@@ -337,6 +337,71 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.0' });
 });
 
+// ============================================
+// Spell Compendium API
+// ============================================
+const { SPELLS, SCHOOLS, getSpellsByLevel, getSpellsByClass, getCantrips } = require('./spells');
+
+app.get('/api/spells', (req, res) => {
+  const { level, class: className, school } = req.query;
+  
+  let spells = Object.values(SPELLS);
+  
+  // Filter by level
+  if (level !== undefined) {
+    const lvl = parseInt(level);
+    spells = spells.filter(s => s.level === lvl);
+  }
+  
+  // Filter by class
+  if (className) {
+    spells = spells.filter(s => s.classes && s.classes.includes(className.toLowerCase()));
+  }
+  
+  // Filter by school
+  if (school) {
+    spells = spells.filter(s => s.school === school.toLowerCase());
+  }
+  
+  // Sort by level, then name
+  spells.sort((a, b) => {
+    if (a.level !== b.level) return a.level - b.level;
+    return a.name.localeCompare(b.name);
+  });
+  
+  res.json({ 
+    count: spells.length,
+    spells: spells.map(s => ({
+      id: s.id,
+      name: s.name,
+      level: s.level,
+      school: s.school,
+      castingTime: s.castingTime,
+      range: s.range,
+      duration: s.duration,
+      components: s.components,
+      damage: s.damage,
+      damageType: s.damageType,
+      healing: s.healing,
+      effect: s.effect,
+      save: s.save,
+      attackType: s.attackType,
+      area: s.area,
+      condition: s.condition,
+      description: s.description,
+      classes: s.classes,
+      upcast: s.upcast
+    }))
+  });
+});
+
+app.get('/api/spells/:id', (req, res) => {
+  const spell = SPELLS[req.params.id];
+  if (!spell) {
+    return res.status(404).json({ error: 'Spell not found' });
+  }
+  res.json(spell);
+});
 
 // ============================================
 // Twitter OAuth 2.0 with PKCE

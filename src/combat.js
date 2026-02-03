@@ -616,7 +616,7 @@ const MONSTERS = {
     speed: 30,
     abilities: { STR: 11, DEX: 16, CON: 16, INT: 20, WIS: 14, CHA: 16 },
     special: ['spellcaster', 'legendary_resistance', 'paralyzing_touch', 'frightful_presence'],
-    spells: ['power_word_stun', 'disintegrate', 'finger_of_death', 'fireball'],
+    spells: ['wordOfAnnihilation', 'annihilationRay', 'touchOfOblivion', 'depthCharge'],
     paralyzeDC: 18,
     legendaryResistances: 3,
     legendaryActions: 3,
@@ -1105,7 +1105,7 @@ const ACTIONS = {
       healing_potion: { healing: '2d4+2', type: 'consumable' },
       greater_healing_potion: { healing: '4d4+4', type: 'consumable' },
       antidote: { effect: 'cure_poison', type: 'consumable' },
-      scroll_of_fireball: { damage: '8d6', type: 'scroll', save: 'DEX', dc: 15 }
+      scroll_of_depth_charge: { damage: '8d6', type: 'scroll', save: 'DEX', dc: 15 }
     };
     
     const item = items[itemName];

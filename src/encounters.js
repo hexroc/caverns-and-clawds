@@ -1136,7 +1136,7 @@ class EncounterManager {
         break;
       }
       
-      case 'fireball': {
+      case 'depthCharge': {
         // 8d6 fire damage to all enemies
         const damage = this._rollDice('8d6');
         let killed = 0;
@@ -1150,7 +1150,7 @@ class EncounterManager {
             killed++;
           }
         }
-        messages.push(`🔥 A massive boiling geyser erupts for ${damage} damage!`);
+        messages.push(`🔥 A depth charge detonates, flash-boiling everything for ${damage} damage!`);
         if (killed > 0) {
           messages.push(`💀 ${killed} enemy/enemies slain!`);
         }
@@ -1170,8 +1170,9 @@ class EncounterManager {
    * Handle spell casting in combat
    */
   _handleSpell(char, encounter, spellId) {
-    // Check if character is a spellcaster
-    const spellcasterClasses = ['cleric', 'wizard', 'sorcerer', 'bard', 'druid', 'warlock', 'paladin', 'ranger'];
+    // Check if character is a spellcaster (both D&D and C&C class names for compatibility)
+    const spellcasterClasses = ['cleric', 'wizard', 'sorcerer', 'bard', 'druid', 'warlock', 'paladin', 'ranger', 
+                                 'shellpriest', 'tidecaller', 'shantysingerr', 'depthtouched', 'crusader'];
     if (!spellcasterClasses.includes(char.class)) {
       return { 
         success: false, 
@@ -1279,15 +1280,16 @@ class EncounterManager {
       10: { 1: 4, 2: 3, 3: 2 }
     };
     
-    const fullCasters = ['cleric', 'wizard', 'sorcerer', 'bard', 'druid'];
-    const halfCasters = ['paladin', 'ranger'];
+    const fullCasters = ['cleric', 'wizard', 'sorcerer', 'bard', 'druid', 'shellpriest', 'tidecaller', 'shantysingerr'];
+    const halfCasters = ['paladin', 'ranger', 'crusader'];
+    const pactCasters = ['warlock', 'depthtouched'];
     
     let maxSlots;
     if (fullCasters.includes(char.class)) {
       maxSlots = fullCasterSlots[Math.min(char.level, 10)] || {};
     } else if (halfCasters.includes(char.class)) {
       maxSlots = halfCasterSlots[Math.min(char.level, 10)] || {};
-    } else if (char.class === 'warlock') {
+    } else if (pactCasters.includes(char.class)) {
       // Warlock pact magic (simplified)
       const warlockSlots = { 1: 1, 2: 2, 3: 2, 4: 2, 5: 2 };
       const slotLevel = Math.min(Math.ceil(char.level / 2), 5);
@@ -1322,8 +1324,9 @@ class EncounterManager {
    * Get known spells for character
    */
   _getKnownSpells(char) {
-    // Simplified: return class-appropriate spells
+    // Simplified: return class-appropriate spells (D&D names map to local SPELLS, C&C names map to imported)
     const classSpells = {
+      // D&D class names (backward compatibility, uses local SPELLS)
       cleric: ['cure_wounds', 'healing_word', 'guiding_bolt', 'sacred_flame', 'bless'],
       wizard: ['magic_missile', 'shield', 'burning_hands', 'mage_armor', 'fire_bolt'],
       sorcerer: ['magic_missile', 'burning_hands', 'shield', 'fire_bolt', 'chromatic_orb'],
@@ -1331,7 +1334,13 @@ class EncounterManager {
       druid: ['cure_wounds', 'healing_word', 'entangle', 'thunderwave', 'produce_flame'],
       warlock: ['eldritch_blast', 'hex', 'hellish_rebuke', 'armor_of_agathys'],
       paladin: ['cure_wounds', 'divine_smite', 'bless', 'shield_of_faith'],
-      ranger: ['cure_wounds', 'hunters_mark', 'ensnaring_strike']
+      ranger: ['cure_wounds', 'hunters_mark', 'ensnaring_strike'],
+      // C&C class names
+      shellpriest: ['cure_wounds', 'healing_word', 'guiding_bolt', 'sacred_flame', 'bless'],
+      tidecaller: ['magic_missile', 'shield', 'burning_hands', 'mage_armor', 'fire_bolt'],
+      shantysingerr: ['cure_wounds', 'healing_word', 'vicious_mockery', 'dissonant_whispers'],
+      depthtouched: ['eldritch_blast', 'hex', 'hellish_rebuke', 'armor_of_agathys'],
+      crusader: ['cure_wounds', 'divine_smite', 'bless', 'shield_of_faith']
     };
     
     const spellIds = classSpells[char.class] || [];

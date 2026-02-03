@@ -356,8 +356,8 @@ const MONSTERS = {
     preferRanged: true,
     preferredRange: 8,
     spellcaster: true,
-    cantrips: ['shockingGrasp'],
-    spells: ['lightningBolt'],
+    cantrips: ['electricTouch'],
+    spells: ['electricTorrent'],
     spellSlots: { 2: 2 },
     spellcastingMod: 2,
     

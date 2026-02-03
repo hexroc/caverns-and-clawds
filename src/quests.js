@@ -269,7 +269,7 @@ const QUESTS = {
     rewards: {
       xp: 700,
       pearls: 350,
-      items: ['potion_greater_healing', 'potion_greater_healing', 'scroll_fireball']
+      items: ['potion_greater_healing', 'potion_greater_healing', 'scroll_depth_charge']
     },
     levelReq: 5,
     repeatable: false,

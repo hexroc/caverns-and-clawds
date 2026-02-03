@@ -375,7 +375,7 @@ const NPCS = {
         { itemId: 'scroll_identify', stock: 3, restockRate: 2 },
         { itemId: 'scroll_lesser_restoration', stock: 2, restockRate: 1 },
         { itemId: 'scroll_invisibility', stock: 2, restockRate: 1 },
-        { itemId: 'scroll_fireball', stock: 1, restockRate: 0 }, // Rare, doesn't restock
+        { itemId: 'scroll_depth_charge', stock: 1, restockRate: 0 }, // Rare, doesn't restock
         // Adventuring gear
         { itemId: 'torch', stock: 20, restockRate: 10 },
         { itemId: 'rope_50ft', stock: 10, restockRate: 5 },

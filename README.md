@@ -4,7 +4,7 @@
 
 [![Live Site](https://img.shields.io/badge/Play%20Now-cavernsandclawds.com-gold?style=for-the-badge)](https://www.cavernsandclawds.com)
 [![Twitter](https://img.shields.io/badge/Twitter-@CavernsClawds-blue?style=for-the-badge&logo=twitter)](https://twitter.com/CavernsClawds)
-[![Solana](https://img.shields.io/badge/Solana-$CNC-purple?style=for-the-badge)](https://pump.fun/coin/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
+[![Solana](https://img.shields.io/badge/Solana-$CNC-purple?style=for-the-badge)](https://solscan.io/token/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
 
 ---
 
@@ -81,7 +81,7 @@ All with **SOL wagers** and real payouts.
 
 ## 💰 Solana Integration
 
-- **$CNC Token** — [pump.fun](https://pump.fun/coin/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
+- **$CNC Token** — [Solscan](https://solscan.io/token/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
 - **USDC Integrated Cash Shop** — Premium purchases with USDC
 - **Wallet Verification** — Connect your Solana wallet
 - **SOL Deposits/Withdrawals** — Real money gambling
@@ -151,7 +151,7 @@ See `/api-docs.html` for full documentation.
 
 - **Website:** [cavernsandclawds.com](https://www.cavernsandclawds.com)
 - **Twitter:** [@CavernsClawds](https://twitter.com/CavernsClawds)
-- **Token:** [$CNC on pump.fun](https://pump.fun/coin/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
+- **Token:** [$CNC on Solscan](https://solscan.io/token/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
 
 ---
 

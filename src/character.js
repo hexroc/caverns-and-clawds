@@ -35,9 +35,8 @@ const RELIGIONS = {
 const RACES = {
   american: {
     name: 'American Lobster',
-    baseRace: 'Human',
     description: 'Classic red-brown lobster. Versatile and adaptable.',
-    traits: ['Versatile (+1 all stats)', 'Bonus Skill', 'Bonus Feat at L1'],
+    traits: ['Versatile (+1 all stats)', 'Extra Training', 'Determined (Bonus Feat)'],
     statBonuses: { str: 1, dex: 1, con: 1, int: 1, wis: 1, cha: 1 },
     size: 'Medium',
     speed: 30,
@@ -45,29 +44,26 @@ const RACES = {
   },
   european: {
     name: 'European Lobster',
-    baseRace: 'Elf',
     description: 'Blue-tinged shell, elegant and magical.',
-    traits: ['Darkvision 60ft', 'Fey Ancestry', 'Trance', 'Keen Senses'],
+    traits: ['Darkvision 60ft', 'Ancient Bloodline', 'Meditation Trance', 'Keen Senses'],
     statBonuses: { dex: 2, int: 1 },
     size: 'Medium',
     speed: 30,
-    features: ['darkvision_60', 'fey_ancestry', 'trance', 'perception_proficiency']
+    features: ['darkvision_60', 'charm_resistance', 'trance', 'perception_proficiency']
   },
   slipper: {
     name: 'Slipper Lobster',
-    baseRace: 'Dwarf',
     description: 'Flat, wide shell. Stocky and tough.',
-    traits: ['Darkvision 60ft', 'Dwarven Resilience', 'Shell-Sense', 'Dwarven Toughness'],
+    traits: ['Darkvision 60ft', 'Toxin Resistance', 'Shell-Sense', 'Hardened Carapace'],
     statBonuses: { con: 2, wis: 1 },
     size: 'Medium',
     speed: 25,
-    features: ['darkvision_60', 'poison_resistance', 'stonecunning', 'hp_bonus']
+    features: ['darkvision_60', 'poison_resistance', 'tremorsense', 'hp_bonus']
   },
   squat: {
     name: 'Squat Lobster',
-    baseRace: 'Halfling',
     description: 'Small, colorful, and surprisingly lucky.',
-    traits: ['Lucky', 'Brave', 'Nimble', 'Small Size'],
+    traits: ['Fortunate', 'Courageous', 'Nimble', 'Small Size'],
     statBonuses: { dex: 2, cha: 1 },
     size: 'Small',
     speed: 25,
@@ -75,9 +71,8 @@ const RACES = {
   },
   spiny: {
     name: 'Spiny Lobster',
-    baseRace: 'Half-Orc',
     description: 'No large claws, covered in defensive spines. Fierce warriors.',
-    traits: ['Darkvision 60ft', 'Relentless Endurance', 'Savage Attacks', 'Menacing'],
+    traits: ['Darkvision 60ft', 'Undying Will', 'Brutal Strikes', 'Menacing'],
     statBonuses: { str: 2, con: 1 },
     size: 'Medium',
     speed: 30,
@@ -85,9 +80,8 @@ const RACES = {
   },
   reef: {
     name: 'Reef Lobster',
-    baseRace: 'Dragonborn',
     description: 'Vibrant tropical colors. Can unleash boiling water breath.',
-    traits: ['Boiling Breath (2d6 fire, 15ft cone)', 'Heat Resistance'],
+    traits: ['Scalding Breath (2d6 fire, 15ft cone)', 'Heat Resistance'],
     statBonuses: { str: 2, cha: 1 },
     size: 'Medium',
     speed: 30,
@@ -95,43 +89,39 @@ const RACES = {
   },
   pistol: {
     name: 'Pistol Lobster',
-    baseRace: 'Gnome',
     description: 'Small with one oversized claw. Known for devastating sonic snaps.',
-    traits: ['Darkvision 60ft', 'Gnome Cunning', 'Sonic Snap (Thunderclap cantrip)'],
+    traits: ['Darkvision 60ft', 'Quick Wits', 'Sonic Snap (Shockwave cantrip)'],
     statBonuses: { int: 2, con: 1 },
     size: 'Small',
     speed: 25,
-    features: ['darkvision_60', 'gnome_cunning', 'cantrip_thunderclap']
+    features: ['darkvision_60', 'magic_resistance', 'cantrip_thunderclap']
   },
   calico: {
     name: 'Calico Lobster',
-    baseRace: 'Half-Elf',
     description: 'Rare mottled pattern. Charming diplomats.',
-    traits: ['Darkvision 60ft', 'Fey Ancestry', 'Skill Versatility', 'Flexible Stats'],
-    statBonuses: { cha: 2, dex: 1, wis: 1 }, // +1 to two of choice normally, simplified
+    traits: ['Darkvision 60ft', 'Ancient Bloodline', 'Skill Versatility', 'Flexible Stats'],
+    statBonuses: { cha: 2, dex: 1, wis: 1 },
     size: 'Medium',
     speed: 30,
-    features: ['darkvision_60', 'fey_ancestry', 'bonus_skills_2']
+    features: ['darkvision_60', 'charm_resistance', 'bonus_skills_2']
   },
   ghost: {
     name: 'Ghost Lobster',
-    baseRace: 'Drow',
     description: 'Albino white, nearly translucent. Dwellers of the lightless depths.',
     traits: ['Superior Darkvision 120ft', 'Sunlight Sensitivity', 'Depth Magic'],
     statBonuses: { dex: 2, cha: 1 },
     size: 'Medium',
     speed: 30,
-    features: ['darkvision_120', 'sunlight_sensitivity', 'drow_magic']
+    features: ['darkvision_120', 'sunlight_sensitivity', 'depth_magic']
   },
   split: {
     name: 'Split Lobster',
-    baseRace: 'Tiefling',
     description: 'Chimeric two-toned shell. Touched by abyssal energies.',
     traits: ['Darkvision 60ft', 'Abyssal Resistance', 'Depth Magic'],
     statBonuses: { cha: 2, int: 1 },
     size: 'Medium',
     speed: 30,
-    features: ['darkvision_60', 'fire_resistance', 'infernal_legacy']
+    features: ['darkvision_60', 'fire_resistance', 'abyssal_legacy']
   }
 };
 
@@ -143,6 +133,7 @@ const CLASSES = {
   fighter: {
     name: 'Fighter',
     seaName: 'Shell Knight',
+    baseClass: 'Fighter',
     description: 'Master of martial combat. Armored in chitin and coral.',
     hitDie: 10,
     primaryStat: 'str',
@@ -169,6 +160,7 @@ const CLASSES = {
   rogue: {
     name: 'Rogue',
     seaName: 'Shadow Swimmer',
+    baseClass: 'Rogue',
     description: 'Stealthy and deadly. Strikes from the murky depths.',
     hitDie: 8,
     primaryStat: 'dex',
@@ -197,6 +189,7 @@ const CLASSES = {
   cleric: {
     name: 'Cleric',
     seaName: 'Tide Priest',
+    baseClass: 'Cleric',
     description: 'Divine caster channeling the power of the ocean gods.',
     hitDie: 8,
     primaryStat: 'wis',
@@ -233,6 +226,7 @@ const CLASSES = {
   wizard: {
     name: 'Wizard',
     seaName: 'Coral Scholar',
+    baseClass: 'Wizard',
     description: 'Arcane master studying the mystical currents of magic.',
     hitDie: 6,
     primaryStat: 'int',
@@ -263,6 +257,126 @@ const CLASSES = {
       2: ['arcane_tradition'],
       4: ['asi'],
       5: ['arcane_tradition_feature']
+    }
+  },
+  warlock: {
+    name: 'Warlock',
+    seaName: 'Abyssal Pact',
+    baseClass: 'Warlock',
+    description: 'Bound to an eldritch patron of the deep. Power at a price.',
+    hitDie: 8,
+    primaryStat: 'cha',
+    saveProficiencies: ['wis', 'cha'],
+    armorProficiencies: ['light'],
+    weaponProficiencies: ['simple'],
+    skillChoices: ['arcana', 'deception', 'history', 'intimidation', 'investigation', 'nature', 'religion'],
+    numSkills: 2,
+    startingEquipment: [
+      { item: 'light_crossbow', equipped: true, slot: 'main_hand' },
+      { item: 'bolts', quantity: 20 },
+      { item: 'component_pouch' },
+      { item: 'leather_armor', equipped: true, slot: 'armor' },
+      { item: 'dagger', quantity: 2 },
+      { item: 'scholars_pack' }
+    ],
+    spellcasting: {
+      ability: 'cha',
+      pactMagic: true, // Warlock uses pact magic (slots refresh on short rest)
+      cantripsKnown: { 1: 2, 4: 3, 10: 4 },
+      spellsKnown: { 1: 2, 2: 3, 3: 4, 4: 5, 5: 6 },
+      pactSlots: { // All slots are same level, refresh on short rest
+        1: { slots: 1, level: 1 },
+        2: { slots: 2, level: 1 },
+        3: { slots: 2, level: 2 },
+        4: { slots: 2, level: 2 },
+        5: { slots: 2, level: 3 }
+      }
+    },
+    features: {
+      1: ['pact_magic', 'eldritch_patron'],
+      2: ['eldritch_invocations'],
+      3: ['pact_boon'],
+      4: ['asi'],
+      5: ['eldritch_invocation_extra']
+    }
+  },
+  paladin: {
+    name: 'Paladin',
+    seaName: 'Tidal Warden',
+    baseClass: 'Paladin',
+    description: 'Holy warrior sworn to protect the depths. Smites with righteous fury.',
+    hitDie: 10,
+    primaryStat: 'str',
+    secondaryStat: 'cha',
+    saveProficiencies: ['wis', 'cha'],
+    armorProficiencies: ['light', 'medium', 'heavy', 'shields'],
+    weaponProficiencies: ['simple', 'martial'],
+    skillChoices: ['athletics', 'insight', 'intimidation', 'medicine', 'persuasion', 'religion'],
+    numSkills: 2,
+    startingEquipment: [
+      { item: 'longsword', equipped: true, slot: 'main_hand' },
+      { item: 'shield', equipped: true, slot: 'off_hand' },
+      { item: 'chain_mail', equipped: true, slot: 'armor' },
+      { item: 'javelin', quantity: 5 },
+      { item: 'priests_pack' },
+      { item: 'holy_symbol' }
+    ],
+    spellcasting: {
+      ability: 'cha',
+      preparedCaster: true, // Prepares spells from full list
+      cantripsKnown: {}, // Paladins don't get cantrips
+      spellSlots: {
+        2: { 1: 2 }, // Paladins get spells at level 2
+        3: { 1: 3 },
+        4: { 1: 3 },
+        5: { 1: 4, 2: 2 }
+      }
+    },
+    features: {
+      1: ['divine_sense', 'lay_on_hands'],
+      2: ['fighting_style', 'spellcasting', 'divine_smite'],
+      3: ['sacred_oath', 'channel_divinity'],
+      4: ['asi'],
+      5: ['extra_attack']
+    }
+  },
+  bard: {
+    name: 'Bard',
+    seaName: 'Reef Chanter',
+    baseClass: 'Bard',
+    description: 'Weaver of song-magic and tales. The voice of the deep.',
+    hitDie: 8,
+    primaryStat: 'cha',
+    saveProficiencies: ['dex', 'cha'],
+    armorProficiencies: ['light'],
+    weaponProficiencies: ['simple', 'hand_crossbow', 'longsword', 'rapier', 'shortsword'],
+    skillChoices: ['any'], // Bards can choose any 3 skills
+    numSkills: 3,
+    startingEquipment: [
+      { item: 'rapier', equipped: true, slot: 'main_hand' },
+      { item: 'lute' }, // Musical instrument
+      { item: 'leather_armor', equipped: true, slot: 'armor' },
+      { item: 'dagger' },
+      { item: 'entertainers_pack' }
+    ],
+    spellcasting: {
+      ability: 'cha',
+      cantripsKnown: { 1: 2, 4: 3, 10: 4 },
+      spellsKnown: { 1: 4, 2: 5, 3: 6, 4: 7, 5: 8 },
+      spellSlots: {
+        1: { 1: 2 },
+        2: { 1: 3 },
+        3: { 1: 4, 2: 2 },
+        4: { 1: 4, 2: 3 },
+        5: { 1: 4, 2: 3, 3: 2 }
+      }
+    },
+    features: {
+      1: ['spellcasting', 'bardic_inspiration_d6'],
+      2: ['jack_of_all_trades', 'song_of_rest_d6'],
+      3: ['bard_college', 'expertise'],
+      4: ['asi'],
+      5: ['bardic_inspiration_d8', 'font_of_inspiration']
     }
   }
 };
@@ -410,13 +524,13 @@ const ITEMS = {
     spell: 'invisibility',
     value: 120
   },
-  scroll_fireball: {
-    name: 'Scroll of Boiling Geyser',
+  scroll_depth_charge: {
+    name: 'Scroll of Depth Charge',
     type: 'scroll',
     rarity: 'rare',
     spellLevel: 3,
-    description: '8d6 fire damage in a 20ft radius. (Fireball, reskinned)',
-    spell: 'fireball',
+    description: '8d6 fire damage in a 20ft radius. The water flash-boils in a devastating explosion.',
+    spell: 'depthCharge',
     value: 300
   },
   
