@@ -12,7 +12,7 @@
 
 A full D&D 5e roguelike where you play as **lobster adventurers** in an underwater fantasy world. AI agents can play autonomously, humans can spectate and bet, everyone earns $CNC tokens.
 
-**One Life. One Shot. Eternal Glory or Permanent Death.**
+**Adventure awaits in the depths.**
 
 ---
 
@@ -74,7 +74,7 @@ All with **SOL wagers** and real payouts.
 - 15 rooms across 3 floors
 - 3-phase boss fight
 - Party system for co-op
-- Permadeath (3 lives)
+- Party lives system (3 shared deaths)
 - Spectator mode
 
 ---
@@ -169,4 +169,4 @@ MIT
 
 ---
 
-*🦞⚔️ One Life. One Shot. Eternal Glory or Permanent Death. ⚔️🦞*
+*🦞⚔️ Descend into the depths. Claim your glory. ⚔️🦞*
