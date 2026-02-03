@@ -99,17 +99,25 @@ const CAPSTONE_ENCOUNTERS = {
     { monsters: ['drowned_sailor', 'drowned_sailor', 'drowned_sailor'] },
     { monsters: ['barnacle_horror', 'drowned_sailor', 'drowned_sailor'] },
     { monsters: ['sea_wraith'] },
+    // Mixed encounter with ranged unit
+    { monsters: ['sahuagin_crossbowman', 'giant_crab', 'giant_crab'] },
   ],
   floor2: [
     { monsters: ['sea_wraith', 'drowned_sailor', 'drowned_sailor'] },
     { monsters: ['moray_terror', 'drowned_sailor'] },
     { monsters: ['anchor_wight'] },
-    { monsters: ['treasure_mimic'] }
+    { monsters: ['treasure_mimic'] },
+    // Mixed ranged/melee encounter
+    { monsters: ['deep_archer', 'sahuagin_crossbowman', 'drowned_sailor'] },
   ],
   floor3: [
     { monsters: ['anchor_wight', 'barnacle_horror', 'barnacle_horror'] },
     { monsters: ['ghost_captain'] },
     { monsters: ['horror_shard', 'drowned_sailor', 'drowned_sailor'] },
+    // Spellcaster encounter
+    { monsters: ['spellcasting_eel', 'deep_archer'] },
+    // All ranged encounter (kiting test)
+    { monsters: ['deep_archer', 'sahuagin_crossbowman', 'sahuagin_crossbowman'] },
   ]
 };
 
@@ -1420,7 +1428,7 @@ class CapstoneManager {
       combat.addCombatant({
         id: `${monsterId}_${enemySpawnIndex}`,
         name: monsterTemplate.name,
-        char: '💀',
+        char: monsterTemplate.aiBehavior === 'ranged' ? '🏹' : '💀',
         type: 'monster',
         team: 'enemy',
         hp: scaledHp,
@@ -1429,7 +1437,13 @@ class CapstoneManager {
         speed: Math.floor((monsterTemplate.stats.speed || 30) / 5),
         attackBonus: monsterTemplate.attacks[0]?.hit || 3,
         damage: monsterTemplate.attacks[0]?.damage || '1d6',
+        damageType: monsterTemplate.attacks[0]?.damageType || 'slashing',
         dexMod: Math.floor((monsterTemplate.stats.dex - 10) / 2),
+        // AI and weapon properties from monster template
+        aiBehavior: monsterTemplate.aiBehavior || null,
+        attackRange: monsterTemplate.attackRange || 1,
+        preferRanged: monsterTemplate.preferRanged || false,
+        preferredRange: monsterTemplate.preferredRange || null,
         position: spawnPos
       });
     }
@@ -1777,6 +1791,133 @@ class CapstoneManager {
   }
   
   /**
+   * Start a demo combat for testing/spectating (no database required)
+   */
+  startDemoCombat() {
+    const combatId = 'demo_' + Date.now().toString(36);
+    
+    // Create boss arena with terrain
+    const grid = generateRoom('boss', 12, combatId);
+    const combat = new TacticalCombat(grid, { 
+      id: combatId, 
+      maxDeaths: 3,
+      autoBattle: true
+    });
+    
+    // Add demo party (3 lobster heroes)
+    combat.addCombatant({
+      id: 'hero_faithful',
+      name: 'Faithful',
+      char: '🦞',
+      type: 'player',
+      team: 'party',
+      hp: 45, maxHp: 45,
+      ac: 16,
+      speed: 6,
+      weapon: 'longsword',
+      attackBonus: 5,
+      damage: '1d8+3',
+      dexMod: 2,
+      position: hex(-4, 4)
+    });
+    
+    combat.addCombatant({
+      id: 'hero_coral',
+      name: 'Coral the Archer',
+      char: '🦐',
+      type: 'player',
+      team: 'party',
+      hp: 32, maxHp: 32,
+      ac: 14,
+      speed: 6,
+      weapon: 'longbow',
+      attackBonus: 6,
+      damage: '1d8+4',
+      dexMod: 4,
+      position: hex(-5, 5)
+    });
+    
+    combat.addCombatant({
+      id: 'hero_shell',
+      name: 'Shell the Spearman',
+      char: '🦀',
+      type: 'player',
+      team: 'party',
+      hp: 40, maxHp: 40,
+      ac: 15,
+      speed: 6,
+      weapon: 'spear',
+      attackBonus: 4,
+      damage: '1d6+2',
+      dexMod: 1,
+      position: hex(-3, 3)
+    });
+    
+    // Add enemies
+    combat.addCombatant({
+      id: 'enemy_spawn1',
+      name: 'Dreadnought Spawn',
+      char: '💀',
+      type: 'monster',
+      team: 'enemy',
+      hp: 35, maxHp: 35,
+      ac: 14,
+      speed: 6,
+      attackBonus: 4,
+      damage: '1d10+2',
+      dexMod: 1,
+      position: hex(3, -3)
+    });
+    
+    combat.addCombatant({
+      id: 'enemy_archer',
+      name: 'Sahuagin Crossbowman',
+      char: '🏹',
+      type: 'monster',
+      team: 'enemy',
+      hp: 22, maxHp: 22,
+      ac: 12,
+      speed: 6,
+      weapon: 'light_crossbow',
+      attackBonus: 4,
+      damage: '1d8+2',
+      dexMod: 2,
+      aiBehavior: 'ranged',
+      preferRanged: true,
+      position: hex(4, -4)
+    });
+    
+    combat.addCombatant({
+      id: 'enemy_eel',
+      name: 'Voltaic Eel',
+      char: '⚡',
+      type: 'monster',
+      team: 'enemy',
+      hp: 28, maxHp: 28,
+      ac: 13,
+      speed: 8,
+      attackBonus: 5,
+      damage: '2d6+2',
+      damageType: 'lightning',
+      dexMod: 3,
+      position: hex(2, -2)
+    });
+    
+    // Store combat for spectating
+    this.activeCombats.set(combatId, combat);
+    
+    // Start combat
+    combat.rollInitiative();
+    combat.startCombat();
+    
+    return {
+      success: true,
+      combatId,
+      message: 'Demo combat started! Watch at /theater.html?combat=' + combatId
+    };
+  }
+  
+  /**
    * Get active capstones (for spectating)
    */
   getActiveCapstones() {
@@ -1788,6 +1929,29 @@ class CapstoneManager {
       WHERE ci.status = 'active'
       ORDER BY ci.started_at DESC
     `).all();
+  }
+  
+  /**
+   * Get a combat by ID (for spectating)
+   */
+  getCombat(combatId) {
+    return this.activeCombats.get(combatId);
+  }
+  
+  /**
+   * Get combat state for spectators
+   */
+  getCombatState(combatId) {
+    const combat = this.activeCombats.get(combatId);
+    if (!combat) {
+      return { success: false, error: 'Combat not found' };
+    }
+    
+    return {
+      success: true,
+      combat: combat.getState(),
+      ascii: combat.renderASCII()
+    };
   }
 }
 

@@ -167,7 +167,7 @@ function getPlayerAppearance(characterStats) {
 
 // Get run ID from URL
 const urlParams = new URLSearchParams(window.location.search);
-const runId = urlParams.get('run');
+const runId = urlParams.get('run') || urlParams.get('combat');
 const campaignId = urlParams.get('id');
 
 // State
@@ -1416,6 +1416,9 @@ class TacticalGrid {
     // Draw grid
     this.drawGrid();
     
+    // Draw range indicators (behind other overlays)
+    this.drawRangeIndicators();
+    
     // Draw overlays (reachable, attack range)
     this.drawOverlays();
     
@@ -2080,13 +2083,105 @@ class TacticalGrid {
         case 'spell_effect':
           this.drawSpellEffect(anim);
           break;
+        case 'spell_area':
+          this.drawSpellAreaEffect(anim);
+          break;
         case 'death':
           this.drawDeathAnimation(anim);
           break;
         case 'trap_trigger':
           this.drawTrapTriggerAnimation(anim);
           break;
+        case 'condition_applied':
+          this.drawConditionEffect(anim);
+          break;
+        case 'projectile':
+          this.drawProjectileAnimation(anim);
+          break;
       }
+    }
+  }
+  
+  // Draw area effect for spells (fireball, cone, etc.)
+  drawSpellAreaEffect(anim) {
+    const tileDrawSize = this.tileSize * this.camera.zoom;
+    
+    // Highlight all affected hexes
+    for (const h of anim.affectedHexes || []) {
+      const screenPos = this.gridToScreen(h.x + 0.5, h.y + 0.5);
+      
+      // Draw hex highlight
+      const alpha = 0.3 * (1 - anim.progress);
+      this.overlayCtx.fillStyle = (anim.color || 'rgba(255, 100, 50,') + ` ${alpha})`;
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(screenPos.x, screenPos.y, tileDrawSize * 0.4, 0, Math.PI * 2);
+      this.overlayCtx.fill();
+    }
+    
+    // Draw central effect at target
+    if (anim.targetX !== undefined) {
+      const centerPos = this.gridToScreen(anim.targetX + 0.5, anim.targetY + 0.5);
+      this.drawSpellEffect({
+        ...anim,
+        x: anim.targetX,
+        y: anim.targetY
+      });
+    }
+  }
+  
+  // Draw condition application effect (stunned, poisoned, etc.)
+  drawConditionEffect(anim) {
+    const screenPos = this.gridToScreen(anim.x + 0.5, anim.y + 0.5);
+    const tileDrawSize = this.tileSize * this.camera.zoom;
+    
+    // Condition icon with animation
+    const icons = {
+      poisoned: '🤢',
+      stunned: '💫',
+      frightened: '😱',
+      paralyzed: '⚡',
+      prone: '⬇️',
+      blinded: '🙈',
+      restrained: '⛓️',
+      charmed: '💕',
+      exhausted: '😩'
+    };
+    
+    const icon = icons[anim.condition] || '❗';
+    const bounce = Math.sin(anim.progress * Math.PI) * 20;
+    
+    this.overlayCtx.font = `${tileDrawSize * 0.5}px sans-serif`;
+    this.overlayCtx.textAlign = 'center';
+    this.overlayCtx.textBaseline = 'middle';
+    this.overlayCtx.globalAlpha = 1 - anim.progress;
+    this.overlayCtx.fillText(icon, screenPos.x, screenPos.y - bounce);
+    this.overlayCtx.globalAlpha = 1;
+  }
+  
+  // Draw projectile animation (for ranged attacks, spells)
+  drawProjectileAnimation(anim) {
+    const start = this.gridToScreen(anim.startX + 0.5, anim.startY + 0.5);
+    const end = this.gridToScreen(anim.endX + 0.5, anim.endY + 0.5);
+    
+    const currentX = start.x + (end.x - start.x) * anim.progress;
+    const currentY = start.y + (end.y - start.y) * anim.progress;
+    
+    this.drawProjectile(currentX, currentY, start, end, anim.projectileType || 'arrow');
+    
+    // Trail
+    const trailLength = 5;
+    for (let i = 0; i < trailLength; i++) {
+      const t = anim.progress - (i * 0.02);
+      if (t <= 0) continue;
+      
+      const trailX = start.x + (end.x - start.x) * t;
+      const trailY = start.y + (end.y - start.y) * t;
+      const alpha = 0.3 * (1 - i / trailLength);
+      
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(trailX, trailY, 3, 0, Math.PI * 2);
+      this.overlayCtx.fillStyle = `rgba(200, 200, 200, ${alpha})`;
+      this.overlayCtx.fill();
     }
   }
   
@@ -2131,28 +2226,405 @@ class TacticalGrid {
     const currentX = start.x + (end.x - start.x) * progress;
     const currentY = start.y + (end.y - start.y) * progress;
     
-    this.overlayCtx.strokeStyle = `rgba(255, 100, 50, ${1 - fadeOut})`;
-    this.overlayCtx.lineWidth = 4;
+    // Different colors/styles for different attack types
+    const attackStyle = this.getAttackStyle(anim.attackType, anim.damageType);
+    
+    // Draw attack trail
+    this.overlayCtx.strokeStyle = attackStyle.color.replace('1)', `${1 - fadeOut})`);
+    this.overlayCtx.lineWidth = attackStyle.lineWidth;
+    this.overlayCtx.lineCap = 'round';
+    
+    if (attackStyle.dashed) {
+      this.overlayCtx.setLineDash([8, 4]);
+    }
+    
     this.overlayCtx.beginPath();
     this.overlayCtx.moveTo(start.x, start.y);
     this.overlayCtx.lineTo(currentX, currentY);
     this.overlayCtx.stroke();
+    this.overlayCtx.setLineDash([]);
     
-    // Impact flash
+    // Draw projectile for ranged attacks
+    if (anim.attackType === 'ranged' || anim.attackType === 'thrown') {
+      this.drawProjectile(currentX, currentY, start, end, attackStyle.projectile);
+    }
+    
+    // Impact effect
     if (progress >= 0.9) {
+      this.drawImpactEffect(end.x, end.y, fadeOut, attackStyle);
+    }
+  }
+  
+  // Get visual style for attack type
+  getAttackStyle(attackType, damageType) {
+    const styles = {
+      melee: {
+        color: 'rgba(255, 100, 50, 1)',
+        lineWidth: 5,
+        dashed: false,
+        impactColor: 'rgba(255, 200, 100, 1)',
+        impactSize: 25
+      },
+      ranged: {
+        color: 'rgba(100, 200, 255, 1)',
+        lineWidth: 3,
+        dashed: false,
+        projectile: 'arrow',
+        impactColor: 'rgba(150, 220, 255, 1)',
+        impactSize: 15
+      },
+      thrown: {
+        color: 'rgba(180, 180, 180, 1)',
+        lineWidth: 3,
+        dashed: true,
+        projectile: 'dagger',
+        impactColor: 'rgba(200, 200, 200, 1)',
+        impactSize: 20
+      }
+    };
+    
+    let style = styles[attackType] || styles.melee;
+    
+    // Modify based on damage type
+    if (damageType === 'fire') {
+      style.color = 'rgba(255, 150, 50, 1)';
+      style.impactColor = 'rgba(255, 100, 0, 1)';
+    } else if (damageType === 'cold') {
+      style.color = 'rgba(100, 180, 255, 1)';
+      style.impactColor = 'rgba(150, 220, 255, 1)';
+    } else if (damageType === 'lightning') {
+      style.color = 'rgba(255, 255, 100, 1)';
+      style.impactColor = 'rgba(255, 255, 200, 1)';
+    } else if (damageType === 'necrotic') {
+      style.color = 'rgba(100, 50, 150, 1)';
+      style.impactColor = 'rgba(150, 100, 200, 1)';
+    } else if (damageType === 'radiant') {
+      style.color = 'rgba(255, 230, 150, 1)';
+      style.impactColor = 'rgba(255, 255, 200, 1)';
+    }
+    
+    return style;
+  }
+  
+  // Draw projectile (arrow, dagger, etc.)
+  drawProjectile(x, y, start, end, type) {
+    const angle = Math.atan2(end.y - start.y, end.x - start.x);
+    
+    this.overlayCtx.save();
+    this.overlayCtx.translate(x, y);
+    this.overlayCtx.rotate(angle);
+    
+    // Draw projectile based on type
+    if (type === 'arrow') {
       this.overlayCtx.beginPath();
-      this.overlayCtx.arc(end.x, end.y, 20 * (1 - fadeOut), 0, Math.PI * 2);
-      this.overlayCtx.fillStyle = `rgba(255, 200, 100, ${0.8 * (1 - fadeOut)})`;
+      this.overlayCtx.moveTo(10, 0);
+      this.overlayCtx.lineTo(-5, -5);
+      this.overlayCtx.lineTo(-5, 5);
+      this.overlayCtx.closePath();
+      this.overlayCtx.fillStyle = '#8B4513';
+      this.overlayCtx.fill();
+    } else if (type === 'dagger') {
+      this.overlayCtx.beginPath();
+      this.overlayCtx.moveTo(8, 0);
+      this.overlayCtx.lineTo(-3, -4);
+      this.overlayCtx.lineTo(-3, 4);
+      this.overlayCtx.closePath();
+      this.overlayCtx.fillStyle = '#C0C0C0';
+      this.overlayCtx.fill();
+    } else {
+      // Generic projectile
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(0, 0, 5, 0, Math.PI * 2);
+      this.overlayCtx.fillStyle = '#FFD700';
       this.overlayCtx.fill();
     }
+    
+    this.overlayCtx.restore();
+  }
+  
+  // Draw impact effect
+  drawImpactEffect(x, y, fadeOut, style) {
+    // Main impact flash
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(x, y, style.impactSize * (1 - fadeOut), 0, Math.PI * 2);
+    this.overlayCtx.fillStyle = style.impactColor.replace('1)', `${0.8 * (1 - fadeOut)})`);
+    this.overlayCtx.fill();
+    
+    // Ring effect
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(x, y, style.impactSize * 1.5 * (1 - fadeOut * 0.5), 0, Math.PI * 2);
+    this.overlayCtx.strokeStyle = style.impactColor.replace('1)', `${0.4 * (1 - fadeOut)})`);
+    this.overlayCtx.lineWidth = 2;
+    this.overlayCtx.stroke();
   }
   
   drawSpellEffect(anim) {
     const screenPos = this.gridToScreen(anim.x + 0.5, anim.y + 0.5);
+    const tileDrawSize = this.tileSize * this.camera.zoom;
     
+    // Choose drawing method based on spell type
+    const visualType = anim.visual || anim.spellType || 'magic';
+    
+    switch (visualType) {
+      case 'fireball_explosion':
+      case 'fire_cone':
+        this.drawFireSpellEffect(screenPos, anim, tileDrawSize);
+        break;
+      case 'ice_beam':
+      case 'frost_cone':
+      case 'ice_storm':
+        this.drawIceSpellEffect(screenPos, anim, tileDrawSize);
+        break;
+      case 'lightning_bolt':
+      case 'lightning_touch':
+        this.drawLightningSpellEffect(screenPos, anim, tileDrawSize);
+        break;
+      case 'healing_light':
+        this.drawHealingSpellEffect(screenPos, anim, tileDrawSize);
+        break;
+      case 'necrotic_hand':
+        this.drawNecroticSpellEffect(screenPos, anim, tileDrawSize);
+        break;
+      case 'magic_missiles':
+        this.drawMagicMissileEffect(screenPos, anim, tileDrawSize);
+        break;
+      default:
+        this.drawGenericSpellEffect(screenPos, anim, tileDrawSize);
+    }
+  }
+  
+  // Fire spell effect (fireball, burning hands)
+  drawFireSpellEffect(screenPos, anim, tileSize) {
+    const colors = ['#ff4500', '#ff8c00', '#ffd700'];
+    const ringRadius = 20 + anim.progress * 60;
+    
+    // Expanding fire ring
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(screenPos.x, screenPos.y, ringRadius, 0, Math.PI * 2);
+    const gradient = this.overlayCtx.createRadialGradient(
+      screenPos.x, screenPos.y, 0,
+      screenPos.x, screenPos.y, ringRadius
+    );
+    gradient.addColorStop(0, `rgba(255, 255, 200, ${0.8 * (1 - anim.progress)})`);
+    gradient.addColorStop(0.3, `rgba(255, 140, 0, ${0.6 * (1 - anim.progress)})`);
+    gradient.addColorStop(1, `rgba(255, 69, 0, ${0.2 * (1 - anim.progress)})`);
+    this.overlayCtx.fillStyle = gradient;
+    this.overlayCtx.fill();
+    
+    // Fire particles
+    for (const p of anim.particles) {
+      p.x += p.vx;
+      p.y += p.vy - 2; // Fire rises
+      p.life -= 0.03;
+      
+      if (p.life > 0) {
+        this.overlayCtx.beginPath();
+        this.overlayCtx.arc(
+          screenPos.x + p.x,
+          screenPos.y + p.y,
+          p.size * p.life * 1.5,
+          0, Math.PI * 2
+        );
+        this.overlayCtx.fillStyle = colors[Math.floor(Math.random() * colors.length)].replace(')', `, ${p.life})`).replace('#', 'rgba(').replace(/([0-9a-f]{2})/gi, (m) => parseInt(m, 16) + ',');
+        this.overlayCtx.fillStyle = `rgba(255, ${Math.floor(Math.random() * 100) + 100}, 0, ${p.life})`;
+        this.overlayCtx.fill();
+      }
+    }
+  }
+  
+  // Ice spell effect (ray of frost, cone of cold)
+  drawIceSpellEffect(screenPos, anim, tileSize) {
+    const ringRadius = 15 + anim.progress * 50;
+    
+    // Ice shards
+    this.overlayCtx.save();
+    this.overlayCtx.translate(screenPos.x, screenPos.y);
+    
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2 + anim.progress * 2;
+      const dist = ringRadius * (0.5 + 0.5 * Math.sin(anim.progress * 10 + i));
+      
+      this.overlayCtx.save();
+      this.overlayCtx.translate(Math.cos(angle) * dist, Math.sin(angle) * dist);
+      this.overlayCtx.rotate(angle);
+      
+      // Draw ice crystal
+      this.overlayCtx.beginPath();
+      this.overlayCtx.moveTo(0, -10 * (1 - anim.progress));
+      this.overlayCtx.lineTo(5, 0);
+      this.overlayCtx.lineTo(0, 10 * (1 - anim.progress));
+      this.overlayCtx.lineTo(-5, 0);
+      this.overlayCtx.closePath();
+      this.overlayCtx.fillStyle = `rgba(150, 220, 255, ${0.7 * (1 - anim.progress)})`;
+      this.overlayCtx.fill();
+      this.overlayCtx.strokeStyle = `rgba(200, 240, 255, ${0.9 * (1 - anim.progress)})`;
+      this.overlayCtx.stroke();
+      
+      this.overlayCtx.restore();
+    }
+    
+    this.overlayCtx.restore();
+    
+    // Central frost burst
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(screenPos.x, screenPos.y, ringRadius * 0.4, 0, Math.PI * 2);
+    this.overlayCtx.fillStyle = `rgba(200, 240, 255, ${0.5 * (1 - anim.progress)})`;
+    this.overlayCtx.fill();
+  }
+  
+  // Lightning spell effect
+  drawLightningSpellEffect(screenPos, anim, tileSize) {
+    if (anim.progress > 0.5) return; // Quick flash
+    
+    const intensity = 1 - anim.progress * 2;
+    
+    // Draw jagged lightning bolts
+    for (let b = 0; b < 4; b++) {
+      const angle = (b / 4) * Math.PI * 2 + Math.random() * 0.5;
+      const length = 30 + Math.random() * 30;
+      
+      this.overlayCtx.beginPath();
+      this.overlayCtx.moveTo(screenPos.x, screenPos.y);
+      
+      let x = screenPos.x;
+      let y = screenPos.y;
+      const segments = 5;
+      
+      for (let i = 0; i < segments; i++) {
+        const segLen = length / segments;
+        x += Math.cos(angle + (Math.random() - 0.5)) * segLen;
+        y += Math.sin(angle + (Math.random() - 0.5)) * segLen;
+        this.overlayCtx.lineTo(x, y);
+      }
+      
+      this.overlayCtx.strokeStyle = `rgba(255, 255, 100, ${intensity})`;
+      this.overlayCtx.lineWidth = 3;
+      this.overlayCtx.stroke();
+      
+      // Glow
+      this.overlayCtx.strokeStyle = `rgba(255, 255, 200, ${intensity * 0.5})`;
+      this.overlayCtx.lineWidth = 6;
+      this.overlayCtx.stroke();
+    }
+    
+    // Central flash
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(screenPos.x, screenPos.y, 20 * intensity, 0, Math.PI * 2);
+    this.overlayCtx.fillStyle = `rgba(255, 255, 255, ${intensity * 0.8})`;
+    this.overlayCtx.fill();
+  }
+  
+  // Healing spell effect
+  drawHealingSpellEffect(screenPos, anim, tileSize) {
+    const colors = ['#22c55e', '#4ade80', '#86efac'];
+    
+    // Rising sparkles
+    for (const p of anim.particles) {
+      p.x += p.vx * 0.3;
+      p.y -= 1.5; // Rise upward
+      p.life -= 0.015;
+      
+      if (p.life > 0) {
+        this.overlayCtx.beginPath();
+        this.overlayCtx.arc(
+          screenPos.x + p.x,
+          screenPos.y + p.y,
+          p.size * p.life,
+          0, Math.PI * 2
+        );
+        this.overlayCtx.fillStyle = `rgba(150, 255, 150, ${p.life})`;
+        this.overlayCtx.fill();
+        
+        // Sparkle
+        this.overlayCtx.fillStyle = `rgba(255, 255, 255, ${p.life * 0.5})`;
+        this.overlayCtx.fillRect(screenPos.x + p.x - 1, screenPos.y + p.y - 1, 2, 2);
+      }
+    }
+    
+    // Healing aura
+    const auraRadius = 20 + Math.sin(anim.progress * 10) * 5;
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(screenPos.x, screenPos.y, auraRadius, 0, Math.PI * 2);
+    this.overlayCtx.strokeStyle = `rgba(100, 255, 150, ${0.6 * (1 - anim.progress)})`;
+    this.overlayCtx.lineWidth = 3;
+    this.overlayCtx.stroke();
+  }
+  
+  // Necrotic spell effect
+  drawNecroticSpellEffect(screenPos, anim, tileSize) {
+    // Dark tendrils
+    this.overlayCtx.save();
+    this.overlayCtx.translate(screenPos.x, screenPos.y);
+    
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2 + anim.progress * 3;
+      const length = 30 + Math.sin(anim.progress * 8 + i) * 15;
+      
+      this.overlayCtx.beginPath();
+      this.overlayCtx.moveTo(0, 0);
+      
+      // Wavy tendril
+      for (let j = 1; j <= 10; j++) {
+        const t = j / 10;
+        const wave = Math.sin(t * 4 + anim.progress * 10) * 5;
+        const x = Math.cos(angle) * length * t + Math.cos(angle + Math.PI/2) * wave;
+        const y = Math.sin(angle) * length * t + Math.sin(angle + Math.PI/2) * wave;
+        this.overlayCtx.lineTo(x, y);
+      }
+      
+      this.overlayCtx.strokeStyle = `rgba(100, 50, 150, ${0.7 * (1 - anim.progress)})`;
+      this.overlayCtx.lineWidth = 2;
+      this.overlayCtx.stroke();
+    }
+    
+    this.overlayCtx.restore();
+    
+    // Dark core
+    this.overlayCtx.beginPath();
+    this.overlayCtx.arc(screenPos.x, screenPos.y, 15 * (1 - anim.progress * 0.5), 0, Math.PI * 2);
+    this.overlayCtx.fillStyle = `rgba(50, 0, 80, ${0.8 * (1 - anim.progress)})`;
+    this.overlayCtx.fill();
+  }
+  
+  // Magic missile effect
+  drawMagicMissileEffect(screenPos, anim, tileSize) {
+    // Multiple seeking missiles
+    const numMissiles = 3;
+    
+    for (let i = 0; i < numMissiles; i++) {
+      const offset = (i - 1) * 15;
+      const delay = i * 0.1;
+      const localProgress = Math.max(0, Math.min(1, (anim.progress - delay) / (1 - delay * numMissiles)));
+      
+      if (localProgress <= 0) continue;
+      
+      const x = screenPos.x + offset + Math.sin(localProgress * 10 + i) * 5;
+      const y = screenPos.y;
+      
+      // Missile glow
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(x, y, 8 * (1 - localProgress), 0, Math.PI * 2);
+      const gradient = this.overlayCtx.createRadialGradient(x, y, 0, x, y, 8);
+      gradient.addColorStop(0, `rgba(150, 100, 255, ${1 - localProgress})`);
+      gradient.addColorStop(1, `rgba(100, 50, 200, ${0.5 * (1 - localProgress)})`);
+      this.overlayCtx.fillStyle = gradient;
+      this.overlayCtx.fill();
+      
+      // Sparkle trail
+      for (let s = 0; s < 3; s++) {
+        const trailX = x - (Math.random() - 0.5) * 10;
+        const trailY = y + s * 3;
+        this.overlayCtx.fillStyle = `rgba(200, 150, 255, ${0.5 * (1 - localProgress) * (1 - s/3)})`;
+        this.overlayCtx.fillRect(trailX - 1, trailY - 1, 2, 2);
+      }
+    }
+  }
+  
+  // Generic spell effect (fallback)
+  drawGenericSpellEffect(screenPos, anim, tileSize) {
     // Draw expanding ring
     const ringRadius = 20 + anim.progress * 40;
-    this.overlayCtx.strokeStyle = anim.colors[0];
+    this.overlayCtx.strokeStyle = anim.colors?.[0] || '#a855f7';
     this.overlayCtx.lineWidth = 3 * (1 - anim.progress);
     this.overlayCtx.beginPath();
     this.overlayCtx.arc(screenPos.x, screenPos.y, ringRadius, 0, Math.PI * 2);
@@ -2172,7 +2644,8 @@ class TacticalGrid {
           p.size * p.life,
           0, Math.PI * 2
         );
-        this.overlayCtx.fillStyle = this.hexToRgba(anim.colors[Math.floor(Math.random() * anim.colors.length)], p.life);
+        const colors = anim.colors || ['#a855f7', '#c084fc', '#e9d5ff'];
+        this.overlayCtx.fillStyle = this.hexToRgba(colors[Math.floor(Math.random() * colors.length)], p.life);
         this.overlayCtx.fill();
       }
     }
@@ -2200,32 +2673,112 @@ class TacticalGrid {
     this.ctx.globalAlpha = 1;
   }
   
+  // Damage type color mapping
+  getDamageTypeColor(damageType) {
+    const colors = {
+      // Physical
+      slashing: '#dc2626',     // Red
+      piercing: '#dc2626',     // Red
+      bludgeoning: '#dc2626',  // Red
+      // Elemental
+      fire: '#f97316',         // Orange
+      cold: '#3b82f6',         // Blue
+      lightning: '#eab308',    // Yellow
+      thunder: '#8b5cf6',      // Purple
+      acid: '#22c55e',         // Green
+      poison: '#84cc16',       // Lime green
+      // Magical
+      force: '#ec4899',        // Pink
+      necrotic: '#581c87',     // Dark purple
+      radiant: '#fbbf24',      // Gold/yellow
+      psychic: '#a855f7',      // Violet
+      // Default
+      damage: '#dc2626',
+      heal: '#22c55e',
+      crit: '#d4af37'
+    };
+    return colors[damageType] || colors.damage;
+  }
+  
   drawDamageNumbers() {
     for (const dn of this.damageNumbers) {
       const y = dn.y - (1 - dn.life) * 50;
       
-      this.overlayCtx.font = `bold ${24 + (1 - dn.life) * 10}px sans-serif`;
+      // Critical hits get bigger
+      const isCrit = dn.type === 'crit';
+      const baseSize = isCrit ? 32 : 24;
+      this.overlayCtx.font = `bold ${baseSize + (1 - dn.life) * 10}px sans-serif`;
       this.overlayCtx.textAlign = 'center';
       this.overlayCtx.globalAlpha = dn.life;
       
+      const isHeal = dn.type === 'heal';
+      const text = isHeal ? `+${dn.amount}` : `-${dn.amount}`;
+      
+      // Get color based on damage type
+      let color = this.getDamageTypeColor(dn.damageType || dn.type);
+      
+      // Crit gets a glow effect
+      if (isCrit) {
+        this.overlayCtx.shadowColor = '#d4af37';
+        this.overlayCtx.shadowBlur = 10 + Math.sin(Date.now() / 100) * 5;
+      }
+      
       // Outline
       this.overlayCtx.strokeStyle = '#000';
-      this.overlayCtx.lineWidth = 3;
-      this.overlayCtx.strokeText(
-        dn.type === 'heal' ? `+${dn.amount}` : `-${dn.amount}`,
-        dn.x, y
-      );
+      this.overlayCtx.lineWidth = isCrit ? 4 : 3;
+      this.overlayCtx.strokeText(text, dn.x, y);
       
       // Fill
-      this.overlayCtx.fillStyle = dn.type === 'heal' ? '#22c55e' : 
-                                   dn.type === 'crit' ? '#d4af37' : '#dc2626';
-      this.overlayCtx.fillText(
-        dn.type === 'heal' ? `+${dn.amount}` : `-${dn.amount}`,
-        dn.x, y
-      );
+      this.overlayCtx.fillStyle = color;
+      this.overlayCtx.fillText(text, dn.x, y);
       
+      // Reset shadow
+      this.overlayCtx.shadowBlur = 0;
       this.overlayCtx.globalAlpha = 1;
     }
+  }
+  
+  // Draw range indicator circles when targeting
+  drawRangeIndicators() {
+    if (!this.showRangeIndicators || !this.playerEntity) return;
+    
+    const tileDrawSize = this.tileSize * this.camera.zoom;
+    const playerScreen = this.gridToScreen(this.playerEntity.x + 0.5, this.playerEntity.y + 0.5);
+    
+    // Normal range (no disadvantage)
+    if (this.normalRange > 0) {
+      this.overlayCtx.strokeStyle = 'rgba(34, 197, 94, 0.6)';
+      this.overlayCtx.lineWidth = 2;
+      this.overlayCtx.setLineDash([5, 5]);
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(playerScreen.x, playerScreen.y, this.normalRange * tileDrawSize, 0, Math.PI * 2);
+      this.overlayCtx.stroke();
+    }
+    
+    // Long range (with disadvantage)
+    if (this.maxRange > this.normalRange) {
+      this.overlayCtx.strokeStyle = 'rgba(234, 179, 8, 0.4)';
+      this.overlayCtx.lineWidth = 2;
+      this.overlayCtx.beginPath();
+      this.overlayCtx.arc(playerScreen.x, playerScreen.y, this.maxRange * tileDrawSize, 0, Math.PI * 2);
+      this.overlayCtx.stroke();
+    }
+    
+    this.overlayCtx.setLineDash([]);
+  }
+  
+  // Set range indicators for current weapon/spell
+  setRangeIndicators(normalRange, maxRange) {
+    this.showRangeIndicators = true;
+    this.normalRange = normalRange || 1;
+    this.maxRange = maxRange || normalRange || 1;
+  }
+  
+  // Clear range indicators
+  clearRangeIndicators() {
+    this.showRangeIndicators = false;
+    this.normalRange = 0;
+    this.maxRange = 0;
   }
   
   renderMinimap() {

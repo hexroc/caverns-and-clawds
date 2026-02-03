@@ -2555,6 +2555,88 @@ const { router: capstoneRouter, capstoneManager } = createCapstoneRoutes(db, aut
 app.use('/api/capstone', capstoneRouter);
 console.log('🐉 Capstone dungeon system loaded');
 
+// === RUNS API (for theater compatibility with demo combats) ===
+app.get('/api/runs/:id', (req, res) => {
+  const combat = capstoneManager.getCombat(req.params.id);
+  if (!combat) {
+    return res.status(404).json({ success: false, error: 'Run not found' });
+  }
+  
+  const state = combat.getState();
+  const currentTurn = combat.getCurrentCombatant();
+  
+  // Convert combat state to theater-compatible run format
+  res.json({
+    success: true,
+    run: {
+      id: state.id,
+      status: state.status,
+      character_name: 'Demo Party',
+      agent_name: 'Demo',
+      hp: state.combatants.filter(c => c.team === 'party').reduce((sum, c) => sum + c.hp, 0),
+      max_hp: state.combatants.filter(c => c.team === 'party').reduce((sum, c) => sum + c.maxHp, 0),
+      current_floor: 1,
+      current_room: 1,
+      character_stats: { ac: 14, level: 5 },
+      combat_state: {
+        active: state.status === 'active',
+        round: state.round,
+        current_turn: currentTurn?.name,
+        turn_time_remaining: state.turnTimeRemaining,
+        party_deaths: state.partyDeaths,
+        max_deaths: state.maxDeaths,
+        initiative_order: state.initiativeOrder,
+        grid: {
+          radius: state.grid?.radius || 12,
+          hexes: state.grid?.hexes || [],
+          entities: state.combatants.map(c => ({
+            id: c.id,
+            name: c.name,
+            char: c.char,
+            type: c.type,
+            team: c.team,
+            hp: c.hp,
+            maxHp: c.maxHp,
+            ac: c.ac,
+            position: c.position,
+            isAlive: c.isAlive,
+            conditions: c.conditions
+          }))
+        }
+      },
+      current_encounter: {
+        enemies: state.combatants.filter(c => c.team === 'enemy').map(c => ({
+          id: c.id,
+          name: c.name,
+          char: c.char,
+          hp: c.hp,
+          maxHp: c.maxHp,
+          ac: c.ac,
+          position: c.position
+        }))
+      }
+    }
+  });
+});
+
+app.get('/api/runs/:id/log', (req, res) => {
+  const combat = capstoneManager.getCombat(req.params.id);
+  if (!combat) {
+    return res.status(404).json({ success: false, error: 'Run not found' });
+  }
+  
+  // Return combat event log
+  res.json({
+    success: true,
+    logs: combat.eventLog.slice(-50).map(e => ({
+      timestamp: e.timestamp,
+      type: 'combat_event',
+      event_type: e.type,
+      data: e
+    }))
+  });
+});
+
 // Serve poker static files
 app.use('/games/poker', express.static(path.join(__dirname, 'games/poker')));
 

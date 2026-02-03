@@ -50,9 +50,15 @@ const MONSTERS = {
         hit: 3, 
         damage: '1d6+1', 
         damageType: 'bludgeoning',
+        range: 1, // 1 hex = 5ft melee
         description: 'Snaps with a massive claw'
       }
     ],
+    
+    // AI behavior for tactical combat
+    aiBehavior: 'aggressive',
+    attackRange: 1,
+    preferRanged: false,
     
     abilities: ['amphibious', 'blindsight_30'],
     
@@ -175,9 +181,14 @@ const MONSTERS = {
         hit: 4, 
         damage: '1d8+2', 
         damageType: 'piercing',
+        range: 1,
         description: 'Rows of serrated teeth'
       }
     ],
+    
+    aiBehavior: 'berserker', // Sharks rush in
+    attackRange: 1,
+    preferRanged: false,
     
     abilities: ['blood_frenzy', 'pack_tactics'],
     
@@ -189,6 +200,178 @@ const MONSTERS = {
     ],
     
     pearls: [3, 12]
+  },
+  
+  // === RANGED ENEMIES ===
+  
+  sahuagin_crossbowman: {
+    id: 'sahuagin_crossbowman',
+    name: 'Sahuagin Crossbowman',
+    description: 'A fish-like humanoid wielding a waterproof crossbow. It prefers to attack from cover.',
+    cr: '1/2',
+    type: 'humanoid',
+    size: 'medium',
+    
+    stats: {
+      hp: 18,
+      ac: 12,
+      speed: 30,
+      str: 11, dex: 14, con: 12, int: 10, wis: 10, cha: 9
+    },
+    
+    attacks: [
+      { 
+        name: 'Light Crossbow', 
+        type: 'ranged',
+        hit: 4, 
+        damage: '1d8+2', 
+        damageType: 'piercing',
+        range: { normal: 16, long: 64 }, // 80/320 ft
+        description: 'A bolt zips through the water'
+      },
+      {
+        name: 'Claws',
+        type: 'melee',
+        hit: 2,
+        damage: '1d4',
+        damageType: 'slashing',
+        range: 1,
+        description: 'Sharp clawed hands'
+      }
+    ],
+    
+    aiBehavior: 'ranged', // Keep distance, kite
+    attackRange: 16, // Max effective range in hexes
+    preferRanged: true,
+    preferredRange: 10, // Ideal distance to maintain
+    
+    abilities: ['blood_frenzy'],
+    
+    behavior: 'ranged',
+    
+    loot: [
+      { itemId: 'lightCrossbow', chance: 0.1, quantity: 1 },
+      { itemId: 'bolt', chance: 0.5, quantity: [5, 10] }
+    ],
+    
+    pearls: [5, 15]
+  },
+  
+  deep_archer: {
+    id: 'deep_archer',
+    name: 'Deep Archer',
+    description: 'An elven ghost, forever guarding the sunken treasures. Its spectral arrows pierce both body and soul.',
+    cr: 2,
+    type: 'undead',
+    size: 'medium',
+    
+    stats: {
+      hp: 32,
+      ac: 14,
+      speed: 30,
+      str: 10, dex: 16, con: 10, int: 12, wis: 14, cha: 8
+    },
+    
+    attacks: [
+      { 
+        name: 'Spectral Longbow', 
+        type: 'ranged',
+        hit: 5, 
+        damage: '1d8+3', 
+        damageType: 'necrotic',
+        range: { normal: 30, long: 120 }, // 150/600 ft
+        description: 'A ghostly arrow that chills to the bone'
+      },
+      {
+        name: 'Ethereal Dagger',
+        type: 'melee',
+        hit: 3,
+        damage: '1d4+1',
+        damageType: 'necrotic',
+        range: 1,
+        description: 'A last-resort ghostly blade'
+      }
+    ],
+    
+    aiBehavior: 'ranged',
+    attackRange: 30,
+    preferRanged: true,
+    preferredRange: 15,
+    
+    abilities: ['incorporeal_movement'],
+    resistances: ['bludgeoning', 'piercing', 'slashing'],
+    immunities: ['poison', 'exhaustion'],
+    
+    behavior: 'ranged',
+    
+    loot: [
+      { itemId: 'potion_healing', chance: 0.2, quantity: 1 },
+      { itemId: 'scroll_shield', chance: 0.1, quantity: 1 }
+    ],
+    
+    pearls: [15, 30]
+  },
+  
+  spellcasting_eel: {
+    id: 'spellcasting_eel',
+    name: 'Voltaic Eel',
+    description: 'An enormous eel crackling with arcane lightning. It can unleash devastating electrical attacks.',
+    cr: 2,
+    type: 'beast',
+    size: 'large',
+    
+    stats: {
+      hp: 38,
+      ac: 13,
+      speed: 40,
+      str: 14, dex: 14, con: 14, int: 6, wis: 12, cha: 8
+    },
+    
+    attacks: [
+      { 
+        name: 'Bite', 
+        type: 'melee',
+        hit: 4, 
+        damage: '1d10+2', 
+        damageType: 'piercing',
+        range: 1,
+        description: 'Razor-sharp teeth'
+      },
+      {
+        name: 'Lightning Bolt',
+        type: 'spell',
+        hit: null, // Save-based
+        saveDC: 13,
+        saveType: 'DEX',
+        damage: '3d6',
+        damageType: 'lightning',
+        range: 12, // 60 ft
+        description: 'A bolt of lightning arcs from the eel'
+      }
+    ],
+    
+    // Has both melee and ranged capability
+    aiBehavior: 'ranged', // Prefers to stay at range and zap
+    attackRange: 12,
+    preferRanged: true,
+    preferredRange: 8,
+    spellcaster: true,
+    cantrips: ['shockingGrasp'],
+    spells: ['lightningBolt'],
+    spellSlots: { 2: 2 },
+    spellcastingMod: 2,
+    
+    abilities: ['amphibious', 'lightning_immunity'],
+    immunities: ['lightning'],
+    
+    behavior: 'ranged',
+    
+    loot: [
+      { itemId: 'potion_lightning_resistance', chance: 0.15, quantity: 1 },
+      { itemId: 'rations', chance: 0.3, quantity: [2, 4] }
+    ],
+    
+    pearls: [20, 40]
   },
   
   // === KELP FOREST BOSS ===

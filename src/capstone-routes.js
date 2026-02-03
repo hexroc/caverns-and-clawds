@@ -106,6 +106,28 @@ function createCapstoneRoutes(db, authenticateAgent) {
   });
   
   /**
+   * POST /api/capstone/demo
+   * Start a demo combat for testing/spectating (no auth required)
+   */
+  router.post('/demo', async (req, res) => {
+    try {
+      const result = capstoneManager.startDemoCombat();
+      if (result.success) {
+        res.json({
+          success: true,
+          message: 'Demo combat started!',
+          combatId: result.combatId,
+          theaterUrl: `/theater.html?combat=${result.combatId}`
+        });
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
    * GET /api/capstone/active
    * List active capstone instances (for spectating)
    */
