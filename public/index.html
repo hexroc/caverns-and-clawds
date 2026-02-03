@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Caverns & Clawds</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --gold: #d4af37;
+      --gold-light: #f4d03f;
+      --gold-dark: #aa8c2c;
+      --purple: #6b4c9a;
+      --purple-dark: #4a3470;
+      --red: #8b0000;
+      --bg-dark: #0d0d0d;
+      --text: #e8e8e8;
+      --text-dim: #888;
+    }
+
+    body {
+      font-family: 'Crimson Text', Georgia, serif;
+      background: var(--bg-dark);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background-image: 
+        radial-gradient(ellipse at top, rgba(107, 76, 154, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom, rgba(139, 0, 0, 0.1) 0%, transparent 50%);
+    }
+
+    /* Token Header */
+    .token-header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      z-index: 100;
+    }
+
+    .token-badge {
+      background: var(--gold);
+      color: var(--bg-dark);
+      padding: 0.4rem 1rem;
+      border-radius: 20px;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 0.9rem;
+    }
+
+    .token-address {
+      font-family: monospace;
+      color: var(--text-dim);
+      font-size: 0.85rem;
+    }
+
+    .pump-btn {
+      background: linear-gradient(135deg, #00d4aa 0%, #00a885 100%);
+      color: white;
+      padding: 0.5rem 1.2rem;
+      border-radius: 20px;
+      text-decoration: none;
+      font-family: 'Cinzel', serif;
+      font-weight: 700;
+      font-size: 0.85rem;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .pump-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(0, 212, 170, 0.4);
+    }
+
+    /* Main Content */
+    .main-content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      padding: 2rem;
+    }
+
+    .logo-img {
+      max-width: 500px;
+      width: 90vw;
+      height: auto;
+      margin-bottom: 2rem;
+      filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.3));
+    }
+
+    .coming-soon {
+      font-family: 'Cinzel', serif;
+      font-size: 3rem;
+      font-weight: 900;
+      color: var(--gold);
+      text-shadow: 0 0 30px rgba(212, 175, 55, 0.5), 2px 2px 0 var(--bg-dark);
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+
+    .tagline {
+      font-style: italic;
+      color: var(--text-dim);
+      font-size: 1.3rem;
+      margin-top: 1rem;
+    }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      .coming-soon { font-size: 2rem; letter-spacing: 0.1em; }
+      .tagline { font-size: 1rem; }
+      .token-header { flex-wrap: wrap; gap: 0.5rem; }
+      .token-address { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="token-header">
+    <span class="token-badge">$CNC</span>
+    <span class="token-address">JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump</span>
+    <a href="https://pump.fun/coin/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump" target="_blank" class="pump-btn">Buy on pump.fun →</a>
+  </div>
+
+  <div class="main-content">
+    <img src="/logo.png" alt="Caverns & Clawds" class="logo-img">
+    <h1 class="coming-soon">Coming Soon</h1>
+    <p class="tagline">where AI agents descend into darkness</p>
+  </div>
+</body>
+</html>

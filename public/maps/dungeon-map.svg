@@ -1,0 +1,188 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" style="background: #0a0a0f;">
+  <defs>
+    <!-- Stone texture pattern -->
+    <pattern id="stoneTexture" patternUnits="userSpaceOnUse" width="20" height="20">
+      <rect width="20" height="20" fill="#1a1a1a"/>
+      <rect x="0" y="0" width="9" height="9" fill="#1f1f1f"/>
+      <rect x="10" y="10" width="9" height="9" fill="#151515"/>
+      <rect x="10" y="0" width="9" height="9" fill="#1a1a1a"/>
+    </pattern>
+    
+    <!-- Treasure glow -->
+    <radialGradient id="treasureGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#d4af37;stop-opacity:0.8"/>
+      <stop offset="50%" style="stop-color:#d4af37;stop-opacity:0.3"/>
+      <stop offset="100%" style="stop-color:#d4af37;stop-opacity:0"/>
+    </radialGradient>
+    
+    <!-- Lava glow -->
+    <radialGradient id="lavaGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" style="stop-color:#ff4500;stop-opacity:1"/>
+      <stop offset="70%" style="stop-color:#8b0000;stop-opacity:0.8"/>
+      <stop offset="100%" style="stop-color:#2a0a0a;stop-opacity:1"/>
+    </radialGradient>
+    
+    <!-- Dragon fire gradient -->
+    <linearGradient id="dragonFire" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#ff6b00"/>
+      <stop offset="50%" style="stop-color:#ff0000"/>
+      <stop offset="100%" style="stop-color:#8b0000"/>
+    </linearGradient>
+    
+    <!-- Wall shadow -->
+    <filter id="wallShadow">
+      <feDropShadow dx="2" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.7"/>
+    </filter>
+    
+    <!-- Glow effect -->
+    <filter id="glow">
+      <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    
+    <!-- Torch flicker animation -->
+    <animate id="flicker1" attributeName="r" values="8;10;7;9;8" dur="0.5s" repeatCount="indefinite"/>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="800" height="600" fill="#0a0a0f"/>
+  
+  <!-- === DUNGEON WALLS (outer boundary) === -->
+  <rect x="50" y="50" width="700" height="500" fill="url(#stoneTexture)" stroke="#3a3a3a" stroke-width="4" filter="url(#wallShadow)"/>
+  
+  <!-- === ENTRANCE CORRIDOR === -->
+  <rect x="50" y="240" width="100" height="120" fill="#1a1a2e"/>
+  <text x="85" y="305" fill="#666" font-size="10" text-anchor="middle">ENTRANCE</text>
+  <!-- Arrow -->
+  <polygon points="60,300 80,290 80,310" fill="#d4af37" opacity="0.6"/>
+  
+  <!-- === GUARD ROOM === -->
+  <rect x="150" y="200" width="120" height="200" fill="#1a1a2e" stroke="#2a2a3a" stroke-width="2"/>
+  <text x="210" y="310" fill="#888" font-size="12" text-anchor="middle">Guard Room</text>
+  <!-- Pillars -->
+  <circle cx="170" cy="230" r="8" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  <circle cx="250" cy="230" r="8" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  <circle cx="170" cy="370" r="8" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  <circle cx="250" cy="370" r="8" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  
+  <!-- === CORRIDOR TO MAIN HALL === -->
+  <rect x="270" y="270" width="80" height="60" fill="#1a1a2e"/>
+  
+  <!-- === MAIN HALL === -->
+  <rect x="350" y="150" width="200" height="300" fill="#1a1a2e" stroke="#2a2a3a" stroke-width="2"/>
+  <text x="450" y="180" fill="#d4af37" font-size="14" text-anchor="middle" font-weight="bold">Grand Hall</text>
+  <!-- Central brazier -->
+  <circle cx="450" cy="300" r="25" fill="#2a1a0a" stroke="#4a3a1a" stroke-width="3"/>
+  <circle cx="450" cy="300" r="15" fill="url(#dragonFire)" filter="url(#glow)">
+    <animate attributeName="r" values="15;17;14;16;15" dur="0.8s" repeatCount="indefinite"/>
+  </circle>
+  <!-- Pillars in main hall -->
+  <circle cx="380" cy="200" r="10" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  <circle cx="520" cy="200" r="10" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  <circle cx="380" cy="400" r="10" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  <circle cx="520" cy="400" r="10" fill="#3a3a4a" stroke="#4a4a5a" stroke-width="2"/>
+  
+  <!-- === TREASURE CHAMBER (North) === -->
+  <rect x="400" y="50" width="100" height="100" fill="#1f1a15" stroke="#d4af37" stroke-width="3"/>
+  <circle cx="450" cy="100" r="60" fill="url(#treasureGlow)"/>
+  <text x="450" y="90" fill="#d4af37" font-size="12" text-anchor="middle" font-weight="bold">⚜ TREASURE ⚜</text>
+  <text x="450" y="110" fill="#d4af37" font-size="10" text-anchor="middle">Chamber</text>
+  <!-- Gold piles -->
+  <circle cx="430" cy="120" r="8" fill="#d4af37" opacity="0.7"/>
+  <circle cx="450" cy="130" r="6" fill="#ffd700" opacity="0.8"/>
+  <circle cx="470" cy="120" r="7" fill="#d4af37" opacity="0.7"/>
+  <!-- Chest -->
+  <rect x="440" cy="135" width="20" height="12" fill="#8b4513" stroke="#d4af37" stroke-width="1"/>
+  
+  <!-- === PRISON CELLS (South) === -->
+  <rect x="380" y="450" width="140" height="80" fill="#151520" stroke="#2a2a3a" stroke-width="2"/>
+  <text x="450" y="475" fill="#666" font-size="10" text-anchor="middle">Prison Cells</text>
+  <!-- Cell bars -->
+  <line x1="390" y1="450" x2="390" y2="530" stroke="#4a4a5a" stroke-width="2"/>
+  <line x1="420" y1="450" x2="420" y2="530" stroke="#4a4a5a" stroke-width="2"/>
+  <line x1="450" y1="450" x2="450" y2="530" stroke="#4a4a5a" stroke-width="2"/>
+  <line x1="480" y1="450" x2="480" y2="530" stroke="#4a4a5a" stroke-width="2"/>
+  <line x1="510" y1="450" x2="510" y2="530" stroke="#4a4a5a" stroke-width="2"/>
+  
+  <!-- === DRAGON'S LAIR === -->
+  <ellipse cx="650" cy="300" rx="90" ry="150" fill="#1f1515" stroke="#8b0000" stroke-width="4"/>
+  <text x="650" y="220" fill="#ff4500" font-size="16" text-anchor="middle" font-weight="bold" filter="url(#glow)">🐉 DRAGON'S</text>
+  <text x="650" y="240" fill="#ff4500" font-size="16" text-anchor="middle" font-weight="bold" filter="url(#glow)">LAIR 🐉</text>
+  <!-- Lava pools -->
+  <ellipse cx="620" cy="350" rx="25" ry="15" fill="url(#lavaGlow)">
+    <animate attributeName="rx" values="25;27;24;26;25" dur="2s" repeatCount="indefinite"/>
+  </ellipse>
+  <ellipse cx="680" cy="320" rx="20" ry="12" fill="url(#lavaGlow)">
+    <animate attributeName="rx" values="20;22;19;21;20" dur="1.5s" repeatCount="indefinite"/>
+  </ellipse>
+  <!-- Bone piles -->
+  <text x="610" y="280" fill="#8b8b8b" font-size="16">💀</text>
+  <text x="690" y="380" fill="#8b8b8b" font-size="16">🦴</text>
+  
+  <!-- === ARMORY (West) === -->
+  <rect x="150" y="50" width="100" height="100" fill="#1a1a2e" stroke="#4a4a5a" stroke-width="2"/>
+  <text x="200" y="90" fill="#888" font-size="10" text-anchor="middle">Armory</text>
+  <!-- Weapon racks -->
+  <text x="170" y="120" fill="#666" font-size="14">⚔️</text>
+  <text x="190" y="120" fill="#666" font-size="14">🗡️</text>
+  <text x="210" y="120" fill="#666" font-size="14">🛡️</text>
+  
+  <!-- === SECRET PASSAGE === -->
+  <rect x="250" y="80" width="60" height="20" fill="#0a0a0f" stroke="#2a2a2a" stroke-width="1" stroke-dasharray="5,5"/>
+  <text x="280" y="95" fill="#4a4a4a" font-size="8" text-anchor="middle">secret</text>
+  
+  <!-- === CORRIDOR CONNECTIONS === -->
+  <!-- Guard room to Main hall -->
+  <line x1="270" y1="300" x2="350" y2="300" stroke="#2a2a2a" stroke-width="1" stroke-dasharray="3,3"/>
+  <!-- Main hall to Dragon lair -->
+  <rect x="550" y="270" width="20" height="60" fill="#1a1a2e"/>
+  
+  <!-- === TORCHES === -->
+  <g filter="url(#glow)">
+    <circle cx="160" cy="260" r="6" fill="#ff6b00">
+      <animate attributeName="r" values="6;8;5;7;6" dur="0.4s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="260" cy="260" r="6" fill="#ff6b00">
+      <animate attributeName="r" values="6;7;5;8;6" dur="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="360" cy="200" r="6" fill="#ff6b00">
+      <animate attributeName="r" values="6;8;5;7;6" dur="0.45s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="540" cy="200" r="6" fill="#ff6b00">
+      <animate attributeName="r" values="6;7;5;8;6" dur="0.55s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="360" cy="420" r="6" fill="#ff6b00">
+      <animate attributeName="r" values="6;8;5;7;6" dur="0.5s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="540" cy="420" r="6" fill="#ff6b00">
+      <animate attributeName="r" values="6;7;5;8;6" dur="0.4s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+  
+  <!-- === COMPASS ROSE === -->
+  <g transform="translate(720, 520)">
+    <circle r="25" fill="#1a1a1a" stroke="#d4af37" stroke-width="2"/>
+    <polygon points="0,-20 3,-5 -3,-5" fill="#d4af37"/>
+    <polygon points="0,20 3,5 -3,5" fill="#666"/>
+    <polygon points="-20,0 -5,3 -5,-3" fill="#666"/>
+    <polygon points="20,0 5,3 5,-3" fill="#666"/>
+    <text y="-8" fill="#d4af37" font-size="8" text-anchor="middle" font-weight="bold">N</text>
+  </g>
+  
+  <!-- === LEGEND === -->
+  <g transform="translate(60, 520)">
+    <text fill="#d4af37" font-size="10" font-weight="bold">LEGEND:</text>
+    <circle cx="10" cy="20" r="4" fill="#ff6b00"/>
+    <text x="20" y="24" fill="#888" font-size="8">Torch</text>
+    <circle cx="70" cy="20" r="4" fill="#d4af37"/>
+    <text x="80" y="24" fill="#888" font-size="8">Treasure</text>
+    <circle cx="140" cy="20" r="4" fill="#ff4500"/>
+    <text x="150" y="24" fill="#888" font-size="8">Lava</text>
+  </g>
+  
+  <!-- Title -->
+  <text x="400" y="30" fill="#d4af37" font-size="20" text-anchor="middle" font-weight="bold" filter="url(#glow)">⚔️ THE DRAGON'S LAIR ⚔️</text>
+</svg>

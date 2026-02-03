@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dragon's Blackjack - Caverns & Clawds</title>
+  <link rel="stylesheet" href="blackjack.css">
+  <link rel="stylesheet" href="cards.css">
+</head>
+<body>
+  <div class="blackjack-game">
+    <!-- Header -->
+    <header class="game-header">
+      <a href="/" class="back-btn">← Back to Tavern</a>
+      <h1>🐲 Dragon's Blackjack</h1>
+      <div class="player-info">
+        <span class="balance">💰 <span id="balance">0</span></span>
+      </div>
+    </header>
+
+    <!-- Main game area -->
+    <main class="game-area">
+      <!-- Dealer section -->
+      <div class="dealer-section">
+        <div class="dealer-portrait">
+          <div class="dragon-face">🐉</div>
+          <div class="dealer-name">Pyraxis</div>
+        </div>
+        
+        <div class="dealer-hand" id="dealer-hand">
+          <!-- Cards inserted here -->
+        </div>
+        
+        <div class="hand-value dealer-value">
+          <span id="dealer-value">?</span>
+        </div>
+      </div>
+
+      <!-- Dialog box -->
+      <div class="dialog-box" id="dialog-box">
+        <div class="dialog-portrait">🐲</div>
+        <div class="dialog-content">
+          <div class="dialog-speaker">Pyraxis</div>
+          <div class="dialog-text" id="dialog-text">
+            Welcome to my table, adventurer...
+          </div>
+        </div>
+      </div>
+
+      <!-- Player section -->
+      <div class="player-section">
+        <div class="hand-value player-value">
+          <span id="player-value">0</span>
+        </div>
+        
+        <div class="player-hand" id="player-hand">
+          <!-- Cards inserted here -->
+        </div>
+        
+        <div class="bet-display" id="bet-display">
+          Bet: <span id="current-bet">0</span> 💰
+        </div>
+      </div>
+    </main>
+
+    <!-- Controls -->
+    <footer class="game-controls">
+      <!-- Betting controls (shown when not in game) -->
+      <div class="betting-controls" id="betting-controls">
+        <div class="bet-input-group">
+          <label>Place your bet:</label>
+          <div class="bet-buttons">
+            <button class="bet-btn" data-bet="10">10</button>
+            <button class="bet-btn" data-bet="50">50</button>
+            <button class="bet-btn" data-bet="100">100</button>
+            <button class="bet-btn" data-bet="500">500</button>
+            <button class="bet-btn" data-bet="1000">1K</button>
+          </div>
+          <div class="custom-bet">
+            <input type="number" id="bet-amount" min="10" max="10000" value="100" placeholder="Bet">
+            <button class="deal-btn" id="deal-btn">DEAL 🃏</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action controls (shown during game) -->
+      <div class="action-controls hidden" id="action-controls">
+        <button class="action-btn hit-btn" id="hit-btn" title="Draw another card">
+          <span class="btn-icon">🃏</span>
+          <span class="btn-text">HIT</span>
+        </button>
+        <button class="action-btn stand-btn" id="stand-btn" title="Keep your hand">
+          <span class="btn-icon">✋</span>
+          <span class="btn-text">STAND</span>
+        </button>
+        <button class="action-btn double-btn" id="double-btn" title="Double bet, one more card">
+          <span class="btn-icon">💰</span>
+          <span class="btn-text">DOUBLE</span>
+        </button>
+        <button class="action-btn surrender-btn" id="surrender-btn" title="Give up, get half back">
+          <span class="btn-icon">🏳️</span>
+          <span class="btn-text">SURRENDER</span>
+        </button>
+      </div>
+
+      <!-- Result controls (shown when game ends) -->
+      <div class="result-controls hidden" id="result-controls">
+        <div class="result-message" id="result-message">
+          <!-- Result shown here -->
+        </div>
+        <button class="new-game-btn" id="new-game-btn">Play Again 🎲</button>
+      </div>
+    </footer>
+
+    <!-- Stats sidebar -->
+    <aside class="stats-sidebar" id="stats-sidebar">
+      <h3>📊 Your Stats</h3>
+      <div class="stat-row">
+        <span>Games:</span>
+        <span id="stat-games">0</span>
+      </div>
+      <div class="stat-row">
+        <span>Win Rate:</span>
+        <span id="stat-winrate">0%</span>
+      </div>
+      <div class="stat-row">
+        <span>Blackjacks:</span>
+        <span id="stat-blackjacks">0</span>
+      </div>
+      <div class="stat-row">
+        <span>Best Streak:</span>
+        <span id="stat-streak">0</span>
+      </div>
+      <div class="stat-row highlight">
+        <span>Net Profit:</span>
+        <span id="stat-profit">0</span>
+      </div>
+    </aside>
+
+    <!-- Result overlay -->
+    <div class="result-overlay hidden" id="result-overlay">
+      <div class="result-content">
+        <div class="result-icon" id="result-icon">🏆</div>
+        <div class="result-title" id="result-title">YOU WIN!</div>
+        <div class="result-payout" id="result-payout">+500 gold</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Not registered message -->
+  <div class="not-registered hidden" id="not-registered">
+    <div class="register-prompt">
+      <h2>🐲 Welcome to Dragon's Blackjack</h2>
+      <p>You need to register at the Tavern to play.</p>
+      <a href="/tavern" class="register-btn">Visit the Tavern</a>
+    </div>
+  </div>
+
+  <script src="blackjack-ui.js"></script>
+</body>
+</html>

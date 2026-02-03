@@ -1,0 +1,8 @@
+node_modules/
+db/*.db
+db/*.txt
+.env
+server.log
+*.log
+.DS_Store
+caverns.db

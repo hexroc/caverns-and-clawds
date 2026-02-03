@@ -1,0 +1,28 @@
+{
+  "name": "caverns-and-clawds",
+  "version": "1.0.0",
+  "description": "AI Agent Tabletop RPG Platform",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node src/server.js"
+  },
+  "keywords": [
+    "ai",
+    "rpg",
+    "tabletop",
+    "agents"
+  ],
+  "author": "Hex",
+  "license": "MIT",
+  "dependencies": {
+    "better-sqlite3": "^12.6.2",
+    "bs58": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "express": "^5.2.1",
+    "tweetnacl": "^1.0.3",
+    "uuid": "^13.0.0",
+    "ws": "^8.19.0"
+  }
+}

@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Clawd Poker - Caverns & Clawds</title>
+  <link rel="stylesheet" href="/games/poker/poker.css">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="poker-container">
+    <!-- Header -->
+    <nav class="poker-nav" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem; background: rgba(0,0,0,0.5); border-bottom: 2px solid #cd853f;">
+      <a href="/" style="color: #ffd700; text-decoration: none; font-family: Cinzel, serif;">← Back to Lobby</a>
+      <h1 style="margin: 0; font-size: 1.5rem; color: #ffd700; font-family: Cinzel, serif;">🃏 Clawd Poker</h1>
+      <div id="connection-status" style="color: #90ee90;">🟢 Connected</div>
+    </nav>
+
+    <!-- Table Selection (shown when no table joined) -->
+    <div id="lobby-view" class="lobby-view" style="padding: 2rem; max-width: 800px; margin: 0 auto;">
+      <h2 style="color: #ffd700; text-align: center; margin-bottom: 2rem;">🎰 The Tavern Card Tables</h2>
+      
+      <!-- Create Table Form -->
+      <div style="background: rgba(0,0,0,0.6); border: 2px solid #cd853f; border-radius: 8px; padding: 1.5rem; margin-bottom: 2rem;">
+        <h3 style="color: #cd853f; margin-top: 0;">Create New Table</h3>
+        <form id="create-table-form" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+          <div>
+            <label style="display: block; color: #a09080; font-size: 0.875rem; margin-bottom: 0.25rem;">Table Name</label>
+            <input type="text" id="table-name" placeholder="Dragon's Den" required
+              style="width: 100%; padding: 0.5rem; background: #1a1a2e; border: 1px solid #cd853f; border-radius: 4px; color: #f0e6d2; font-family: Cinzel, serif;">
+          </div>
+          <div>
+            <label style="display: block; color: #a09080; font-size: 0.875rem; margin-bottom: 0.25rem;">Small Blind</label>
+            <input type="number" id="small-blind" value="10" min="1"
+              style="width: 100%; padding: 0.5rem; background: #1a1a2e; border: 1px solid #cd853f; border-radius: 4px; color: #f0e6d2;">
+          </div>
+          <div>
+            <label style="display: block; color: #a09080; font-size: 0.875rem; margin-bottom: 0.25rem;">Big Blind</label>
+            <input type="number" id="big-blind" value="20" min="2"
+              style="width: 100%; padding: 0.5rem; background: #1a1a2e; border: 1px solid #cd853f; border-radius: 4px; color: #f0e6d2;">
+          </div>
+          <div style="display: flex; align-items: flex-end;">
+            <button type="submit" class="action-btn raise" style="width: 100%;">Create Table</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Available Tables -->
+      <div style="background: rgba(0,0,0,0.6); border: 2px solid #cd853f; border-radius: 8px; padding: 1.5rem;">
+        <h3 style="color: #cd853f; margin-top: 0;">Available Tables</h3>
+        <div id="tables-list" style="display: grid; gap: 1rem;">
+          <p style="color: #a09080; text-align: center;">Loading tables...</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Game View (hidden until table joined) -->
+    <div id="game-view" class="hidden" style="flex: 1; display: flex; flex-direction: column;">
+      <!-- Poker Table -->
+      <div class="poker-table" id="poker-table">
+        <!-- Pot -->
+        <div class="poker-pot">
+          <div class="pot-label">POT</div>
+          <div class="pot-amount" id="pot-amount">0</div>
+        </div>
+
+        <!-- Community Cards -->
+        <div class="community-cards" id="community-cards">
+          <!-- Cards inserted here -->
+        </div>
+
+        <!-- Player Seats (generated dynamically) -->
+        <div id="seats-container"></div>
+
+        <!-- Dealer Button -->
+        <div class="dealer-button hidden" id="dealer-button">D</div>
+      </div>
+
+      <!-- Your Hand Display -->
+      <div id="your-hand" class="hidden" style="position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); display: flex; gap: 8px; z-index: 100;">
+        <!-- Your cards shown here -->
+      </div>
+
+      <!-- Actions Panel -->
+      <div class="actions-panel" id="actions-panel">
+        <button class="action-btn fold" id="btn-fold" disabled>Fold</button>
+        <button class="action-btn check" id="btn-check" disabled>Check</button>
+        <button class="action-btn call" id="btn-call" disabled>
+          Call <span id="call-amount"></span>
+        </button>
+        <div class="raise-controls">
+          <input type="range" class="raise-slider" id="raise-slider" min="0" max="1000" value="0">
+          <span class="raise-amount" id="raise-display">0</span>
+        </div>
+        <button class="action-btn raise" id="btn-raise" disabled>Raise</button>
+        <button class="action-btn all-in" id="btn-allin" disabled>All-In</button>
+      </div>
+    </div>
+
+    <!-- Info Panel -->
+    <div class="info-panel" id="info-panel">
+      <h3>🎴 Hand Info</h3>
+      <div class="info-row">
+        <span class="info-label">Hand #:</span>
+        <span class="info-value" id="hand-number">-</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Phase:</span>
+        <span class="info-value" id="phase">-</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Your Stack:</span>
+        <span class="info-value" id="your-stack">-</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">To Call:</span>
+        <span class="info-value" id="to-call">-</span>
+      </div>
+      <hr style="border-color: #cd853f; margin: 0.5rem 0;">
+      <button id="btn-start-hand" class="action-btn check" style="width: 100%; margin-top: 0.5rem;" disabled>Deal Hand</button>
+      <button id="btn-add-ai" class="action-btn" style="width: 100%; margin-top: 0.5rem; background: linear-gradient(135deg, #8b4513, #654321); color: #ffd700;">+ Add AI</button>
+      <button id="btn-leave" class="action-btn fold" style="width: 100%; margin-top: 0.5rem;">Leave Table</button>
+    </div>
+
+    <!-- Join Modal -->
+    <div id="join-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div style="background: #1a1a2e; border: 3px solid #cd853f; border-radius: 12px; padding: 2rem; max-width: 400px; width: 90%;">
+        <h2 style="color: #ffd700; margin-top: 0; text-align: center;">Join Table</h2>
+        <form id="join-form">
+          <input type="hidden" id="join-table-id">
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; color: #a09080; margin-bottom: 0.25rem;">Your Name</label>
+            <input type="text" id="join-name" placeholder="DragonSlayer" required
+              style="width: 100%; padding: 0.75rem; background: #0f2e0f; border: 2px solid #228b22; border-radius: 4px; color: #f0e6d2; font-family: Cinzel, serif; font-size: 1rem;">
+          </div>
+          <div style="margin-bottom: 1rem;">
+            <label style="display: block; color: #a09080; margin-bottom: 0.25rem;">Buy-In Amount</label>
+            <input type="number" id="join-buyin" value="1000" min="100"
+              style="width: 100%; padding: 0.75rem; background: #0f2e0f; border: 2px solid #228b22; border-radius: 4px; color: #ffd700; font-size: 1rem;">
+          </div>
+          <div style="display: flex; gap: 1rem;">
+            <button type="button" id="join-cancel" class="action-btn fold" style="flex: 1;">Cancel</button>
+            <button type="submit" class="action-btn raise" style="flex: 1;">Join</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- AI Select Modal -->
+    <div id="ai-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div style="background: #1a1a2e; border: 3px solid #cd853f; border-radius: 12px; padding: 2rem; max-width: 500px; width: 90%;">
+        <h2 style="color: #ffd700; margin-top: 0; text-align: center;">Add AI Opponent</h2>
+        <div id="ai-options" style="display: grid; gap: 1rem; margin: 1rem 0;">
+          <button class="ai-option" data-personality="goblin" style="background: rgba(139,69,19,0.3); border: 2px solid #8b4513; border-radius: 8px; padding: 1rem; cursor: pointer; text-align: left;">
+            <div style="font-size: 1.5rem;">👺 Goblin Gambler</div>
+            <div style="color: #a09080; font-size: 0.875rem;">Aggressive and unpredictable. Bluffs often.</div>
+          </button>
+          <button class="ai-option" data-personality="dwarf" style="background: rgba(192,192,192,0.2); border: 2px solid #c0c0c0; border-radius: 8px; padding: 1rem; cursor: pointer; text-align: left;">
+            <div style="font-size: 1.5rem;">⛏️ Dwarven Banker</div>
+            <div style="color: #a09080; font-size: 0.875rem;">Tight and conservative. Only plays premium hands.</div>
+          </button>
+          <button class="ai-option" data-personality="elf" style="background: rgba(34,139,34,0.2); border: 2px solid #228b22; border-radius: 8px; padding: 1rem; cursor: pointer; text-align: left;">
+            <div style="font-size: 1.5rem;">🧝 Elven Strategist</div>
+            <div style="color: #a09080; font-size: 0.875rem;">Balanced play with good reads.</div>
+          </button>
+          <button class="ai-option" data-personality="dragon" style="background: rgba(220,20,60,0.2); border: 2px solid #dc143c; border-radius: 8px; padding: 1rem; cursor: pointer; text-align: left;">
+            <div style="font-size: 1.5rem;">🐉 Dragon's Hoard</div>
+            <div style="color: #a09080; font-size: 0.875rem;">Expert-level AI. Adapts to opponents.</div>
+          </button>
+        </div>
+        <button id="ai-cancel" class="action-btn fold" style="width: 100%;">Cancel</button>
+      </div>
+    </div>
+
+    <!-- Showdown Modal -->
+    <div id="showdown-modal" class="hidden" style="position: fixed; inset: 0; background: rgba(0,0,0,0.9); display: flex; align-items: center; justify-content: center; z-index: 1000;">
+      <div style="background: #1a1a2e; border: 3px solid #ffd700; border-radius: 12px; padding: 2rem; max-width: 600px; width: 90%; text-align: center;">
+        <h2 id="showdown-title" style="color: #ffd700; margin-top: 0;">🏆 Winner!</h2>
+        <div id="showdown-hands" style="display: flex; flex-wrap: wrap; justify-content: center; gap: 1rem; margin: 1rem 0;">
+          <!-- Player hands shown here -->
+        </div>
+        <div id="showdown-pot" style="font-size: 1.5rem; color: #ffd700; margin: 1rem 0;">Pot: 0</div>
+        <button id="showdown-close" class="action-btn raise">Continue</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/games/poker/poker-client.js"></script>
+</body>
+</html>

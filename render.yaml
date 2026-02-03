@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: caverns-and-clawds
+    env: node
+    buildCommand: npm install
+    startCommand: node src/server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TWITTER_CLIENT_ID
+        sync: false
+      - key: TWITTER_CLIENT_SECRET
+        sync: false
+      - key: TWITTER_CALLBACK_URL
+        value: https://cavernsandclawds.com/api/auth/twitter/callback

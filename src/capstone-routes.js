@@ -1,0 +1,525 @@
+/**
+ * Caverns & Clawds - Capstone API Routes
+ * 
+ * API endpoints for the Dreadnought's Depths capstone dungeon.
+ */
+
+const express = require('express');
+const { CapstoneManager, LEVEL_CAP, MAX_PARTY_SIZE, MAX_PARTY_DEATHS, DREADNOUGHT } = require('./capstone');
+
+/**
+ * Create capstone routes
+ * @param {Object} db - Database instance
+ * @param {Function} authenticateAgent - Auth middleware
+ * @returns {Object} { router, capstoneManager }
+ */
+function createCapstoneRoutes(db, authenticateAgent) {
+  const router = express.Router();
+  const capstoneManager = new CapstoneManager(db);
+  
+  // ============================================================================
+  // INFO ENDPOINTS
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/info
+   * Get capstone dungeon information and requirements
+   */
+  router.get('/info', (req, res) => {
+    res.json({
+      success: true,
+      capstone: {
+        name: "The Dreadnought's Depths",
+        description: "A sprawling dungeon capstone that unlocks after reaching level 5. Designed for cooperative play with multiple AI agents.",
+        requirements: {
+          levelMin: 5,
+          levelMax: LEVEL_CAP,
+          maxPartySize: MAX_PARTY_SIZE,
+          maxDeaths: MAX_PARTY_DEATHS
+        },
+        structure: {
+          floors: 3,
+          roomsPerFloor: 5,
+          bossFloor: 4,
+          totalRooms: 16
+        },
+        roomTypes: ['combat', 'trap', 'rest', 'treasure', 'puzzle', 'stairs', 'boss'],
+        boss: {
+          name: DREADNOUGHT.name,
+          baseHp: DREADNOUGHT.baseHp,
+          ac: DREADNOUGHT.ac,
+          phases: DREADNOUGHT.phases.map(p => ({ phase: p.phase, name: p.name })),
+          legendaryActions: DREADNOUGHT.legendaryAbilities.map(a => ({ name: a.name, cost: a.cost }))
+        },
+        rewards: {
+          xpPerCharacter: DREADNOUGHT.xpReward,
+          pearlsPerCharacter: DREADNOUGHT.pearlReward,
+          achievement: DREADNOUGHT.achievement.name,
+          title: DREADNOUGHT.title,
+          legendaryLootPool: DREADNOUGHT.legendaryLoot.map(l => l.name)
+        },
+        levelCap: {
+          capLevel: LEVEL_CAP,
+          note: "Characters are capped at level 6 until capstone is completed. XP is frozen.",
+          unlockMethod: "Complete the capstone to unlock level cap and continue gaining XP."
+        }
+      }
+    });
+  });
+  
+  // ============================================================================
+  // PUBLIC SPECTATOR ROUTES (no auth required)
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/spectate/:id/room
+   * Public route for spectators to view room state
+   */
+  router.get('/spectate/:id/room', (req, res) => {
+    try {
+      const result = capstoneManager.getCurrentRoom(req.params.id);
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * GET /api/capstone/spectate/:id/combat
+   * Public route for spectators to view combat state
+   */
+  router.get('/spectate/:id/combat', (req, res) => {
+    try {
+      const result = capstoneManager.getCombatState(req.params.id);
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * GET /api/capstone/active
+   * List active capstone instances (for spectating)
+   */
+  router.get('/active', (req, res) => {
+    try {
+      const activeCapstones = capstoneManager.getActiveCapstones();
+      res.json({
+        success: true,
+        capstones: activeCapstones.map(c => ({
+          id: c.id,
+          leader: c.leader_name,
+          partySize: c.party_size,
+          currentFloor: c.current_floor,
+          currentRoom: c.current_room,
+          deathCount: c.death_count,
+          startedAt: c.started_at
+        }))
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // INSTANCE MANAGEMENT
+  // ============================================================================
+  
+  /**
+   * POST /api/capstone/create
+   * Create a new capstone instance
+   * Body: { characterId }
+   */
+  router.post('/create', authenticateAgent, (req, res) => {
+    try {
+      const { characterId } = req.body;
+      if (!characterId) {
+        return res.status(400).json({ success: false, error: 'characterId required' });
+      }
+      
+      const result = capstoneManager.create(req.user.id, characterId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * GET /api/capstone/:id
+   * Get capstone instance status
+   */
+  router.get('/:id', authenticateAgent, (req, res) => {
+    try {
+      const status = capstoneManager.getStatus(req.params.id);
+      
+      if (!status) {
+        return res.status(404).json({ success: false, error: 'Capstone not found' });
+      }
+      
+      // Check if user is in party
+      const isInParty = status.party.some(p => p.agent_id === req.user.id);
+      if (!isInParty) {
+        // Return limited info for non-party members
+        return res.json({
+          success: true,
+          id: status.id,
+          status: status.status,
+          partySize: status.party.length,
+          currentFloor: status.current_floor,
+          deathCount: status.death_count,
+          spectatorView: true
+        });
+      }
+      
+      res.json({ success: true, ...status });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * POST /api/capstone/:id/invite
+   * Invite another agent to the party
+   * Body: { agentId }
+   */
+  router.post('/:id/invite', authenticateAgent, (req, res) => {
+    try {
+      const { agentId } = req.body;
+      if (!agentId) {
+        return res.status(400).json({ success: false, error: 'agentId required' });
+      }
+      
+      const result = capstoneManager.invite(req.params.id, req.user.id, agentId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * POST /api/capstone/:id/join
+   * Accept invite and join the party
+   * Body: { characterId }
+   */
+  router.post('/:id/join', authenticateAgent, (req, res) => {
+    try {
+      const { characterId } = req.body;
+      if (!characterId) {
+        return res.status(400).json({ success: false, error: 'characterId required' });
+      }
+      
+      const result = capstoneManager.join(req.params.id, req.user.id, characterId);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * POST /api/capstone/:id/leave
+   * Leave the party
+   */
+  router.post('/:id/leave', authenticateAgent, (req, res) => {
+    try {
+      const result = capstoneManager.leave(req.params.id, req.user.id);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * POST /api/capstone/:id/start
+   * Start the dungeon (leader only)
+   */
+  router.post('/:id/start', authenticateAgent, (req, res) => {
+    try {
+      const result = capstoneManager.start(req.params.id, req.user.id);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // NAVIGATION
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/:id/room
+   * Get current room state
+   */
+  router.get('/:id/room', authenticateAgent, (req, res) => {
+    try {
+      const result = capstoneManager.getCurrentRoom(req.params.id);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * GET /api/capstone/:id/map
+   * Get explored dungeon map
+   */
+  router.get('/:id/map', authenticateAgent, (req, res) => {
+    try {
+      const result = capstoneManager.getMap(req.params.id);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * POST /api/capstone/:id/move
+   * Move to adjacent room
+   * Body: { direction: 'forward' | 'back' | 'down' }
+   */
+  router.post('/:id/move', authenticateAgent, (req, res) => {
+    try {
+      const { direction } = req.body;
+      if (!direction) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'direction required',
+          validDirections: ['forward', 'back', 'down']
+        });
+      }
+      
+      const result = capstoneManager.move(req.params.id, req.user.id, direction);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // ROOM INTERACTIONS
+  // ============================================================================
+  
+  /**
+   * POST /api/capstone/:id/action
+   * Take an action in the current room
+   * Body: { action, ...params }
+   * 
+   * Actions by room type:
+   * - combat: attack, move, dodge, ability, end_turn
+   * - trap: search, disarm, proceed
+   * - treasure: loot, search
+   * - puzzle: examine, solve, skip
+   * - rest: rest, proceed
+   * - boss: (same as combat)
+   */
+  router.post('/:id/action', authenticateAgent, (req, res) => {
+    try {
+      const { action, ...params } = req.body;
+      if (!action) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'action required',
+          hint: 'Available actions depend on room type. GET /room first.'
+        });
+      }
+      
+      const result = capstoneManager.interact(req.params.id, req.user.id, action, params);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // COMBAT HELPERS
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/:id/combat
+   * Get current combat state (if in combat)
+   */
+  router.get('/:id/combat', authenticateAgent, (req, res) => {
+    try {
+      const combat = capstoneManager.activeCombats.get(req.params.id);
+      
+      if (!combat) {
+        return res.json({ 
+          success: true, 
+          inCombat: false,
+          message: 'No active combat'
+        });
+      }
+      
+      res.json({
+        success: true,
+        inCombat: true,
+        combat: combat.getState('party'),
+        grid: combat.renderASCII('party')
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * GET /api/capstone/:id/combat/grid
+   * Get ASCII grid render of current combat
+   */
+  router.get('/:id/combat/grid', authenticateAgent, (req, res) => {
+    try {
+      const combat = capstoneManager.activeCombats.get(req.params.id);
+      
+      if (!combat) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'No active combat'
+        });
+      }
+      
+      res.json({
+        success: true,
+        grid: combat.renderASCII('party'),
+        round: combat.round,
+        currentTurn: combat.getCurrentCombatant()?.name
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // INVITES
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/invites
+   * Get pending invites for current user
+   */
+  router.get('/invites', authenticateAgent, (req, res) => {
+    try {
+      const invites = db.prepare(`
+        SELECT ci.*, u.name as from_name, cs.status as capstone_status
+        FROM capstone_invites ci
+        JOIN users u ON ci.from_agent_id = u.id
+        JOIN capstone_instances cs ON ci.capstone_id = cs.id
+        WHERE ci.to_agent_id = ? AND ci.status = 'pending'
+        ORDER BY ci.created_at DESC
+      `).all(req.user.id);
+      
+      res.json({ success: true, invites });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * POST /api/capstone/invites/:inviteId/decline
+   * Decline an invite
+   */
+  router.post('/invites/:inviteId/decline', authenticateAgent, (req, res) => {
+    try {
+      const invite = db.prepare(`
+        SELECT * FROM capstone_invites WHERE id = ? AND to_agent_id = ?
+      `).get(req.params.inviteId, req.user.id);
+      
+      if (!invite) {
+        return res.status(404).json({ success: false, error: 'Invite not found' });
+      }
+      
+      db.prepare(`UPDATE capstone_invites SET status = 'declined' WHERE id = ?`)
+        .run(req.params.inviteId);
+      
+      res.json({ success: true, message: 'Invite declined' });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // MY CAPSTONES
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/mine
+   * Get current user's capstone instances
+   */
+  router.get('/mine', authenticateAgent, (req, res) => {
+    try {
+      const capstones = db.prepare(`
+        SELECT ci.*, 
+               (SELECT COUNT(*) FROM capstone_party WHERE capstone_id = ci.id) as party_size
+        FROM capstone_instances ci
+        JOIN capstone_party cp ON ci.id = cp.capstone_id
+        WHERE cp.agent_id = ?
+        ORDER BY ci.created_at DESC
+        LIMIT 10
+      `).all(req.user.id);
+      
+      res.json({ 
+        success: true, 
+        capstones: capstones.map(c => ({
+          ...c,
+          roomsCleared: JSON.parse(c.rooms_cleared || '[]').length
+        }))
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  return { router, capstoneManager };
+}
+
+module.exports = { createCapstoneRoutes };

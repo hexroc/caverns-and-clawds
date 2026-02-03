@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fate Duel - Caverns & Clawds</title>
+  <link rel="stylesheet" href="/src/games/fate-duel/fate-duel.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #0a0a1a 0%, #1a1a3a 100%);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Georgia', serif;
+      color: #e8e8e8;
+      padding: 20px;
+    }
+    
+    .demo-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .demo-title {
+      font-size: 2.5rem;
+      color: #ffd166;
+      text-shadow: 0 0 20px rgba(255, 209, 102, 0.4);
+      margin-bottom: 10px;
+    }
+    
+    .demo-subtitle {
+      color: #888;
+      font-size: 1.1rem;
+    }
+    
+    #game-container {
+      width: 100%;
+      max-width: 800px;
+    }
+    
+    .demo-controls {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      margin-top: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .demo-btn {
+      padding: 12px 24px;
+      font-size: 1rem;
+      background: #25254a;
+      color: #ffd166;
+      border: 2px solid #ffd166;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .demo-btn:hover {
+      background: #ffd166;
+      color: #1a1a2e;
+    }
+    
+    .demo-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .demo-footer {
+      margin-top: 40px;
+      text-align: center;
+      color: #666;
+      font-size: 0.9rem;
+    }
+    
+    .demo-footer a {
+      color: #ffd166;
+    }
+  </style>
+</head>
+<body>
+  <div class="demo-header">
+    <h1 class="demo-title">⚔️ Fate Duel ⚔️</h1>
+    <p class="demo-subtitle">A minigame for Caverns & Clawds</p>
+  </div>
+  
+  <div id="game-container"></div>
+  
+  <div class="demo-controls">
+    <button class="demo-btn" onclick="startDuel('quick', 'shrine_keeper')">
+      🧙 Challenge Shrine Keeper
+    </button>
+    <button class="demo-btn" onclick="startDuel('trial', 'goblin_gambler')">
+      👺 Quick Bet (Grix)
+    </button>
+    <button class="demo-btn" onclick="startDuel('grand', 'knight_champion')">
+      🛡️ Grand Duel (Sir Valoris)
+    </button>
+    <button class="demo-btn" onclick="startDuel('quick', 'fate_weaver')">
+      👁️ Face the Weaver (Hard)
+    </button>
+  </div>
+  
+  <div class="demo-footer">
+    <p>Part of <a href="/">Caverns & Clawds</a></p>
+    <p style="margin-top: 8px; font-size: 0.8rem;">
+      Controls: [1] Sword | [2] Shield | [3] Scroll
+    </p>
+  </div>
+
+  <!-- Load Fate Duel modules -->
+  <script src="/src/games/fate-duel/game-logic.js"></script>
+  <script src="/src/games/fate-duel/ai-opponent.js"></script>
+  <script src="/src/games/fate-duel/animations.js"></script>
+  <script src="/src/games/fate-duel/power-ups.js"></script>
+  <script src="/src/games/fate-duel/sounds.js"></script>
+  <script src="/src/games/fate-duel/index.js"></script>
+  
+  <script>
+    let currentDuel = null;
+    
+    function startDuel(format, opponent) {
+      // Clean up existing duel
+      if (currentDuel) {
+        currentDuel.destroy();
+      }
+      
+      const container = document.getElementById('game-container');
+      container.innerHTML = '';
+      
+      // Initialize sound on first interaction
+      const soundManager = window.FateDuel.getSoundManager();
+      soundManager.init();
+      
+      // Create and start duel
+      currentDuel = new FateDuel.Game({
+        container: container,
+        format: format,
+        playerName: 'Hero',
+        opponent: opponent,
+        stakes: {
+          win: { gold: 50 },
+          lose: { gold: -25 }
+        },
+        onComplete: (result) => {
+          console.log('Duel complete:', result);
+          setTimeout(() => {
+            container.innerHTML = `
+              <div style="text-align: center; padding: 40px;">
+                <h2 style="color: ${result.isVictory ? '#ffd166' : '#e63946'}; font-size: 2rem; margin-bottom: 20px;">
+                  ${result.isVictory ? '🏆 Victory!' : '💀 Defeat'}
+                </h2>
+                <p style="margin-bottom: 20px;">Final Score: ${result.finalScores[0]} - ${result.finalScores[1]}</p>
+                <p style="color: #888;">Choose another opponent above to play again!</p>
+              </div>
+            `;
+          }, 500);
+        },
+        onRoundEnd: (round) => {
+          console.log('Round ended:', round);
+        }
+      });
+      
+      currentDuel.start();
+    }
+    
+    // Auto-start with shrine keeper on load
+    window.addEventListener('load', () => {
+      // Don't auto-start, let user click
+    });
+  </script>
+</body>
+</html>

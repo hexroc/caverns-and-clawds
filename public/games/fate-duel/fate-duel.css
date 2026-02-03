@@ -1,0 +1,785 @@
+/**
+ * Fate Duel - Styles & Animations
+ * Fantasy-themed rock-paper-scissors minigame
+ */
+
+/* ===== CSS VARIABLES ===== */
+:root {
+  /* Fate Duel Theme */
+  --fd-bg: #1a1a2e;
+  --fd-bg-light: #25254a;
+  --fd-bg-dark: #0f0f1a;
+  
+  /* Choice Colors */
+  --fd-sword: #e63946;
+  --fd-sword-light: #ff6b6b;
+  --fd-sword-dark: #a62d37;
+  
+  --fd-shield: #457b9d;
+  --fd-shield-light: #6ba3c7;
+  --fd-shield-dark: #2d5570;
+  
+  --fd-scroll: #9b5de5;
+  --fd-scroll-light: #b88af0;
+  --fd-scroll-dark: #7340b0;
+  
+  /* UI Colors */
+  --fd-gold: #ffd166;
+  --fd-silver: #c0c0c0;
+  --fd-clash: #f8f9fa;
+  --fd-tie: #6c757d;
+  --fd-text: #e8e8e8;
+  --fd-text-muted: #888;
+  
+  /* Animation Timing */
+  --fd-anim-fast: 150ms;
+  --fd-anim-normal: 300ms;
+  --fd-anim-slow: 600ms;
+}
+
+/* ===== DUEL ARENA ===== */
+.fate-duel-container {
+  position: relative;
+  width: 100%;
+  max-width: 800px;
+  margin: 0 auto;
+  background: var(--fd-bg);
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.fate-duel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 24px;
+  background: var(--fd-bg-dark);
+  border-bottom: 2px solid var(--fd-gold);
+}
+
+.fate-duel-title {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--fd-gold);
+  text-shadow: 0 2px 8px rgba(255, 209, 102, 0.3);
+}
+
+.fate-duel-format {
+  font-size: 0.9rem;
+  color: var(--fd-text-muted);
+}
+
+/* ===== SCOREBOARD ===== */
+.fate-scoreboard {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  padding: 20px;
+  background: linear-gradient(180deg, var(--fd-bg-dark) 0%, var(--fd-bg) 100%);
+}
+
+.fate-player {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.fate-player-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--fd-text);
+}
+
+.fate-player-score {
+  font-size: 3rem;
+  font-weight: bold;
+  color: var(--fd-gold);
+  text-shadow: 0 0 20px rgba(255, 209, 102, 0.5);
+  min-width: 60px;
+  text-align: center;
+}
+
+.fate-score-divider {
+  font-size: 2rem;
+  color: var(--fd-text-muted);
+}
+
+.fate-round-indicator {
+  font-size: 0.85rem;
+  color: var(--fd-text-muted);
+  text-align: center;
+  padding: 8px 0;
+}
+
+/* ===== CHOICE SELECTOR ===== */
+.fate-choice-area {
+  padding: 30px 20px;
+  text-align: center;
+}
+
+.fate-choice-prompt {
+  font-size: 1.2rem;
+  color: var(--fd-text);
+  margin-bottom: 20px;
+}
+
+.fate-choices {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.fate-choice-btn {
+  position: relative;
+  width: 120px;
+  height: 140px;
+  background: var(--fd-bg-light);
+  border: 3px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all var(--fd-anim-normal) ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.fate-choice-btn:hover {
+  transform: translateY(-5px) scale(1.05);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.fate-choice-btn.sword { border-color: var(--fd-sword); }
+.fate-choice-btn.sword:hover { background: rgba(230, 57, 70, 0.2); }
+.fate-choice-btn.sword.selected { 
+  background: rgba(230, 57, 70, 0.3);
+  box-shadow: 0 0 30px var(--fd-sword);
+}
+
+.fate-choice-btn.shield { border-color: var(--fd-shield); }
+.fate-choice-btn.shield:hover { background: rgba(69, 123, 157, 0.2); }
+.fate-choice-btn.shield.selected { 
+  background: rgba(69, 123, 157, 0.3);
+  box-shadow: 0 0 30px var(--fd-shield);
+}
+
+.fate-choice-btn.scroll { border-color: var(--fd-scroll); }
+.fate-choice-btn.scroll:hover { background: rgba(155, 93, 229, 0.2); }
+.fate-choice-btn.scroll.selected { 
+  background: rgba(155, 93, 229, 0.3);
+  box-shadow: 0 0 30px var(--fd-scroll);
+}
+
+.fate-choice-btn .choice-icon {
+  width: 60px;
+  height: 60px;
+}
+
+.fate-choice-btn .choice-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.fate-choice-btn.sword .choice-label { color: var(--fd-sword); }
+.fate-choice-btn.shield .choice-label { color: var(--fd-shield); }
+.fate-choice-btn.scroll .choice-label { color: var(--fd-scroll); }
+
+.fate-choice-btn.locked {
+  pointer-events: none;
+  opacity: 0.7;
+}
+
+.fate-choice-btn.locked::after {
+  content: '✓';
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 1.2rem;
+  color: var(--fd-gold);
+}
+
+/* ===== TIMER ===== */
+.fate-timer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+}
+
+.fate-timer-bar {
+  width: 200px;
+  height: 8px;
+  background: var(--fd-bg-dark);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.fate-timer-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--fd-gold), #f59e0b);
+  border-radius: 4px;
+  transition: width 100ms linear;
+}
+
+.fate-timer.urgent .fate-timer-fill {
+  background: linear-gradient(90deg, var(--fd-sword), #ff0000);
+  animation: timer-pulse 0.5s ease infinite;
+}
+
+.fate-timer-text {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: var(--fd-text);
+}
+
+.fate-timer.urgent .fate-timer-text {
+  color: var(--fd-sword);
+  animation: timer-pulse 0.5s ease infinite;
+}
+
+@keyframes timer-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+/* ===== CLASH ARENA OVERLAY ===== */
+.fate-clash-arena {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.fate-clash-arena.fade-out {
+  animation: fadeOut 300ms ease forwards;
+}
+
+@keyframes fadeOut {
+  to { opacity: 0; }
+}
+
+.clash-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.85);
+  animation: backdropIn 200ms ease;
+}
+
+@keyframes backdropIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.clash-zone {
+  position: relative;
+  width: 500px;
+  height: 300px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===== CHOICE CARDS (CLASH) ===== */
+.choice-card {
+  position: absolute;
+  width: 140px;
+  height: 180px;
+  perspective: 1000px;
+  transition: transform var(--fd-anim-slow) cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.choice-card.side-left { left: 50px; }
+.choice-card.side-right { right: 50px; }
+
+.card-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, var(--fd-bg-light) 0%, var(--fd-bg) 100%);
+  border-radius: 12px;
+  border: 3px solid currentColor;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.choice-card.choice-sword { color: var(--fd-sword); }
+.choice-card.choice-shield { color: var(--fd-shield); }
+.choice-card.choice-scroll { color: var(--fd-scroll); }
+
+.choice-card .choice-icon {
+  width: 80px;
+  height: 80px;
+  margin-bottom: 12px;
+}
+
+.choice-card .choice-name {
+  font-size: 1rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.card-glow {
+  position: absolute;
+  inset: -10px;
+  border-radius: 18px;
+  opacity: 0;
+  transition: opacity var(--fd-anim-normal);
+}
+
+.choice-card.choice-sword .card-glow { box-shadow: 0 0 40px var(--fd-sword); }
+.choice-card.choice-shield .card-glow { box-shadow: 0 0 40px var(--fd-shield); }
+.choice-card.choice-scroll .card-glow { box-shadow: 0 0 40px var(--fd-scroll); }
+
+.choice-card.entering {
+  transition: transform var(--fd-anim-slow) cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity var(--fd-anim-normal);
+}
+
+.choice-card.winner {
+  z-index: 10;
+  animation: winner-pop 500ms ease forwards;
+}
+
+.choice-card.winner .card-glow {
+  opacity: 1;
+  animation: winner-glow 1s ease infinite;
+}
+
+@keyframes winner-pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+  100% { transform: scale(1.1) translateY(-10px); }
+}
+
+@keyframes winner-glow {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
+}
+
+.choice-card.loser {
+  animation: loser-shake 300ms ease forwards;
+  opacity: 0.5;
+}
+
+@keyframes loser-shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  25% { transform: translateX(-10px) rotate(-3deg); }
+  75% { transform: translateX(10px) rotate(3deg); }
+}
+
+.choice-card.tie {
+  animation: tie-bounce 500ms ease;
+}
+
+@keyframes tie-bounce {
+  0% { transform: translateX(0); }
+  30% { transform: translateX(-30px); }
+  60% { transform: translateX(20px); }
+  100% { transform: translateX(0); }
+}
+
+/* ===== PARTICLES ===== */
+.clash-particles {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.clash-particle {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: particle-burst var(--fd-anim-slow) ease-out forwards;
+}
+
+@keyframes particle-burst {
+  0% {
+    transform: translate(0, 0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(var(--end-x), var(--end-y)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* ===== CLASH FLASH ===== */
+.clash-flash {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 200px;
+  height: 200px;
+  margin: -100px;
+  background: radial-gradient(circle, var(--fd-clash) 0%, transparent 70%);
+  border-radius: 50%;
+  animation: flash-burst 300ms ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes flash-burst {
+  0% {
+    transform: scale(0);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2);
+    opacity: 0;
+  }
+}
+
+/* ===== SCREEN SHAKE ===== */
+.fate-clash-arena.shake {
+  animation: screen-shake 300ms ease;
+}
+
+@keyframes screen-shake {
+  0%, 100% { transform: translate(0, 0); }
+  10% { transform: translate(-5px, -3px); }
+  20% { transform: translate(5px, 3px); }
+  30% { transform: translate(-4px, 2px); }
+  40% { transform: translate(4px, -2px); }
+  50% { transform: translate(-3px, 3px); }
+  60% { transform: translate(3px, -3px); }
+  70% { transform: translate(-2px, 1px); }
+  80% { transform: translate(2px, -1px); }
+  90% { transform: translate(-1px, 1px); }
+}
+
+/* ===== RESULT TEXT ===== */
+.clash-result {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.clash-result.show {
+  animation: result-in 400ms ease forwards;
+}
+
+@keyframes result-in {
+  0% {
+    transform: translateX(-50%) scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: translateX(-50%) scale(1.2);
+  }
+  100% {
+    transform: translateX(-50%) scale(1);
+    opacity: 1;
+  }
+}
+
+.result-text {
+  font-size: 3rem;
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 4px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.result-text.win { color: var(--fd-gold); }
+.result-text.lose { color: var(--fd-sword); }
+.result-text.tie { color: var(--fd-text-muted); }
+
+/* ===== MATCH END OVERLAY ===== */
+.match-end-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.9);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.match-end-overlay.show {
+  opacity: 1;
+}
+
+.match-end-content {
+  text-align: center;
+  transform: scale(0.8);
+  transition: transform 400ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.match-end-overlay.show .match-end-content {
+  transform: scale(1);
+}
+
+.match-end-icon {
+  font-size: 6rem;
+  margin-bottom: 20px;
+  animation: icon-bounce 1s ease infinite;
+}
+
+@keyframes icon-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-15px); }
+}
+
+.match-end-title {
+  font-size: 4rem;
+  font-weight: bold;
+  margin-bottom: 20px;
+  text-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+}
+
+.match-end-overlay.victory .match-end-title {
+  color: var(--fd-gold);
+  text-shadow: 0 0 40px rgba(255, 209, 102, 0.5);
+}
+
+.match-end-overlay.defeat .match-end-title {
+  color: var(--fd-sword);
+  text-shadow: 0 0 40px rgba(230, 57, 70, 0.5);
+}
+
+.match-end-score {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 30px;
+  font-size: 3rem;
+  margin-bottom: 20px;
+}
+
+.match-end-score .score-value {
+  color: var(--fd-text);
+  font-weight: bold;
+}
+
+.match-end-score .score-divider {
+  color: var(--fd-text-muted);
+}
+
+.match-end-reward {
+  font-size: 1.5rem;
+  color: var(--fd-gold);
+  margin-bottom: 30px;
+}
+
+.match-end-continue {
+  padding: 16px 48px;
+  font-size: 1.2rem;
+  font-weight: bold;
+  background: var(--fd-gold);
+  color: var(--fd-bg-dark);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all var(--fd-anim-fast);
+}
+
+.match-end-continue:hover {
+  transform: scale(1.05);
+  box-shadow: 0 8px 24px rgba(255, 209, 102, 0.4);
+}
+
+/* ===== POWER-UP CARDS ===== */
+.power-up-card {
+  position: relative;
+  width: 160px;
+  padding: 16px;
+  background: var(--fd-bg-light);
+  border-radius: 12px;
+  border: 2px solid currentColor;
+  text-align: center;
+}
+
+.power-up-card.rarity-common { color: #9ca3af; }
+.power-up-card.rarity-uncommon { color: #22c55e; }
+.power-up-card.rarity-rare { color: #3b82f6; }
+.power-up-card.rarity-epic { color: #a855f7; }
+.power-up-card.rarity-legendary { 
+  color: #f59e0b;
+  animation: legendary-glow 2s ease infinite;
+}
+
+@keyframes legendary-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(245, 158, 11, 0.3); }
+  50% { box-shadow: 0 0 40px rgba(245, 158, 11, 0.6); }
+}
+
+.power-up-icon {
+  font-size: 2.5rem;
+  margin-bottom: 8px;
+}
+
+.power-up-name {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 4px;
+  color: var(--fd-text);
+}
+
+.power-up-type {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 8px;
+}
+
+.power-up-desc {
+  font-size: 0.85rem;
+  color: var(--fd-text-muted);
+  margin-bottom: 8px;
+}
+
+.power-up-flavor {
+  font-size: 0.75rem;
+  font-style: italic;
+  color: var(--fd-text-muted);
+  opacity: 0.7;
+}
+
+/* ===== WAITING STATE ===== */
+.fate-waiting {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  text-align: center;
+}
+
+.fate-waiting-icon {
+  font-size: 4rem;
+  margin-bottom: 20px;
+  animation: waiting-pulse 2s ease infinite;
+}
+
+@keyframes waiting-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
+}
+
+.fate-waiting-text {
+  font-size: 1.2rem;
+  color: var(--fd-text-muted);
+}
+
+/* ===== OPPONENT INDICATOR ===== */
+.fate-opponent-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px;
+  background: var(--fd-bg-dark);
+  border-radius: 8px;
+  margin-top: 20px;
+}
+
+.fate-opponent-status.choosing::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--fd-gold);
+  animation: thinking-blink 1s ease infinite;
+}
+
+.fate-opponent-status.ready::after {
+  content: '✓';
+  color: var(--fd-gold);
+  font-weight: bold;
+}
+
+@keyframes thinking-blink {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 600px) {
+  .fate-choices {
+    gap: 12px;
+  }
+  
+  .fate-choice-btn {
+    width: 90px;
+    height: 110px;
+  }
+  
+  .fate-choice-btn .choice-icon {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .choice-card {
+    width: 100px;
+    height: 130px;
+  }
+  
+  .clash-zone {
+    width: 320px;
+    height: 200px;
+  }
+  
+  .match-end-title {
+    font-size: 2.5rem;
+  }
+  
+  .match-end-score {
+    font-size: 2rem;
+  }
+}
+
+/* ===== KEYBOARD HINTS ===== */
+.fate-keyboard-hints {
+  display: flex;
+  justify-content: center;
+  gap: 40px;
+  padding: 12px;
+  opacity: 0.6;
+}
+
+.fate-key-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--fd-text-muted);
+}
+
+.fate-key {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  background: var(--fd-bg-light);
+  border: 1px solid var(--fd-text-muted);
+  border-radius: 4px;
+  font-weight: bold;
+}

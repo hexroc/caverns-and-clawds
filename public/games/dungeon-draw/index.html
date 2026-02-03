@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dungeon Draw - Caverns & Clawds</title>
+  <link rel="stylesheet" href="dungeon-draw.css">
+</head>
+<body>
+  <div class="game-container" id="game">
+    <!-- Header -->
+    <header class="game-header">
+      <div class="game-title">
+        <span class="logo">🎴</span>
+        <h1>Dungeon Draw</h1>
+      </div>
+      <div class="game-controls">
+        <button class="control-btn" onclick="showSettings()">⚙️ Settings</button>
+        <button class="control-btn" onclick="showRules()">❓ Rules</button>
+        <a href="/" class="control-btn">🏠 Lobby</a>
+      </div>
+    </header>
+
+    <!-- Game Board -->
+    <main class="game-board">
+      <!-- Opponents Area -->
+      <div class="opponents-area" id="opponents">
+        <!-- AI opponents rendered here -->
+      </div>
+
+      <!-- Center Area -->
+      <div class="center-area">
+        <!-- Draw Pile -->
+        <div class="draw-pile" onclick="handleDraw()" title="Click to draw">
+          <div class="draw-pile-stack">
+            <div class="card-back"></div>
+            <div class="card-back"></div>
+            <div class="card-back"></div>
+          </div>
+          <div class="pile-label">Draw <span class="pile-count" id="deck-count">99</span></div>
+        </div>
+
+        <!-- Current Color & Direction -->
+        <div class="current-color">
+          <div class="color-indicator" id="color-indicator">
+            <span id="color-symbol">🔥</span>
+          </div>
+          <div class="direction-indicator" id="direction-indicator">
+            ➡️ Clockwise
+          </div>
+        </div>
+
+        <!-- Discard Pile -->
+        <div class="discard-pile" id="discard-pile">
+          <!-- Top card rendered here -->
+        </div>
+      </div>
+
+      <!-- Status Messages -->
+      <div class="status-area" id="status-area"></div>
+
+      <!-- Player Area -->
+      <div class="player-area">
+        <div class="player-info">
+          <div class="player-stats">
+            <span class="player-avatar" id="player-avatar">🧙</span>
+            <span class="player-name" id="player-name">Adventurer</span>
+            <span class="turn-indicator hidden" id="your-turn">Your Turn!</span>
+          </div>
+          <div id="pending-draw" class="pending-draw-indicator hidden">+0 Cards!</div>
+        </div>
+        <div class="hand-container" id="player-hand">
+          <!-- Player's cards rendered here -->
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Color Picker Overlay -->
+  <div class="color-picker-overlay hidden" id="color-picker">
+    <div class="color-picker">
+      <h2>🔮 Choose an Element!</h2>
+      <div class="color-options">
+        <button class="color-option fire" onclick="chooseColor('fire')" title="Fire">🔥</button>
+        <button class="color-option ice" onclick="chooseColor('ice')" title="Ice">❄️</button>
+        <button class="color-option nature" onclick="chooseColor('nature')" title="Nature">🌿</button>
+        <button class="color-option lightning" onclick="chooseColor('lightning')" title="Lightning">⚡</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Over Overlay -->
+  <div class="game-over-overlay hidden" id="game-over">
+    <div class="game-over-content">
+      <div class="game-over-icon" id="game-over-icon">👑</div>
+      <h1 class="game-over-title" id="game-over-title">Victory!</h1>
+      <p class="game-over-subtitle" id="game-over-subtitle">You cleared your hand!</p>
+      <div class="game-over-scores" id="game-over-scores">
+        <!-- Scores rendered here -->
+      </div>
+      <button class="play-again-btn" onclick="startNewGame()">🎴 Play Again</button>
+    </div>
+  </div>
+
+  <!-- Settings Panel -->
+  <div class="settings-overlay hidden" id="settings-overlay">
+    <div class="settings-panel">
+      <h2>⚙️ Game Settings</h2>
+      <div class="setting-group">
+        <label>Your Name</label>
+        <input type="text" id="setting-name" value="Adventurer" maxlength="20">
+      </div>
+      <div class="setting-group">
+        <label>Number of Opponents</label>
+        <select id="setting-opponents">
+          <option value="1">1 Opponent</option>
+          <option value="2" selected>2 Opponents</option>
+          <option value="3">3 Opponents</option>
+        </select>
+      </div>
+      <div class="setting-group">
+        <label>AI Difficulty</label>
+        <select id="setting-difficulty">
+          <option value="easy">Easy</option>
+          <option value="medium" selected>Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+      </div>
+      <div class="settings-buttons">
+        <button class="btn-secondary" onclick="hideSettings()">Cancel</button>
+        <button class="btn-primary" onclick="applySettings()">Start New Game</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rules Modal -->
+  <div class="settings-overlay hidden" id="rules-overlay">
+    <div class="settings-panel" style="max-width: 500px;">
+      <h2>📜 How to Play</h2>
+      <div style="text-align: left; line-height: 1.6; max-height: 400px; overflow-y: auto;">
+        <p><strong>Goal:</strong> Be the first to empty your hand!</p>
+        <br>
+        <p><strong>On Your Turn:</strong></p>
+        <ul style="margin-left: 20px;">
+          <li>Play a card matching the <strong>color</strong> or <strong>number</strong></li>
+          <li>Or play a <strong>Wild card</strong> (🔮 or 🌪️)</li>
+          <li>If you can't play, <strong>draw</strong> from the deck</li>
+        </ul>
+        <br>
+        <p><strong>Special Cards:</strong></p>
+        <ul style="margin-left: 20px;">
+          <li>💫 <strong>Stun</strong> - Skip next player</li>
+          <li>🌀 <strong>Time Warp</strong> - Reverse direction</li>
+          <li>💀 <strong>Curse</strong> - Next player draws 2</li>
+          <li>🔮 <strong>Chaos Orb</strong> - Wild, choose color</li>
+          <li>🌪️ <strong>Chaos Storm</strong> - Wild + next draws 4</li>
+        </ul>
+        <br>
+        <p><strong>Elements:</strong></p>
+        <ul style="margin-left: 20px;">
+          <li>🔥 Fire (Red)</li>
+          <li>❄️ Ice (Blue)</li>
+          <li>🌿 Nature (Green)</li>
+          <li>⚡ Lightning (Yellow)</li>
+        </ul>
+      </div>
+      <div class="settings-buttons" style="margin-top: 20px;">
+        <button class="btn-primary" onclick="hideRules()" style="flex: 1;">Got it!</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Card definitions and game logic -->
+  <script src="cards.js"></script>
+  <script src="dungeon-draw.js"></script>
+  
+  <script>
+    // ========== UI RENDERER ==========
+    let game = null;
+    let selectedCard = null;
+
+    // Element info for rendering
+    const ELEMENT_SYMBOLS = {
+      fire: '🔥',
+      ice: '❄️',
+      nature: '🌿',
+      lightning: '⚡'
+    };
+
+    function renderCard(card, isPlayable = false, onClick = null) {
+      const div = document.createElement('div');
+      div.className = 'game-card';
+      if (isPlayable) div.classList.add('playable');
+      div.dataset.cardId = card.id;
+
+      // Determine face class
+      let faceClass = card.element || (card.wildType === 'chaosStorm' ? 'wild-storm' : 'wild');
+
+      // Get display value
+      let centerContent = '';
+      let cornerContent = '';
+
+      if (card.type === 'number') {
+        centerContent = `<span class="card-center number">${card.value}</span>`;
+        cornerContent = `${ELEMENT_SYMBOLS[card.element]}<br>${card.value}`;
+      } else if (card.type === 'special') {
+        centerContent = `<span class="card-center">${card.symbol}</span>`;
+        cornerContent = `${ELEMENT_SYMBOLS[card.element]}<br>${card.symbol}`;
+      } else if (card.type === 'wild') {
+        centerContent = `<span class="card-center">${card.symbol}</span>`;
+        cornerContent = `${card.symbol}`;
+      }
+
+      div.innerHTML = `
+        <div class="card-face ${faceClass}">
+          <div class="card-corner top-left">${cornerContent}</div>
+          ${centerContent}
+          <span class="card-name">${card.name}</span>
+          <div class="card-corner bottom-right">${cornerContent}</div>
+        </div>
+      `;
+
+      if (onClick) {
+        div.addEventListener('click', () => onClick(card));
+      }
+
+      return div;
+    }
+
+    function renderOpponents(state) {
+      const container = document.getElementById('opponents');
+      container.innerHTML = '';
+
+      state.players.forEach((player, index) => {
+        if (index === 0) return; // Skip human player
+
+        const div = document.createElement('div');
+        div.className = 'opponent';
+        const isActive = index === state.currentPlayer;
+
+        // Create card backs
+        let cardsHtml = '';
+        for (let i = 0; i < Math.min(player.cardCount, 10); i++) {
+          cardsHtml += '<div class="card-back"></div>';
+        }
+
+        div.innerHTML = `
+          <div class="opponent-info ${isActive ? 'active' : ''}">
+            <span class="opponent-avatar">${player.avatar}</span>
+            <span class="opponent-name">${player.name}</span>
+            <span style="margin-left: 8px; color: var(--text-muted);">(${player.cardCount})</span>
+          </div>
+          <div class="opponent-cards">${cardsHtml}</div>
+        `;
+
+        if (isActive) {
+          div.querySelector('.opponent-info').classList.add('active');
+        }
+
+        container.appendChild(div);
+      });
+    }
+
+    function renderPlayerHand(state) {
+      const container = document.getElementById('player-hand');
+      container.innerHTML = '';
+
+      const humanPlayer = state.players[0];
+      if (!humanPlayer.hand) return;
+
+      const isMyTurn = state.currentPlayer === 0 && state.status === 'playing';
+      const playableCards = isMyTurn ? 
+        humanPlayer.hand.filter(c => canPlayCard(c, state.topCard, state.currentColor)).map(c => c.id) : [];
+
+      humanPlayer.hand.forEach(card => {
+        const isPlayable = playableCards.includes(card.id);
+        const cardEl = renderCard(card, isPlayable, isPlayable ? handleCardClick : null);
+        container.appendChild(cardEl);
+      });
+    }
+
+    function renderDiscardPile(state) {
+      const container = document.getElementById('discard-pile');
+      container.innerHTML = '';
+
+      if (state.topCard) {
+        const cardEl = renderCard(state.topCard);
+        container.appendChild(cardEl);
+      }
+    }
+
+    function renderCurrentColor(state) {
+      const indicator = document.getElementById('color-indicator');
+      const symbol = document.getElementById('color-symbol');
+
+      // Remove all color classes
+      indicator.classList.remove('fire', 'ice', 'nature', 'lightning');
+
+      if (state.currentColor) {
+        indicator.classList.add(state.currentColor);
+        symbol.textContent = ELEMENT_SYMBOLS[state.currentColor];
+      }
+
+      // Direction
+      const dirIndicator = document.getElementById('direction-indicator');
+      if (state.direction === 1) {
+        dirIndicator.textContent = '➡️ Clockwise';
+        dirIndicator.classList.remove('reversed');
+      } else {
+        dirIndicator.textContent = '⬅️ Counter-clockwise';
+        dirIndicator.classList.add('reversed');
+      }
+    }
+
+    function renderUI(state) {
+      // Update deck count
+      document.getElementById('deck-count').textContent = state.deckCount;
+
+      // Render components
+      renderOpponents(state);
+      renderPlayerHand(state);
+      renderDiscardPile(state);
+      renderCurrentColor(state);
+
+      // Your turn indicator
+      const turnIndicator = document.getElementById('your-turn');
+      const isMyTurn = state.currentPlayer === 0 && state.status === 'playing';
+      turnIndicator.classList.toggle('hidden', !isMyTurn);
+
+      // Pending draw indicator
+      const pendingDraw = document.getElementById('pending-draw');
+      if (state.pendingDraw > 0 && isMyTurn) {
+        pendingDraw.textContent = `+${state.pendingDraw} Cards!`;
+        pendingDraw.classList.remove('hidden');
+      } else {
+        pendingDraw.classList.add('hidden');
+      }
+
+      // Color picker
+      document.getElementById('color-picker').classList.toggle('hidden', state.status !== 'choosing_color');
+
+      // Game over
+      if (state.status === 'ended' && state.winner) {
+        showGameOver(state);
+      }
+    }
+
+    function showGameOver(state) {
+      const overlay = document.getElementById('game-over');
+      const icon = document.getElementById('game-over-icon');
+      const title = document.getElementById('game-over-title');
+      const subtitle = document.getElementById('game-over-subtitle');
+      const scores = document.getElementById('game-over-scores');
+
+      const humanWon = state.winner.id === 'human';
+
+      icon.textContent = humanWon ? '👑' : '💀';
+      title.textContent = humanWon ? 'Victory!' : 'Defeat!';
+      subtitle.textContent = humanWon ? 
+        'You cleared your hand first!' : 
+        `${state.winner.name} cleared their hand!`;
+
+      // Render scores
+      scores.innerHTML = '';
+      for (const player of state.players) {
+        const score = state.scores[player.id] || 0;
+        scores.innerHTML += `
+          <div class="score-item">
+            <div class="score-name">${player.avatar} ${player.name}</div>
+            <div class="score-value">${score} pts</div>
+          </div>
+        `;
+      }
+
+      overlay.classList.remove('hidden');
+    }
+
+    // ========== EVENT HANDLERS ==========
+
+    function handleCardClick(card) {
+      if (!game || game.status !== 'playing') return;
+
+      const humanPlayer = game.players[0];
+      const result = game.playCard(humanPlayer, card);
+
+      if (result.needsColor) {
+        // Color picker will be shown by renderUI
+      } else if (result.success) {
+        // Continue game loop for AI
+        setTimeout(() => game.runGameLoop(), 500);
+      }
+    }
+
+    function handleDraw() {
+      if (!game || game.status !== 'playing') return;
+      if (game.currentPlayer !== 0) return;
+
+      const humanPlayer = game.players[0];
+      game.draw(humanPlayer);
+
+      // Continue game loop for AI
+      setTimeout(() => game.runGameLoop(), 500);
+    }
+
+    function chooseColor(color) {
+      if (!game || game.status !== 'choosing_color') return;
+
+      game.chooseColor(color);
+
+      // Continue game loop for AI
+      setTimeout(() => game.runGameLoop(), 500);
+    }
+
+    // ========== ANIMATION HANDLERS ==========
+
+    function handleAnimation(type, data) {
+      console.log('Animation:', type, data);
+
+      switch (type) {
+        case 'stun':
+          showStatusMessage(`💫 ${data.targetPlayer.name} is STUNNED!`);
+          break;
+        case 'timeWarp':
+          showStatusMessage('🌀 TIME WARP! Direction reversed!');
+          break;
+        case 'curse':
+          showStatusMessage(`💀 ${data.targetPlayer.name} is CURSED! +2 cards!`);
+          break;
+        case 'chaosOrb':
+          showStatusMessage(`🔮 Chaos Orb! ${ELEMENT_SYMBOLS[data.color]} chosen!`);
+          break;
+        case 'chaosStorm':
+          showStatusMessage(`🌪️ CHAOS STORM! ${data.targetPlayer.name} draws 4!`);
+          break;
+        case 'victory':
+          // Handled in renderUI
+          break;
+      }
+    }
+
+    function showStatusMessage(text, duration = 1500) {
+      const area = document.getElementById('status-area');
+      area.innerHTML = `<div class="status-message">${text}</div>`;
+
+      setTimeout(() => {
+        area.innerHTML = '';
+      }, duration);
+    }
+
+    // ========== SETTINGS ==========
+
+    function showSettings() {
+      document.getElementById('settings-overlay').classList.remove('hidden');
+    }
+
+    function hideSettings() {
+      document.getElementById('settings-overlay').classList.add('hidden');
+    }
+
+    function applySettings() {
+      const name = document.getElementById('setting-name').value || 'Adventurer';
+      const opponents = parseInt(document.getElementById('setting-opponents').value);
+      const difficulty = document.getElementById('setting-difficulty').value;
+
+      hideSettings();
+      startGame({
+        playerName: name,
+        playerCount: opponents + 1,
+        aiDifficulty: difficulty
+      });
+    }
+
+    function showRules() {
+      document.getElementById('rules-overlay').classList.remove('hidden');
+    }
+
+    function hideRules() {
+      document.getElementById('rules-overlay').classList.add('hidden');
+    }
+
+    // ========== GAME START ==========
+
+    function startGame(options = {}) {
+      document.getElementById('game-over').classList.add('hidden');
+
+      game = new DungeonDraw({
+        playerCount: options.playerCount || 3,
+        aiDifficulty: options.aiDifficulty || 'medium',
+        playerName: options.playerName || 'Adventurer',
+        onStateChange: renderUI,
+        onAnimation: handleAnimation
+      });
+
+      document.getElementById('player-name').textContent = game.playerName;
+      document.getElementById('player-avatar').textContent = game.players[0].avatar;
+
+      // Initial render
+      renderUI(game.getState());
+
+      // Start AI turns if AI goes first (shouldn't happen but just in case)
+      if (game.currentPlayer !== 0) {
+        setTimeout(() => game.runGameLoop(), 1000);
+      }
+    }
+
+    function startNewGame() {
+      startGame({
+        playerName: game?.playerName || 'Adventurer',
+        playerCount: game?.players?.length || 3,
+        aiDifficulty: game?.aiDifficulty || 'medium'
+      });
+    }
+
+    // Start game on load
+    window.addEventListener('load', () => {
+      startGame();
+    });
+  </script>
+</body>
+</html>
