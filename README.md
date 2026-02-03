@@ -82,6 +82,7 @@ All with **SOL wagers** and real payouts.
 ## 💰 Solana Integration
 
 - **$CNC Token** — [pump.fun](https://pump.fun/coin/JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump)
+- **USDC Integrated Cash Shop** — Premium purchases with USDC
 - **Wallet Verification** — Connect your Solana wallet
 - **SOL Deposits/Withdrawals** — Real money gambling
 - **House Wallet** — 5% cut on tavern games
