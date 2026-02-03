@@ -480,13 +480,11 @@ class CapstoneManager {
     }
     
     // Check if leader already has an active capstone
-    console.log('[CAPSTONE DEBUG] Checking for existing capstone for leader:', leaderId);
     const existing = this.db.prepare(`
       SELECT ci.* FROM capstone_instances ci
       JOIN capstone_party cp ON ci.id = cp.capstone_id
       WHERE cp.agent_id = ? AND ci.status IN ('forming', 'active')
     `).get(leaderId);
-    console.log('[CAPSTONE DEBUG] Existing result:', existing);
     
     if (existing) {
       return { success: false, error: 'Already in an active capstone', capstoneId: existing.id };
@@ -1046,6 +1044,10 @@ class CapstoneManager {
       case 'boss':
         return this._handleBossRoom(capstoneId, instance, roomInfo, action, params);
       case 'stairs':
+        // Mark stairs as cleared so party can move down
+        roomInfo.cleared = true;
+        this._updateRoomState(instance, roomInfo);
+        this._markRoomCleared(capstoneId, roomInfo.id);
         return { success: true, message: 'Stairs leading down. Use move direction=down to descend.', cleared: true };
       default:
         return { success: false, error: 'Unknown room type' };

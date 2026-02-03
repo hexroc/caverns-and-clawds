@@ -1030,8 +1030,8 @@
           <p class="room-description" id="room-description">
             Enemies lurk in the darkness ahead.
           </p>
-          <div class="room-exits" id="room-exits">
-            <span class="exit-badge">→ Forward</span>
+          <div class="room-exits hidden" id="room-exits">
+            <!-- Hidden in spectator mode - AI handles navigation -->
           </div>
         </div>
 
@@ -1093,14 +1093,7 @@
         <button class="action-btn" onclick="refreshInstances()">🔄 Refresh</button>
       </div>
       
-      <div class="action-buttons" id="action-buttons">
-        <!-- Player actions (shown when it's your turn) -->
-        <button class="action-btn" id="btn-attack" disabled onclick="sendAction('attack')">⚔️ Attack</button>
-        <button class="action-btn" id="btn-move" disabled onclick="sendAction('move')">👟 Move</button>
-        <button class="action-btn" id="btn-dodge" disabled onclick="sendAction('dodge')">🛡️ Dodge</button>
-        <button class="action-btn" id="btn-ability" disabled onclick="sendAction('ability')">✨ Ability</button>
-        <button class="action-btn primary" id="btn-end-turn" disabled onclick="sendAction('end_turn')">⏭️ End Turn</button>
-      </div>
+      <!-- AI spectator mode - no player controls -->
       
       <div class="spectator-badge">
         <span>👁️</span>
@@ -1620,11 +1613,7 @@
       // In player mode, enable based on whose turn it is
       const isMyTurn = false; // Would check if current user's turn
       
-      document.getElementById('btn-attack').disabled = !isMyTurn;
-      document.getElementById('btn-move').disabled = !isMyTurn;
-      document.getElementById('btn-dodge').disabled = !isMyTurn;
-      document.getElementById('btn-ability').disabled = !isMyTurn;
-      document.getElementById('btn-end-turn').disabled = !isMyTurn;
+      // Spectator mode - no player controls
     }
 
     // ========================================
@@ -1789,20 +1778,8 @@
     // ========================================
     // ACTIONS (for player mode)
     // ========================================
-    async function sendAction(action) {
-      if (!currentCapstoneId || !API_KEY) return;
-      
-      const data = await fetchAPI(`/${currentCapstoneId}/action`, {
-        method: 'POST',
-        body: JSON.stringify({ action })
-      });
-      
-      if (data.success) {
-        addLogEntry(`Action: ${action}`, 'system');
-      } else {
-        addLogEntry(`Error: ${data.error}`, 'system');
-      }
-    }
+    // Spectator mode - player actions removed
+    // AI agents control all combat through the API
 
     // Handle window resize
     window.addEventListener('resize', () => {
