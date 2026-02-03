@@ -1449,14 +1449,9 @@
       document.getElementById('room-name').textContent = roomInfo.name || 'Unknown Room';
       document.getElementById('room-description').textContent = roomInfo.description || '';
       
-      // Show exits
+      // Spectator mode - no navigation buttons, AI handles movement
       const exitsDiv = document.getElementById('room-exits');
-      const exits = [];
-      if (roomInfo.room < 5) exits.push('→ Forward');
-      if (roomInfo.room > 1) exits.push('← Back');
-      if (roomInfo.type === 'stairs') exits.push('↓ Descend');
-      
-      exitsDiv.innerHTML = exits.map(e => `<span class="exit-badge">${e}</span>`).join('');
+      exitsDiv.innerHTML = ''; // AI controls navigation
       
       currentCombat = null;
     }

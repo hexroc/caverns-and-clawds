@@ -1442,7 +1442,7 @@ class CapstoneManager {
       autoBattle: true  // Both sides use AI for spectator mode
     });
     
-    // Add party members
+    // Add party members and their henchmen
     let partySpawnIndex = 0;
     for (const member of party) {
       const spawnPos = this._getPartySpawnPosition(partySpawnIndex++, grid);
@@ -1465,6 +1465,40 @@ class CapstoneManager {
         dexMod: dexMod,
         position: spawnPos
       });
+      
+      // Add henchmen for this character
+      const henchmen = this.db.prepare(`
+        SELECT ch.*, hp.name as template_name, hp.class as hench_class
+        FROM character_henchmen ch
+        LEFT JOIN (SELECT id, name, class FROM (
+          SELECT 'sally_shrimp' as id, 'Sally the Shrimp' as name, 'fighter' as class
+          UNION SELECT 'barnaby_barnacle', 'Barnaby', 'defender'
+          UNION SELECT 'finley_fish', 'Finley', 'support'
+          UNION SELECT 'rocky_urchin', 'Rocky', 'fighter'
+        )) hp ON ch.henchman_id = hp.id
+        WHERE ch.character_id = ? AND ch.status = 'alive'
+      `).all(member.character_id);
+      
+      for (const hench of henchmen) {
+        const henchSpawn = this._getPartySpawnPosition(partySpawnIndex++, grid);
+        const henchChar = hench.hench_class === 'defender' ? '🛡️' : hench.hench_class === 'support' ? '✨' : '🦐';
+        combat.addCombatant({
+          id: `hench_${hench.id}`,
+          name: hench.custom_name || hench.template_name || 'Henchman',
+          char: henchChar,
+          type: 'henchman',
+          team: 'party',
+          hp: hench.hp_current || 25,
+          maxHp: hench.hp_max || 25,
+          ac: 13,
+          speed: 6,
+          attackBonus: hench.level + 2,
+          damage: '1d6+2',
+          damageBonus: 2,
+          dexMod: 2,
+          position: henchSpawn
+        });
+      }
     }
     
     // Add enemies (scaled by party size)
