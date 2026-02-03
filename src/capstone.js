@@ -480,11 +480,13 @@ class CapstoneManager {
     }
     
     // Check if leader already has an active capstone
+    console.log('[CAPSTONE DEBUG] Checking for existing capstone for leader:', leaderId);
     const existing = this.db.prepare(`
       SELECT ci.* FROM capstone_instances ci
       JOIN capstone_party cp ON ci.id = cp.capstone_id
       WHERE cp.agent_id = ? AND ci.status IN ('forming', 'active')
     `).get(leaderId);
+    console.log('[CAPSTONE DEBUG] Existing result:', existing);
     
     if (existing) {
       return { success: false, error: 'Already in an active capstone', capstoneId: existing.id };
@@ -826,6 +828,49 @@ class CapstoneManager {
   // ============================================================================
   
   /**
+   * Check and cleanup completed combats (auto-battle can end while no actions are taken)
+   */
+  _checkCombatCleanup(capstoneId) {
+    const combat = this.activeCombats.get(capstoneId);
+    if (!combat) return null;
+    
+    // If combat ended (victory or defeat), clean it up
+    if (combat.status === 'victory') {
+      const instance = this.db.prepare('SELECT * FROM capstone_instances WHERE id = ?').get(capstoneId);
+      const layout = JSON.parse(instance.room_states || '{}');
+      const roomInfo = this._getRoomInfo(instance.current_floor, instance.current_room, layout);
+      
+      // Mark room as cleared
+      roomInfo.cleared = true;
+      this._updateRoomState(instance, roomInfo);
+      this._markRoomCleared(capstoneId, roomInfo.id);
+      
+      // Update death count
+      const newDeathCount = instance.death_count + combat.partyDeaths;
+      this.db.prepare('UPDATE capstone_instances SET death_count = ? WHERE id = ?')
+        .run(newDeathCount, capstoneId);
+      
+      // Remove combat from active list
+      this.activeCombats.delete(capstoneId);
+      
+      return { cleaned: true, result: 'victory' };
+    } else if (combat.status === 'defeat') {
+      const instance = this.db.prepare('SELECT * FROM capstone_instances WHERE id = ?').get(capstoneId);
+      
+      // Update death count to max (party wipe)
+      this.db.prepare('UPDATE capstone_instances SET death_count = ?, status = "failed" WHERE id = ?')
+        .run(MAX_PARTY_DEATHS, capstoneId);
+      
+      // Remove combat from active list
+      this.activeCombats.delete(capstoneId);
+      
+      return { cleaned: true, result: 'defeat' };
+    }
+    
+    return null;
+  }
+
+  /**
    * Get current room state
    */
   getCurrentRoom(capstoneId) {
@@ -834,6 +879,9 @@ class CapstoneManager {
     
     const layout = JSON.parse(instance.room_states || '{}');
     const roomInfo = this._getRoomInfo(instance.current_floor, instance.current_room, layout);
+    
+    // Check and cleanup completed combats
+    this._checkCombatCleanup(capstoneId);
     
     // Check for active combat
     const combat = this.activeCombats.get(capstoneId);
@@ -864,6 +912,9 @@ class CapstoneManager {
       SELECT * FROM capstone_party WHERE capstone_id = ? AND agent_id = ?
     `).get(capstoneId, agentId);
     if (!partyMember) return { success: false, error: 'Not in party' };
+    
+    // Check and cleanup completed combats (auto-battle may have ended)
+    this._checkCombatCleanup(capstoneId);
     
     // Check for active combat
     if (this.activeCombats.has(capstoneId)) {

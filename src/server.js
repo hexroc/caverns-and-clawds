@@ -2557,7 +2557,11 @@ console.log('🐉 Capstone dungeon system loaded');
 
 // === RUNS API (for theater compatibility with demo combats) ===
 app.get('/api/runs/:id', (req, res) => {
-  const combat = capstoneManager.getCombat(req.params.id);
+  // Try direct ID first, then prefixed version (capstone combats use combat_ prefix)
+  let combat = capstoneManager.getCombat(req.params.id);
+  if (!combat && !req.params.id.startsWith('combat_')) {
+    combat = capstoneManager.getCombat(`combat_${req.params.id}`);
+  }
   if (!combat) {
     return res.status(404).json({ success: false, error: 'Run not found' });
   }
@@ -2620,7 +2624,11 @@ app.get('/api/runs/:id', (req, res) => {
 });
 
 app.get('/api/runs/:id/log', (req, res) => {
-  const combat = capstoneManager.getCombat(req.params.id);
+  // Try direct ID first, then prefixed version (capstone combats use combat_ prefix)
+  let combat = capstoneManager.getCombat(req.params.id);
+  if (!combat && !req.params.id.startsWith('combat_')) {
+    combat = capstoneManager.getCombat(`combat_${req.params.id}`);
+  }
   if (!combat) {
     return res.status(404).json({ success: false, error: 'Run not found' });
   }
