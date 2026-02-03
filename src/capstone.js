@@ -37,42 +37,52 @@ const ROOM_TYPES = {
   combat: {
     name: 'Combat Room',
     description: 'Enemies lurk in the darkness ahead.',
+    narrative: 'The party advances cautiously into the chamber, weapons at the ready. Ancient coral formations cast twisted shadows across the walls as bioluminescent algae pulses with an eerie blue glow. Then, movement—shapes emerge from the darkness, chitin scraping against stone. The enemy has been waiting.',
     gridRadius: 10,
     hasCombat: true
   },
   trap: {
     name: 'Trap Room',
     description: 'This chamber feels... dangerous.',
+    narrative: 'Something about this chamber sets every nerve on edge. The floor tiles bear ancient markings, worn smooth by countless tides. Skeletal remains of unfortunate creatures litter the corners—a grim warning of what befell those who came before. The party exchanges wary glances.',
     gridRadius: 8,
-    hasTrap: true
+    isEvent: true,
+    eventType: 'trap'
   },
   rest: {
     name: 'Rest Alcove',
     description: 'A safe space to catch your breath.',
+    narrative: 'At last, a moment of respite. This small alcove feels sheltered from the darkness that permeates these depths. Soft phosphorescent moss blankets the walls, and a natural spring bubbles from a crack in the stone—fresh water, clean and cold. The party settles in, tending wounds and catching their breath.',
     gridRadius: 6,
     allowsRest: true
   },
   treasure: {
     name: 'Treasure Chamber',
     description: 'Glittering pearls and ancient artifacts catch the light.',
+    narrative: 'Glittering pearls and ancient artifacts catch the light, scattered across the chamber like stars fallen to the ocean floor. Golden coins bearing the marks of sunken empires lie heaped beside coral-encrusted chests. The party\'s eyes widen—fortune favors the bold, but greed has been the downfall of many who delved too deep.',
     gridRadius: 8,
-    hasTreasure: true
+    isEvent: true,
+    eventType: 'treasure'
   },
-  puzzle: {
-    name: 'Puzzle Room',
-    description: 'Ancient mechanisms await solving.',
-    gridRadius: 10,
-    hasPuzzle: true
+  npc: {
+    name: 'Encounter',
+    description: 'Someone waits in the shadows ahead.',
+    narrative: 'A figure emerges from the gloom—not an enemy, but something else entirely. In these treacherous depths, allies are as rare as they are valuable. Yet trust is a luxury few can afford. The party approaches with caution, ready for treachery but hoping for aid.',
+    gridRadius: 8,
+    isEvent: true,
+    eventType: 'npc'
   },
   boss: {
     name: 'Boss Arena',
     description: 'The Dreadnought awaits.',
+    narrative: 'The cavern opens into a vast arena, its ceiling lost in darkness above. The ground trembles with each thunderous heartbeat that echoes from somewhere ahead. Then they see it—the Dreadnought. An enormous crustacean abomination forged from the cursed shell of a thousand drowned souls, its carapace gleaming with eldritch energy. This is what they came for. This is where legends are made—or ended.',
     gridRadius: 15,
     isBoss: true
   },
   stairs: {
     name: 'Stairway',
     description: 'A passage leading deeper into the abyss.',
+    narrative: 'A spiral staircase descends into the abyss, carved from living rock by claws far larger than any mortal creature. Cold current rises from below, carrying whispers of deeper horrors yet to come. The party steels themselves—there is no turning back now. Only forward, into the dark.',
     gridRadius: 6,
     hasStairs: true
   }
@@ -80,12 +90,12 @@ const ROOM_TYPES = {
 
 // Room distribution per floor
 const FLOOR_LAYOUTS = [
-  // Floor 1
+  // Floor 1: Introduction - combat basics, first trap, treasure reward
   ['combat', 'combat', 'trap', 'treasure', 'stairs'],
-  // Floor 2  
-  ['combat', 'combat', 'rest', 'puzzle', 'stairs'],
-  // Floor 3
-  ['combat', 'combat', 'trap', 'rest', 'stairs'],
+  // Floor 2: Meet NPCs, more combat, treasure
+  ['combat', 'combat', 'npc', 'treasure', 'stairs'],
+  // Floor 3: Harder floor - trap, rest before boss, NPC for last supplies
+  ['combat', 'combat', 'trap', 'rest', 'npc', 'stairs'],
   // Boss floor
   ['boss']
 ];
@@ -134,8 +144,8 @@ const DREADNOUGHT = {
   team: 'enemy',
   
   // Base stats (scaled by party size)
-  baseHp: 200,
-  hpPerExtraCharacter: 50, // +50 HP per char beyond 4
+  baseHp: 150, // Reduced from 200 for better balance
+  hpPerExtraCharacter: 25, // +25 HP per char beyond 4 (reduced from 50)
   ac: 17,
   speed: 4,
   
@@ -207,9 +217,9 @@ const DREADNOUGHT = {
       hpThreshold: 0.66,
       name: 'Regenerating',
       description: 'The Dreadnought\'s shell begins to pulse with dark energy!',
-      regeneration: 10, // HP per round
+      regeneration: 5, // HP per round (reduced from 10 for balance)
       statChanges: {
-        ac: 18
+        ac: 16  // Lowered from 18 - shell is healing, not hardening
       }
     },
     {
@@ -301,25 +311,498 @@ const TRAPS = [
 ];
 
 // ============================================================================
-// PUZZLE DEFINITIONS
+// NPC ENCOUNTER DEFINITIONS (Pillars of Eternity style events)
 // ============================================================================
 
-const PUZZLES = [
+const NPC_ENCOUNTERS = [
   {
-    id: 'shell_sequence',
-    name: 'Shell Sequence',
-    description: 'Three shells of different colors must be placed in the correct order.',
-    hint: 'The sea whispers: Red sinks, Blue floats, Green stays still.',
-    solution: ['red', 'green', 'blue'],
-    reward: { pearls: 100, item: 'potion_greater_healing' }
+    id: 'wandering_merchant',
+    name: 'Wandering Merchant',
+    description: 'A hermit crab hauling a shell laden with goods scuttles toward you. His eyestalks twitch nervously as he sizes up your party.',
+    dialogue: {
+      greeting: '"Ah, travelers! Dangerous waters these are... but I have wares that might help you survive them. For the right price, of course."',
+      haggleSuccess: '"Fine, fine! You drive a hard bargain. Take it before I change my mind."',
+      haggleFail: '"Do I look like a charity? The price is the price."',
+      intimidateSuccess: '"N-no need for violence! Here, take a discount, just... just let me pass!"',
+      intimidateFail: '"I\'ve dealt with worse than you lot. Pay up or move along."',
+      farewell: '"Safe travels! Try not to die before you can spend those pearls, eh?"'
+    },
+    services: [
+      { id: 'potion_healing', name: 'Healing Potion', price: 25, stock: 3 },
+      { id: 'potion_greater_healing', name: 'Greater Healing Potion', price: 75, stock: 2 },
+      { id: 'antidote', name: 'Antidote', price: 30, stock: 2 },
+      { id: 'rations', name: 'Rations', price: 5, stock: 5 }
+    ],
+    actions: [
+      { id: 'buy', name: 'Browse Wares', skill: null, dc: null },
+      { id: 'haggle', name: 'Haggle for Discount', skill: 'persuasion', dc: 14, discount: 0.25 },
+      { id: 'intimidate', name: 'Intimidate for Discount', skill: 'intimidation', dc: 16, discount: 0.4, hostileOnFail: true },
+      { id: 'leave', name: 'Leave Without Buying', skill: null, dc: null }
+    ]
   },
   {
-    id: 'current_maze',
-    name: 'Current Maze',
-    description: 'Navigate the magical currents to reach the other side.',
-    hint: 'Follow the warmest water.',
-    skillCheck: { skill: 'survival', dc: 14 },
-    reward: { pearls: 75 }
+    id: 'scroll_peddler',
+    name: 'Scroll Peddler',
+    description: 'A wizened octopus draped in tattered robes guards a collection of waterproof scroll cases. Arcane symbols glow faintly on her tentacles.',
+    dialogue: {
+      greeting: '"Knowledge is power, little ones. And power... has a price. What secrets do you seek?"',
+      haggleSuccess: '"Your tongue is as silver as a moonfish. Very well, a small concession."',
+      haggleFail: '"These scrolls contain magics beyond your comprehension. The price reflects their worth."',
+      persuadeInfo: '"Hmm, you show wisdom in asking. The Dreadnought fears fire and light. Its shell is weakest where it joins..."',
+      farewell: '"May the currents carry you to victory. Or at least, an interesting death."'
+    },
+    services: [
+      { id: 'scroll_shield', name: 'Scroll of Shield', price: 50, stock: 2 },
+      { id: 'scroll_healing_word', name: 'Scroll of Healing Word', price: 60, stock: 2 },
+      { id: 'scroll_bless', name: 'Scroll of Bless', price: 75, stock: 1 },
+      { id: 'scroll_guiding_bolt', name: 'Scroll of Guiding Bolt', price: 80, stock: 1 }
+    ],
+    actions: [
+      { id: 'buy', name: 'Browse Scrolls', skill: null, dc: null },
+      { id: 'haggle', name: 'Haggle for Discount', skill: 'persuasion', dc: 15, discount: 0.2 },
+      { id: 'ask_info', name: 'Ask About the Dreadnought', skill: 'persuasion', dc: 12, givesBossHint: true },
+      { id: 'leave', name: 'Leave', skill: null, dc: null }
+    ]
+  },
+  {
+    id: 'crustacean_priest',
+    name: 'Crustacean Priest',
+    description: 'A massive lobster in ceremonial vestments tends a small shrine. Bioluminescent symbols pulse with healing energy. The priest\'s ancient eyes study your wounds with concern.',
+    dialogue: {
+      greeting: '"The Depths provide, young ones. I sense pain among you... and purpose. How may this humble servant aid your quest?"',
+      healingOffer: '"For a donation of %PRICE% pearls, I can mend your wounds. The light of the Depths flows through all who believe."',
+      freeHealSuccess: '"Your cause is just, and your need is great. The Depths demand no payment from the righteous today."',
+      freeHealFail: '"I sympathize, truly. But the shrine needs upkeep, and pearls keep the light burning. Perhaps a small donation?"',
+      blessing: '"Go with the blessing of the Depths. May your shells stay strong and your claws stay sharp."',
+      farewell: '"Walk in the light, children. The Dreadnought\'s darkness cannot touch those who carry hope."'
+    },
+    services: [
+      { id: 'heal_minor', name: 'Minor Healing (restore 20 HP)', price: 30, stock: 99 },
+      { id: 'heal_major', name: 'Major Healing (restore 50 HP)', price: 75, stock: 99 },
+      { id: 'heal_full', name: 'Full Restoration (full HP)', price: 150, stock: 99 },
+      { id: 'cure_condition', name: 'Cure Condition', price: 50, stock: 99 },
+      { id: 'resurrection', name: 'Resurrection (revive fallen)', price: 300, stock: 99 }
+    ],
+    actions: [
+      { id: 'buy', name: 'Request Healing', skill: null, dc: null },
+      { id: 'plead', name: 'Plead for Free Healing', skill: 'persuasion', dc: 18, freeService: 'heal_minor' },
+      { id: 'donate', name: 'Donate Extra (get blessing)', skill: null, dc: null, bonusCost: 50, givesBuff: true },
+      { id: 'leave', name: 'Leave', skill: null, dc: null }
+    ]
+  },
+  {
+    id: 'shady_dealer',
+    name: 'Shady Dealer',
+    description: 'A scarred moray eel emerges from a crevice, beady eyes gleaming with avarice. Several suspicious-looking items hang from hooks embedded in his hide.',
+    dialogue: {
+      greeting: '"Well, well... adventurers. I got things you won\'t find anywhere else. Quality merchandise, no questions asked."',
+      haggleSuccess: '"Tch. Fine. But you didn\'t get this price from me, understand?"',
+      haggleFail: '"You want charity, go find a priest. This is business."',
+      intimidateSuccess: '"Okay, okay! Take it easy! Here, half price, just... put those claws away."',
+      intimidateFail: '"Ha! You think you scare me? I\'ve swum with sharks, little crab. Pay or leave."',
+      deceptionSuccess: '"Ohhh, you\'re with THEM. Why didn\'t you say so? Friends get the special rate."',
+      deceptionFail: '"Nice try. I know everyone worth knowing down here, and I don\'t know you."',
+      farewell: '"Pleasure doing business. If anyone asks, we never met."'
+    },
+    services: [
+      { id: 'poison_vial', name: 'Poison Vial (+2d6 poison damage)', price: 100, stock: 2 },
+      { id: 'smoke_bomb', name: 'Smoke Bomb (escape combat)', price: 80, stock: 1 },
+      { id: 'lucky_pearl', name: 'Lucky Pearl (reroll one check)', price: 150, stock: 1 },
+      { id: 'resurrection_voucher', name: 'Resurrection Voucher', price: 250, stock: 1 }
+    ],
+    actions: [
+      { id: 'buy', name: 'Browse Goods', skill: null, dc: null },
+      { id: 'haggle', name: 'Haggle', skill: 'persuasion', dc: 16, discount: 0.2 },
+      { id: 'intimidate', name: 'Intimidate', skill: 'intimidation', dc: 14, discount: 0.5 },
+      { id: 'deceive', name: 'Claim to Know His Boss', skill: 'deception', dc: 17, discount: 0.3 },
+      { id: 'leave', name: 'Leave', skill: null, dc: null }
+    ]
+  },
+  {
+    id: 'wounded_survivor',
+    name: 'Wounded Survivor',
+    description: 'A battered crayfish in dented armor lies propped against the wall, clutching a wound. Her breathing is labored, but her eyes still hold determination.',
+    dialogue: {
+      greeting: '"*cough* ...more adventurers? Either I\'m hallucinating, or you\'re all about to die like my party did."',
+      helpOffer: '"If you could spare any healing... I can tell you what killed my friends. Might save your shells."',
+      helpSuccess: '"Thank you... truly. Here—take this. It was our scout\'s. She\'d want it to help someone finish what we started."',
+      noHelp: '"I understand. Resources are scarce. Just... be careful in the next chamber. Something hunts there."',
+      infoShare: '"The Dreadnought has minions. Barnacle Horrors that ambush from the walls. Listen for clicking..."',
+      joinOffer: '"I... I can still fight. If you\'ll have me. I owe those monsters a debt."',
+      farewell: '"Give \'em hell for me. For all of us."'
+    },
+    actions: [
+      { id: 'heal', name: 'Share Healing Supplies', skill: null, dc: null, cost: { type: 'item', item: 'potion_healing' }, givesReward: true },
+      { id: 'persuade_info', name: 'Ask for Information', skill: 'persuasion', dc: 10, givesInfo: true },
+      { id: 'medicine', name: 'Treat Wounds (no items)', skill: 'medicine', dc: 14, givesReward: true },
+      { id: 'recruit', name: 'Offer to Let Her Join', skill: 'persuasion', dc: 12, canRecruit: true },
+      { id: 'leave', name: 'Leave Her', skill: null, dc: null }
+    ],
+    rewards: {
+      help: { item: 'lucky_charm', pearls: 50 },
+      recruit: { temporaryAlly: 'wounded_survivor_ally' }
+    }
+  },
+  {
+    id: 'lost_adventurer',
+    name: 'Lost Adventurer',
+    description: 'A young shrimp in oversized armor stands at a crossroads, map held upside down, looking utterly confused. He jumps when he sees you.',
+    dialogue: {
+      greeting: '"Oh! Oh thank the Depths, other people! I\'ve been wandering for hours. Is this the way to the exit? Please say yes."',
+      directions: '"The boss room? You\'re GOING there? On PURPOSE? ...you\'re either very brave or very stupid."',
+      shareMap: '"Well, I did map out some of the tunnels before I got lost. Here, take it—I\'m getting out of here!"',
+      intimidateFlee: '"OKAY OKAY I\'M GOING! Here, take my stuff, just don\'t hurt me!"',
+      joinSuccess: '"You know what? Maybe strength in numbers is the play here. I\'m in! Just... stay in front of me."',
+      farewell: '"Good luck! I\'ll tell stories about you! Assuming you survive! Which you probably won\'t!"'
+    },
+    actions: [
+      { id: 'help_navigate', name: 'Help Him Find Exit', skill: 'survival', dc: 10, givesMap: true },
+      { id: 'ask_info', name: 'Ask What He\'s Seen', skill: 'persuasion', dc: 8, givesInfo: true },
+      { id: 'intimidate', name: 'Demand His Supplies', skill: 'intimidation', dc: 10, givesLoot: true, karmaLoss: true },
+      { id: 'recruit', name: 'Convince Him to Join', skill: 'persuasion', dc: 14, canRecruit: true },
+      { id: 'leave', name: 'Wish Him Luck', skill: null, dc: null }
+    ],
+    rewards: {
+      map: { revealRooms: true },
+      loot: { pearls: 30, item: 'rations' },
+      recruit: { temporaryAlly: 'lost_adventurer_ally' }
+    }
+  }
+];
+
+// ============================================================================
+// EVENT TEMPLATES (Pillars of Eternity style choice events)
+// ============================================================================
+
+const TRAP_EVENTS = [
+  {
+    id: 'pressure_plates',
+    name: 'The Trapped Corridor',
+    narrative: 'The corridor ahead is lined with ancient tiles. Some bear faded symbols, others are cracked and worn. A skeleton lies crumpled halfway through, its shell shattered.',
+    actions: [
+      { 
+        id: 'study', 
+        name: 'Study the Patterns', 
+        description: 'Carefully analyze which tiles are safe.',
+        skill: 'perception', 
+        dc: 14,
+        successText: 'You notice a pattern—tiles with wave symbols are safe. You mark a path through.',
+        failText: 'The symbols blur together. You can\'t discern any pattern.',
+        successEffect: { disarmTrap: true }
+      },
+      { 
+        id: 'disarm', 
+        name: 'Disable the Mechanism', 
+        description: 'Find and disable the trap\'s trigger.',
+        skill: 'sleight_of_hand', 
+        dc: 16,
+        successText: 'Your nimble claws find the pressure mechanism and jam it. The trap is disabled.',
+        failText: 'You trigger the trap! Spikes shoot from the walls!',
+        successEffect: { disarmTrap: true },
+        failEffect: { triggerTrap: true, damage: '2d6', damageType: 'piercing', saveType: 'dex', saveDC: 14 }
+      },
+      { 
+        id: 'rush', 
+        name: 'Sprint Through', 
+        description: 'Move fast enough to avoid the worst of it.',
+        skill: 'acrobatics', 
+        dc: 15,
+        successText: 'You dash through, tiles clicking harmlessly behind you!',
+        failText: 'A tile depresses underfoot—pain lances through your leg!',
+        successEffect: { passSafely: true },
+        failEffect: { damage: '1d8', damageType: 'piercing' }
+      },
+      { 
+        id: 'tank', 
+        name: 'Shield the Party', 
+        description: 'Use your body to block the trap for others.',
+        skill: 'constitution', 
+        dc: 12,
+        successText: 'Spikes glance off your hardened shell as you shield your allies.',
+        failText: 'The spikes pierce even your defenses, but your allies pass safely.',
+        successEffect: { passSafely: true, heroic: true },
+        failEffect: { damage: '2d6', damageType: 'piercing', partyPassesSafely: true }
+      },
+      { 
+        id: 'wait', 
+        name: 'Let Others Go First', 
+        description: 'Observe what happens to the party.',
+        skill: null, 
+        dc: null,
+        successText: 'You hang back cautiously.',
+        effect: { lastInLine: true }
+      }
+    ],
+    resolution: {
+      allSuccess: 'The party navigates the trapped corridor without incident.',
+      someSuccess: 'The party pushes through, though not without cost.',
+      allFail: 'The corridor exacts a heavy toll on everyone.'
+    }
+  },
+  {
+    id: 'poison_chamber',
+    name: 'The Miasma Chamber',
+    narrative: 'A thick, sickly-green mist fills this chamber. The skeletal remains of sea creatures litter the floor. Somewhere, you can hear the hiss of escaping gas.',
+    actions: [
+      { 
+        id: 'find_source', 
+        name: 'Locate Gas Source', 
+        description: 'Find where the poison is coming from.',
+        skill: 'investigation', 
+        dc: 13,
+        successText: 'You spot the cracked vent pipes and block them with debris.',
+        failText: 'The mist makes it impossible to see. Your lungs burn.',
+        successEffect: { disarmTrap: true },
+        failEffect: { damage: '1d6', damageType: 'poison' }
+      },
+      { 
+        id: 'hold_breath', 
+        name: 'Hold Breath and Run', 
+        description: 'Take a deep breath and sprint through.',
+        skill: 'constitution', 
+        dc: 14,
+        successText: 'You make it through before needing to breathe!',
+        failText: 'You gasp involuntarily—the poison sears your gills!',
+        successEffect: { passSafely: true },
+        failEffect: { damage: '2d6', damageType: 'poison', condition: 'poisoned' }
+      },
+      { 
+        id: 'fan_clear', 
+        name: 'Create Air Current', 
+        description: 'Use large movements to disperse the gas.',
+        skill: 'athletics', 
+        dc: 15,
+        successText: 'Your powerful strokes create a current that clears a path!',
+        failText: 'You only stir up more poison, making it worse.',
+        successEffect: { clearPath: true, helpOthers: true },
+        failEffect: { damage: '1d8', damageType: 'poison' }
+      },
+      { 
+        id: 'antidote', 
+        name: 'Use Antidote', 
+        description: 'Take preventative medicine.',
+        skill: null, 
+        dc: null,
+        requiresItem: 'antidote',
+        successText: 'The antidote protects you from the worst effects.',
+        effect: { passSafely: true, consumeItem: 'antidote' }
+      }
+    ],
+    resolution: {
+      allSuccess: 'The party clears the poison chamber unscathed.',
+      someSuccess: 'Most make it through, though some bear the marks of poison.',
+      allFail: 'The poison takes its toll on everyone. You stagger out, weakened.'
+    }
+  },
+  {
+    id: 'collapsing_tunnel',
+    name: 'The Unstable Passage',
+    narrative: 'Cracks spider across the ceiling. Dust and small stones rain down constantly. The tunnel groans ominously—it won\'t hold for long.',
+    actions: [
+      { 
+        id: 'assess', 
+        name: 'Find Safe Route', 
+        description: 'Identify the sturdiest path.',
+        skill: 'survival', 
+        dc: 13,
+        successText: 'You trace a path along the more stable sections of wall.',
+        failText: 'Every route looks equally dangerous.',
+        successEffect: { safePath: true, helpOthers: true }
+      },
+      { 
+        id: 'brace', 
+        name: 'Brace the Ceiling', 
+        description: 'Hold up the weakest section for others.',
+        skill: 'athletics', 
+        dc: 16,
+        successText: 'Your strength holds back the collapse! Others scramble past.',
+        failText: 'The weight is too much! Stones crash down around you.',
+        successEffect: { heroic: true, partyPassesSafely: true },
+        failEffect: { damage: '3d6', damageType: 'bludgeoning' }
+      },
+      { 
+        id: 'quick_dash', 
+        name: 'Sprint Through', 
+        description: 'Run before it collapses.',
+        skill: 'acrobatics', 
+        dc: 14,
+        successText: 'You dive through just as rubble crashes behind you!',
+        failText: 'Debris catches you mid-stride!',
+        successEffect: { passSafely: true },
+        failEffect: { damage: '2d6', damageType: 'bludgeoning' }
+      },
+      { 
+        id: 'wait', 
+        name: 'Wait for Opening', 
+        description: 'Time your passage carefully.',
+        skill: 'perception', 
+        dc: 12,
+        successText: 'You time it perfectly, slipping through a gap in the falling debris.',
+        failText: 'You hesitate too long—the tunnel collapses!',
+        successEffect: { passSafely: true },
+        failEffect: { damage: '2d8', damageType: 'bludgeoning' }
+      }
+    ],
+    resolution: {
+      allSuccess: 'Everyone makes it through before the tunnel collapses behind you.',
+      someSuccess: 'The party escapes, though some bear bruises from falling stones.',
+      allFail: 'You dig yourselves out of the rubble, battered but alive.'
+    }
+  }
+];
+
+const TREASURE_EVENTS = [
+  {
+    id: 'suspicious_chest',
+    name: 'The Ornate Chest',
+    narrative: 'An ornate chest sits in an alcove, seemingly untouched by time. Its surface gleams with an almost hungry light. Too perfect. Too convenient.',
+    actions: [
+      { 
+        id: 'inspect', 
+        name: 'Check for Traps', 
+        description: 'Carefully examine before touching.',
+        skill: 'investigation', 
+        dc: 14,
+        successText: 'You notice a thin wire connected to the lid—a trap! You disarm it.',
+        failText: 'It looks safe to you. (It might not be.)',
+        successEffect: { disarmChestTrap: true }
+      },
+      { 
+        id: 'open_carefully', 
+        name: 'Open Carefully', 
+        description: 'Slowly lift the lid.',
+        skill: 'sleight_of_hand', 
+        dc: 12,
+        successText: 'The chest opens smoothly, revealing treasure within!',
+        failText: 'CLICK. Oh no.',
+        successEffect: { getTreasure: true },
+        failEffect: { trapTrigger: true, damage: '2d6', damageType: 'piercing' }
+      },
+      { 
+        id: 'smash', 
+        name: 'Smash It Open', 
+        description: 'Break the chest with brute force.',
+        skill: 'athletics', 
+        dc: 10,
+        successText: 'The chest splinters! Treasure scatters across the floor.',
+        failText: 'Your blow triggers a hidden mechanism!',
+        successEffect: { getTreasure: true, scatteredLoot: true },
+        failEffect: { trapTrigger: true, damage: '1d8', damageType: 'piercing' }
+      },
+      { 
+        id: 'detect_magic', 
+        name: 'Sense for Magic', 
+        description: 'Feel for magical auras.',
+        skill: 'arcana', 
+        dc: 13,
+        successText: 'A faint transmutation aura... the chest itself is not what it seems!',
+        failText: 'You sense nothing unusual.',
+        successEffect: { detectMimic: true }
+      },
+      { 
+        id: 'leave', 
+        name: 'Leave It', 
+        description: 'Not worth the risk.',
+        skill: null, 
+        dc: null,
+        effect: { noTreasure: true }
+      }
+    ],
+    hasMimicChance: 0.2,
+    loot: { pearls: [50, 150], items: ['uncommon', 'rare'] }
+  },
+  {
+    id: 'skeleton_hoard',
+    name: 'The Fallen Adventurer',
+    narrative: 'A skeleton in rusted armor lies against the wall, bony fingers still clutching a leather satchel. Whatever killed them left the valuables untouched.',
+    actions: [
+      { 
+        id: 'loot', 
+        name: 'Search the Body', 
+        description: 'Take what they no longer need.',
+        skill: null, 
+        dc: null,
+        successText: 'You find pearls, a potion, and a tattered map.',
+        effect: { getTreasure: true }
+      },
+      { 
+        id: 'respectful', 
+        name: 'Search Respectfully', 
+        description: 'Take only what you need, say a prayer.',
+        skill: null, 
+        dc: null,
+        successText: 'You take only essentials and offer respects. Something feels... lighter.',
+        effect: { getTreasure: true, karmaBonus: true, reducedLoot: true }
+      },
+      { 
+        id: 'examine', 
+        name: 'Examine Cause of Death', 
+        description: 'Figure out what killed them.',
+        skill: 'medicine', 
+        dc: 12,
+        successText: 'Claw marks on the armor. Something with multiple limbs. Ambush predator.',
+        failText: 'Hard to tell. Could be anything down here.',
+        successEffect: { warningInfo: true }
+      },
+      { 
+        id: 'leave', 
+        name: 'Leave Them in Peace', 
+        description: 'They\'ve suffered enough.',
+        skill: null, 
+        dc: null,
+        effect: { noTreasure: true, karmaBonus: true }
+      }
+    ],
+    loot: { pearls: [30, 80], items: ['common', 'uncommon'] }
+  },
+  {
+    id: 'hidden_cache',
+    name: 'The Loose Stone',
+    narrative: 'One stone in the wall sits slightly askew. Behind it, darkness. Someone hid something here—the question is whether they meant to come back for it.',
+    actions: [
+      { 
+        id: 'reach_in', 
+        name: 'Reach Inside', 
+        description: 'Stick your claw in and feel around.',
+        skill: 'dexterity', 
+        dc: 10,
+        successText: 'Your claw closes around a small pouch! Pearls!',
+        failText: 'PAIN! Something bit you!',
+        successEffect: { getTreasure: true },
+        failEffect: { damage: '1d4', damageType: 'piercing', condition: 'poisoned' }
+      },
+      { 
+        id: 'light', 
+        name: 'Shine Light Inside', 
+        description: 'See before you reach.',
+        skill: 'perception', 
+        dc: 8,
+        requiresItem: 'torch',
+        successText: 'A small venomous fish guards the cache. You can see the treasure behind it.',
+        failText: 'The light reflects off something metallic, but you can\'t quite see...',
+        successEffect: { revealDanger: true }
+      },
+      { 
+        id: 'widen', 
+        name: 'Break Open the Wall', 
+        description: 'Make the hole bigger.',
+        skill: 'athletics', 
+        dc: 14,
+        successText: 'The wall crumbles, revealing a hidden compartment with treasure!',
+        failText: 'The noise attracts attention... and the cache was empty anyway.',
+        successEffect: { getTreasure: true, bonusLoot: true },
+        failEffect: { alertEnemies: true }
+      },
+      { 
+        id: 'leave', 
+        name: 'Ignore It', 
+        description: 'Could be a trap.',
+        skill: null, 
+        dc: null,
+        effect: { noTreasure: true }
+      }
+    ],
+    loot: { pearls: [20, 60], items: ['common'] }
   }
 ];
 
@@ -401,7 +884,43 @@ class CapstoneManager {
   constructor(db) {
     this.db = db;
     this.activeCombats = new Map(); // capstoneId -> TacticalCombat
+    this.broadcastToRun = null; // Set by server.js for event broadcasting
     initCapstoneSchema(db);
+  }
+  
+  /**
+   * Set the broadcast function for sending events to spectators
+   */
+  setBroadcastFunction(fn) {
+    this.broadcastToRun = fn;
+  }
+  
+  /**
+   * Broadcast an RP event (dialogue, roll, narrative) to spectators
+   */
+  _broadcastRPEvent(capstoneId, eventType, data) {
+    if (!this.broadcastToRun) return;
+    this.broadcastToRun(capstoneId, {
+      type: 'rp_event',
+      eventType,
+      timestamp: Date.now(),
+      ...data
+    });
+  }
+  
+  /**
+   * Register combat event listener to broadcast to spectators
+   */
+  _registerCombatBroadcast(capstoneId, combat) {
+    if (!this.broadcastToRun) return;
+    
+    combat.on((event) => {
+      // Broadcast combat events to spectators
+      this.broadcastToRun(capstoneId, {
+        type: 'combat_event',
+        event
+      });
+    });
   }
   
   // ============================================================================
@@ -710,6 +1229,7 @@ class CapstoneManager {
           type: roomType,
           name: template.name,
           description: template.description,
+          narrative: template.narrative,
           cleared: false,
           state: this._generateRoomState(roomType, floor + 1, rng)
         });
@@ -728,6 +1248,7 @@ class CapstoneManager {
         type: 'boss',
         name: 'The Dreadnought\'s Lair',
         description: 'The final chamber. The Dreadnought awaits.',
+        narrative: ROOM_TYPES.boss.narrative,
         cleared: false,
         state: { boss: DREADNOUGHT }
       }]
@@ -751,19 +1272,39 @@ class CapstoneManager {
         break;
         
       case 'trap':
-        state.trap = TRAPS[Math.floor(rng() * TRAPS.length)];
-        state.triggered = false;
-        state.detected = false;
+        // Select a trap event template
+        state.event = TRAP_EVENTS[Math.floor(rng() * TRAP_EVENTS.length)];
+        state.eventType = 'trap';
+        state.resolved = false;
+        state.characterActions = {}; // Track each character's chosen action
+        state.results = [];
         break;
         
       case 'treasure':
-        state.treasure = this._generateTreasure(floor, rng);
-        state.looted = false;
+        // Select a treasure event template
+        state.event = TREASURE_EVENTS[Math.floor(rng() * TREASURE_EVENTS.length)];
+        state.eventType = 'treasure';
+        state.resolved = false;
+        state.characterActions = {};
+        state.results = [];
+        // Pre-generate the loot
+        state.loot = this._generateTreasure(floor, rng);
+        // Check for mimic if event has that chance
+        if (state.event.hasMimicChance && rng() < state.event.hasMimicChance) {
+          state.isMimic = true;
+        }
         break;
         
-      case 'puzzle':
-        state.puzzle = PUZZLES[Math.floor(rng() * PUZZLES.length)];
-        state.solved = false;
+      case 'npc':
+        // Select an NPC encounter
+        state.npc = NPC_ENCOUNTERS[Math.floor(rng() * NPC_ENCOUNTERS.length)];
+        state.eventType = 'npc';
+        state.resolved = false;
+        state.characterActions = {};
+        state.results = [];
+        state.interactionLog = []; // Track conversation/actions
+        state.discountApplied = 0; // Track any negotiated discounts
+        state.hostileNpc = false;
         break;
         
       case 'rest':
@@ -838,6 +1379,9 @@ class CapstoneManager {
       const layout = JSON.parse(instance.room_states || '{}');
       const roomInfo = this._getRoomInfo(instance.current_floor, instance.current_room, layout);
       
+      // Check if this was a boss fight
+      const isBoss = roomInfo.type === 'boss';
+      
       // Mark room as cleared
       roomInfo.cleared = true;
       this._updateRoomState(instance, roomInfo);
@@ -851,12 +1395,17 @@ class CapstoneManager {
       // Remove combat from active list
       this.activeCombats.delete(capstoneId);
       
+      // Handle boss victory specially
+      if (isBoss) {
+        return this._handleBossVictory(capstoneId);
+      }
+      
       return { cleaned: true, result: 'victory' };
     } else if (combat.status === 'defeat') {
       const instance = this.db.prepare('SELECT * FROM capstone_instances WHERE id = ?').get(capstoneId);
       
       // Update death count to max (party wipe)
-      this.db.prepare('UPDATE capstone_instances SET death_count = ?, status = "failed" WHERE id = ?')
+      this.db.prepare("UPDATE capstone_instances SET death_count = ?, status = 'failed' WHERE id = ?")
         .run(MAX_PARTY_DEATHS, capstoneId);
       
       // Remove combat from active list
@@ -884,17 +1433,53 @@ class CapstoneManager {
     // Check for active combat
     const combat = this.activeCombats.get(capstoneId);
     
+    // Get party info for display when not in combat
+    const partyMembers = this._getPartyDisplayInfo(capstoneId);
+    
     return {
       success: true,
+      status: instance.status, // 'forming', 'active', 'completed', 'failed'
       floor: instance.current_floor,
       room: instance.current_room,
       totalFloors: TOTAL_FLOORS + 1, // +1 for boss floor
       roomsOnFloor: ROOMS_PER_FLOOR,
       roomInfo,
       combat: combat ? combat.getState('party') : null,
+      party: partyMembers, // Party info for non-combat display
       deathCount: instance.death_count,
       deathsRemaining: MAX_PARTY_DEATHS - instance.death_count
     };
+  }
+  
+  /**
+   * Get party member display info (for UI when not in combat)
+   */
+  _getPartyDisplayInfo(capstoneId) {
+    try {
+      const partyRows = this.db.prepare(`
+        SELECT agent_id, character_id FROM capstone_party WHERE capstone_id = ?
+      `).all(capstoneId);
+      
+      // Demo agent name mapping
+      const demoNames = {
+        'agent_faithful': 'Faithful AI',
+        'agent_coral': 'Coral',
+        'agent_shell': 'Shell Knight'
+      };
+      
+      return partyRows.map(p => ({
+        id: p.character_id,
+        name: demoNames[p.agent_id] || p.agent_id.replace('agent_', ''),
+        team: 'party',
+        isAlive: true,
+        hp: 50,
+        maxHp: 50,
+        type: 'player'
+      }));
+    } catch (err) {
+      console.error('Error getting party display info:', err.message);
+      return [];
+    }
   }
   
   /**
@@ -925,6 +1510,24 @@ class CapstoneManager {
     // Check if current room is cleared
     if (!currentRoomInfo.cleared && currentRoomInfo.type !== 'rest') {
       return { success: false, error: 'Clear current room before moving' };
+    }
+    
+    // Check if capstone is completed (boss defeated)
+    if (instance.status === 'completed') {
+      return { 
+        success: true, 
+        message: 'The Dreadnought has been vanquished! The capstone dungeon is complete!',
+        completed: true
+      };
+    }
+    
+    // Can't move forward from boss room (only victory/defeat ends the run)
+    if (currentRoomInfo.type === 'boss' && currentRoomInfo.cleared) {
+      return { 
+        success: true, 
+        message: 'The Dreadnought has been vanquished! The capstone dungeon is complete!',
+        completed: true
+      };
     }
     
     let newFloor = instance.current_floor;
@@ -1034,11 +1637,9 @@ class CapstoneManager {
       case 'combat':
         return this._handleCombatRoom(capstoneId, instance, roomInfo, action, params);
       case 'trap':
-        return this._handleTrapRoom(capstoneId, instance, roomInfo, action, params);
       case 'treasure':
-        return this._handleTreasureRoom(capstoneId, instance, roomInfo, action, params);
-      case 'puzzle':
-        return this._handlePuzzleRoom(capstoneId, instance, roomInfo, action, params);
+      case 'npc':
+        return this._handleEventRoom(capstoneId, instance, roomInfo, action, params, agentId);
       case 'rest':
         return this._handleRestRoom(capstoneId, instance, roomInfo, action, params);
       case 'boss':
@@ -1085,255 +1686,961 @@ class CapstoneManager {
     return { success: false, error: 'No active combat' };
   }
   
+  // ============================================================================
+  // UNIFIED EVENT ROOM SYSTEM (Pillars of Eternity style)
+  // ============================================================================
+
   /**
-   * Handle trap room
+   * Handle event rooms (trap, treasure, npc) with PoE-style choices
+   * Each character can choose an action, rolls determine outcomes
    */
-  _handleTrapRoom(capstoneId, instance, roomInfo, action, params) {
-    if (roomInfo.cleared) {
-      return { success: true, message: 'Room already cleared', cleared: true };
+  _handleEventRoom(capstoneId, instance, roomInfo, action, params, agentId) {
+    if (roomInfo.cleared || roomInfo.state.resolved) {
+      return { success: true, message: 'This encounter has been resolved.', cleared: true };
     }
-    
-    const trap = roomInfo.state.trap;
-    
+
+    const state = roomInfo.state;
+    const eventType = state.eventType;
+
+    // Get party member info for this agent
+    const partyMember = this.db.prepare(
+      'SELECT * FROM capstone_party WHERE capstone_id = ? AND agent_id = ?'
+    ).get(capstoneId, agentId);
+
+    // Get character info
+    const character = partyMember ? 
+      this.db.prepare('SELECT * FROM characters WHERE id = ?').get(partyMember.character_id) : null;
+
     switch (action) {
-      case 'search':
-      case 'detect':
-        // Perception/Investigation check to detect trap
-        const detectRoll = Math.floor(Math.random() * 20) + 1 + (params.modifier || 0);
-        if (detectRoll >= trap.detectDC) {
-          roomInfo.state.detected = true;
-          this._updateRoomState(instance, roomInfo);
-          return {
-            success: true,
-            message: `You detect a ${trap.name}! (Rolled ${detectRoll} vs DC ${trap.detectDC})`,
-            trap: { name: trap.name, description: trap.description }
-          };
-        }
-        return {
-          success: true,
-          message: 'The room seems safe... (Rolled ' + detectRoll + ')',
-          trapDetected: false
-        };
-        
-      case 'disarm':
-        if (!roomInfo.state.detected) {
-          return { success: false, error: 'No trap detected to disarm' };
-        }
-        const disarmRoll = Math.floor(Math.random() * 20) + 1 + (params.modifier || 0);
-        if (disarmRoll >= trap.saveDC) {
-          roomInfo.cleared = true;
-          this._updateRoomState(instance, roomInfo);
-          this._markRoomCleared(capstoneId, roomInfo.id);
-          return {
-            success: true,
-            message: `Successfully disarmed the ${trap.name}!`,
-            cleared: true
-          };
-        }
-        // Failed disarm triggers trap
-        return this._triggerTrap(capstoneId, instance, roomInfo, trap);
-        
+      case 'look':
+      case 'examine':
+        return this._describeEvent(roomInfo, capstoneId);
+
+      case 'actions':
+        return this._listEventActions(roomInfo, character);
+
+      case 'choose':
+        return this._chooseEventAction(capstoneId, instance, roomInfo, params, agentId, character);
+
+      case 'speak':
+      case 'say':
+        return this._characterSpeak(capstoneId, roomInfo, params, agentId, character);
+
+      case 'resolve':
+        return this._resolveEvent(capstoneId, instance, roomInfo);
+
+      // NPC-specific actions
+      case 'buy':
+        if (eventType !== 'npc') return { success: false, error: 'Not in NPC encounter' };
+        return this._handleNpcPurchase(capstoneId, instance, roomInfo, params, character);
+
+      case 'haggle':
+      case 'intimidate':
+      case 'persuade':
+      case 'deceive':
+        if (eventType !== 'npc') return { success: false, error: 'Not in NPC encounter' };
+        return this._handleNpcNegotiation(capstoneId, instance, roomInfo, action, params, character);
+
+      case 'leave':
       case 'proceed':
-      case 'enter':
-        // Walking through without checking triggers trap
-        if (!roomInfo.state.triggered && !roomInfo.state.detected) {
-          return this._triggerTrap(capstoneId, instance, roomInfo, trap);
-        }
-        roomInfo.cleared = true;
-        this._updateRoomState(instance, roomInfo);
-        this._markRoomCleared(capstoneId, roomInfo.id);
-        return { success: true, message: 'Room cleared.', cleared: true };
-        
+        return this._leaveEvent(capstoneId, instance, roomInfo);
+
       default:
-        return { 
-          success: false, 
-          error: 'Unknown action. Available: search, disarm, proceed',
-          hint: roomInfo.state.detected ? 'Trap detected! Use disarm to attempt to disable it.' : null
-        };
+        return this._getEventHelp(eventType);
     }
   }
-  
+
   /**
-   * Trigger a trap
+   * Describe the current event scene
    */
-  _triggerTrap(capstoneId, instance, roomInfo, trap) {
-    roomInfo.state.triggered = true;
-    
-    // Get party members and deal damage
-    const party = this.db.prepare('SELECT * FROM capstone_party WHERE capstone_id = ?').all(capstoneId);
-    const results = [];
-    
-    for (const member of party) {
-      if (member.status !== 'alive') continue;
+  _describeEvent(roomInfo, capstoneId = null) {
+    const state = roomInfo.state;
+    const eventType = state.eventType;
+
+    if (eventType === 'npc') {
+      const npc = state.npc;
       
-      // Roll save
-      const saveRoll = Math.floor(Math.random() * 20) + 1;
-      const saved = saveRoll >= trap.saveDC;
-      
-      // Roll damage
-      const damageMatch = trap.damage.match(/(\d+)d(\d+)/);
-      let damage = 0;
-      if (damageMatch) {
-        const [_, numDice, dieSize] = damageMatch;
-        for (let i = 0; i < parseInt(numDice); i++) {
-          damage += Math.floor(Math.random() * parseInt(dieSize)) + 1;
-        }
+      // Broadcast NPC greeting to spectators (only if not already greeted)
+      if (capstoneId && !state.greetedSpectators) {
+        this._broadcastRPEvent(capstoneId, 'dialogue', {
+          speaker: npc.name,
+          text: npc.dialogue.greeting,
+          isNpc: true,
+          isGreeting: true
+        });
+        state.greetedSpectators = true;
       }
       
-      if (saved) damage = Math.floor(damage / 2);
-      
-      results.push({
-        characterId: member.character_id,
-        saved,
-        saveRoll,
-        damage,
-        damageType: trap.damageType
-      });
-      
-      // Apply damage to character (would need character HP tracking)
+      return {
+        success: true,
+        eventType: 'npc',
+        name: npc.name,
+        narrative: npc.description,
+        dialogue: npc.dialogue.greeting,
+        services: npc.services,
+        availableActions: npc.actions.map(a => ({
+          id: a.id,
+          name: a.name,
+          skill: a.skill,
+          dc: a.dc
+        })),
+        interactionLog: state.interactionLog || []
+      };
     }
+
+    const event = state.event;
+    return {
+      success: true,
+      eventType,
+      name: event.name,
+      narrative: event.narrative,
+      actions: event.actions.map(a => ({
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        skill: a.skill,
+        dc: a.dc,
+        requiresItem: a.requiresItem
+      })),
+      characterChoices: state.characterActions || {},
+      results: state.results || []
+    };
+  }
+
+  /**
+   * List available actions for this event
+   */
+  _listEventActions(roomInfo, character) {
+    const state = roomInfo.state;
+    const eventType = state.eventType;
+
+    if (eventType === 'npc') {
+      const npc = state.npc;
+      return {
+        success: true,
+        actions: npc.actions.map(a => ({
+          id: a.id,
+          name: a.name,
+          skill: a.skill,
+          dc: a.dc,
+          description: this._getNpcActionDescription(a)
+        }))
+      };
+    }
+
+    const event = state.event;
+    const actions = event.actions.map(a => {
+      const actionInfo = {
+        id: a.id,
+        name: a.name,
+        description: a.description,
+        skill: a.skill,
+        dc: a.dc
+      };
+
+      // Check if character has required item
+      if (a.requiresItem) {
+        actionInfo.requiresItem = a.requiresItem;
+        // TODO: Check character inventory
+        actionInfo.hasItem = true; // Placeholder
+      }
+
+      return actionInfo;
+    });
+
+    return { success: true, actions };
+  }
+
+  /**
+   * Character chooses an action for the event
+   */
+  _chooseEventAction(capstoneId, instance, roomInfo, params, agentId, character) {
+    const state = roomInfo.state;
+    const actionId = params.action || params.actionId;
+
+    if (!actionId) {
+      return { success: false, error: 'Specify action parameter' };
+    }
+
+    // Get the event/npc actions
+    const availableActions = state.eventType === 'npc' 
+      ? state.npc.actions 
+      : state.event.actions;
+
+    const chosenAction = availableActions.find(a => a.id === actionId);
+    if (!chosenAction) {
+      return { 
+        success: false, 
+        error: `Unknown action: ${actionId}`,
+        available: availableActions.map(a => a.id)
+      };
+    }
+
+    // Record the choice
+    if (!state.characterActions) state.characterActions = {};
+    state.characterActions[agentId] = {
+      actionId,
+      characterId: character?.id,
+      characterName: character?.name || 'Unknown',
+      timestamp: Date.now()
+    };
+
+    this._updateRoomState(instance, roomInfo);
+
+    // For NPC encounters, execute immediately
+    if (state.eventType === 'npc') {
+      return this._executeNpcAction(capstoneId, instance, roomInfo, chosenAction, character);
+    }
+
+    // For trap/treasure events, check if all party members have chosen
+    const party = this.db.prepare('SELECT * FROM capstone_party WHERE capstone_id = ?').all(capstoneId);
+    const livingParty = party.filter(p => p.status === 'alive');
+    const chosenCount = Object.keys(state.characterActions).length;
+
+    if (chosenCount >= livingParty.length) {
+      // All have chosen, auto-resolve
+      return this._resolveEvent(capstoneId, instance, roomInfo);
+    }
+
+    return {
+      success: true,
+      message: `${character?.name || 'You'} chose: ${chosenAction.name}`,
+      waitingFor: livingParty.length - chosenCount,
+      hint: 'Waiting for other party members to choose their actions...'
+    };
+  }
+
+  /**
+   * Character speaks in-character
+   */
+  _characterSpeak(capstoneId, roomInfo, params, agentId, character) {
+    const dialogue = params.dialogue || params.text || params.message;
+    if (!dialogue) {
+      return { success: false, error: 'Provide dialogue/text parameter' };
+    }
+
+    if (!roomInfo.state.interactionLog) roomInfo.state.interactionLog = [];
     
+    roomInfo.state.interactionLog.push({
+      speaker: character?.name || 'Unknown',
+      agentId,
+      text: dialogue,
+      timestamp: Date.now()
+    });
+
+    return {
+      success: true,
+      message: `${character?.name || 'You'} says: "${dialogue}"`,
+      interactionLog: roomInfo.state.interactionLog
+    };
+  }
+
+  /**
+   * Resolve the event after all choices are made
+   */
+  _resolveEvent(capstoneId, instance, roomInfo) {
+    const state = roomInfo.state;
+    
+    if (state.eventType === 'npc') {
+      // NPC encounters resolve per-action, this just marks complete
+      state.resolved = true;
+      roomInfo.cleared = true;
+      this._updateRoomState(instance, roomInfo);
+      this._markRoomCleared(capstoneId, roomInfo.id);
+      
+      const npc = state.npc;
+      return {
+        success: true,
+        message: npc.dialogue.farewell,
+        cleared: true,
+        summary: state.interactionLog
+      };
+    }
+
+    // Trap/Treasure event resolution
+    const event = state.event;
+    const results = [];
+    let overallSuccess = true;
+    let trapDisarmed = false;
+    let treasureObtained = false;
+
+    // Process each character's action
+    for (const [agentId, choice] of Object.entries(state.characterActions)) {
+      const action = event.actions.find(a => a.id === choice.actionId);
+      if (!action) continue;
+
+      const result = {
+        characterName: choice.characterName,
+        action: action.name,
+        skill: action.skill
+      };
+
+      if (action.skill && action.dc) {
+        // Roll the skill check
+        const roll = Math.floor(Math.random() * 20) + 1;
+        const modifier = 0; // TODO: Get character's actual skill modifier
+        const total = roll + modifier;
+        const success = total >= action.dc;
+
+        result.roll = roll;
+        result.modifier = modifier;
+        result.total = total;
+        result.dc = action.dc;
+        result.success = success;
+
+        if (success) {
+          result.narrative = action.successText;
+          if (action.successEffect) {
+            this._applyEventEffect(action.successEffect, result, state);
+            if (action.successEffect.disarmTrap) trapDisarmed = true;
+            if (action.successEffect.getTreasure) treasureObtained = true;
+          }
+        } else {
+          result.narrative = action.failText;
+          overallSuccess = false;
+          if (action.failEffect) {
+            this._applyEventEffect(action.failEffect, result, state);
+          }
+        }
+      } else {
+        // No roll needed
+        result.success = true;
+        result.narrative = action.successText || action.effect?.description;
+        if (action.effect) {
+          this._applyEventEffect(action.effect, result, state);
+        }
+      }
+
+      results.push(result);
+    }
+
+    // Determine final resolution
+    const resolution = overallSuccess ? event.resolution.allSuccess :
+      results.some(r => r.success) ? event.resolution.someSuccess :
+      event.resolution.allFail;
+
+    state.results = results;
+    state.resolved = true;
     roomInfo.cleared = true;
     this._updateRoomState(instance, roomInfo);
     this._markRoomCleared(capstoneId, roomInfo.id);
+
+    // Compile rewards/penalties
+    const response = {
+      success: true,
+      cleared: true,
+      resolution,
+      results
+    };
+
+    // Add treasure if obtained
+    if (treasureObtained && state.loot) {
+      response.treasure = state.loot;
+    }
+
+    return response;
+  }
+
+  /**
+   * Apply effects from event actions
+   */
+  _applyEventEffect(effect, result, state) {
+    if (effect.damage) {
+      const damageMatch = effect.damage.match(/(\d+)d(\d+)/);
+      if (damageMatch) {
+        const [_, numDice, dieSize] = damageMatch;
+        let damage = 0;
+        for (let i = 0; i < parseInt(numDice); i++) {
+          damage += Math.floor(Math.random() * parseInt(dieSize)) + 1;
+        }
+        result.damage = damage;
+        result.damageType = effect.damageType || 'unknown';
+      }
+    }
+
+    if (effect.condition) {
+      result.condition = effect.condition;
+    }
+
+    if (effect.heroic) {
+      result.heroic = true;
+    }
+  }
+
+  /**
+   * Leave/skip the event
+   */
+  _leaveEvent(capstoneId, instance, roomInfo) {
+    const state = roomInfo.state;
     
+    state.resolved = true;
+    roomInfo.cleared = true;
+    this._updateRoomState(instance, roomInfo);
+    this._markRoomCleared(capstoneId, roomInfo.id);
+
+    if (state.eventType === 'npc') {
+      return {
+        success: true,
+        message: state.npc.dialogue.farewell || 'You leave the encounter behind.',
+        cleared: true
+      };
+    }
+
     return {
       success: true,
-      message: `The ${trap.name} is triggered! ${trap.description}`,
-      trapTriggered: true,
-      results,
-      cleared: true
+      message: 'You move past without fully engaging.',
+      cleared: true,
+      warning: state.eventType === 'treasure' ? 'Treasure left behind!' : null
     };
   }
-  
+
+  // ============================================================================
+  // NPC ENCOUNTER HANDLERS
+  // ============================================================================
+
   /**
-   * Handle treasure room
+   * Execute an NPC interaction action
    */
-  _handleTreasureRoom(capstoneId, instance, roomInfo, action, params) {
-    if (roomInfo.state.looted) {
-      return { success: true, message: 'Treasure already looted', cleared: true };
+  _executeNpcAction(capstoneId, instance, roomInfo, action, character) {
+    const state = roomInfo.state;
+    const npc = state.npc;
+
+    if (!state.interactionLog) state.interactionLog = [];
+
+    // Handle non-skill actions
+    if (!action.skill) {
+      if (action.id === 'buy') {
+        return this._describeNpcShop(npc, state);
+      }
+      if (action.id === 'leave') {
+        return this._leaveEvent(capstoneId, instance, roomInfo);
+      }
+      return { success: true, message: 'Action noted.' };
     }
-    
-    switch (action) {
-      case 'loot':
-      case 'take':
-      case 'open':
-        const treasure = roomInfo.state.treasure;
-        roomInfo.state.looted = true;
-        roomInfo.cleared = true;
-        this._updateRoomState(instance, roomInfo);
-        this._markRoomCleared(capstoneId, roomInfo.id);
-        
-        // Distribute pearls to party
-        const party = this.db.prepare('SELECT * FROM capstone_party WHERE capstone_id = ?').all(capstoneId);
-        const pearlsEach = Math.floor(treasure.pearls / party.length);
-        
-        // TODO: Actually add items and pearls to characters
-        
-        return {
-          success: true,
-          message: 'You found treasure!',
-          treasure: {
-            items: treasure.items,
-            pearls: treasure.pearls,
-            pearlsPerMember: pearlsEach
-          },
-          cleared: true
-        };
-        
-      case 'search':
-        return {
-          success: true,
-          message: 'You see a treasure cache. Use loot to collect it.',
-          treasure: { items: roomInfo.state.treasure.items.length + ' items', pearls: 'Unknown amount' }
-        };
-        
-      default:
-        return { success: false, error: 'Unknown action. Available: loot, search' };
+
+    // Skill check action
+    const roll = Math.floor(Math.random() * 20) + 1;
+    const modifier = this._getCharacterSkillMod(character, action.skill);
+    const total = roll + modifier;
+    const success = total >= action.dc;
+
+    // Broadcast the roll to spectators
+    this._broadcastRPEvent(capstoneId, 'roll', {
+      character: character?.name || 'Unknown',
+      skill: action.skill,
+      roll,
+      modifier,
+      total,
+      dc: action.dc,
+      success,
+      actionName: action.name
+    });
+
+    const result = {
+      skill: action.skill,
+      roll,
+      modifier,
+      total,
+      dc: action.dc,
+      success
+    };
+
+    // Apply results
+    if (success) {
+      if (action.discount) {
+        state.discountApplied = Math.max(state.discountApplied || 0, action.discount);
+        result.message = npc.dialogue[`${action.id}Success`] || npc.dialogue.haggleSuccess;
+        result.discount = `${Math.round(action.discount * 100)}% off`;
+      }
+      if (action.givesBossHint) {
+        result.message = npc.dialogue.persuadeInfo;
+        result.bossHint = true;
+      }
+      if (action.freeService) {
+        result.message = npc.dialogue.freeHealSuccess;
+        result.freeService = action.freeService;
+      }
+    } else {
+      result.message = npc.dialogue[`${action.id}Fail`] || npc.dialogue.haggleFail;
+      if (action.hostileOnFail) {
+        state.hostileNpc = true;
+        result.warning = 'The NPC is now hostile! No further purchases allowed.';
+      }
     }
+
+    // Broadcast NPC dialogue to spectators
+    if (result.message) {
+      this._broadcastRPEvent(capstoneId, 'dialogue', {
+        speaker: npc.name,
+        text: result.message,
+        isNpc: true
+      });
+    }
+
+    state.interactionLog.push({
+      speaker: character?.name || 'You',
+      action: action.name,
+      result: success ? 'success' : 'failure',
+      roll: `${roll}+${modifier}=${total} vs DC ${action.dc}`
+    });
+
+    this._updateRoomState(instance, roomInfo);
+
+    return {
+      success: true,
+      ...result
+    };
   }
-  
+
   /**
-   * Handle puzzle room
+   * Describe NPC shop inventory
    */
-  _handlePuzzleRoom(capstoneId, instance, roomInfo, action, params) {
-    if (roomInfo.state.solved) {
-      return { success: true, message: 'Puzzle already solved', cleared: true };
+  _describeNpcShop(npc, state) {
+    const discount = state.discountApplied || 0;
+    
+    const services = npc.services.map(s => ({
+      id: s.id,
+      name: s.name,
+      basePrice: s.price,
+      price: Math.round(s.price * (1 - discount)),
+      stock: s.stock
+    }));
+
+    return {
+      success: true,
+      shop: true,
+      merchant: npc.name,
+      discount: discount > 0 ? `${Math.round(discount * 100)}% off` : null,
+      services,
+      hint: 'Use: buy item=<item_id> to purchase'
+    };
+  }
+
+  /**
+   * Handle NPC purchase
+   */
+  _handleNpcPurchase(capstoneId, instance, roomInfo, params, character) {
+    const state = roomInfo.state;
+    const npc = state.npc;
+    
+    if (state.hostileNpc) {
+      return { success: false, error: 'The merchant refuses to deal with you.' };
     }
+
+    const itemId = params.item || params.itemId;
+    if (!itemId) {
+      return this._describeNpcShop(npc, state);
+    }
+
+    const service = npc.services.find(s => s.id === itemId);
+    if (!service) {
+      return { success: false, error: `Item not found: ${itemId}` };
+    }
+
+    const discount = state.discountApplied || 0;
+    const finalPrice = Math.round(service.price * (1 - discount));
+
+    // TODO: Check character has enough pearls, deduct, add item to inventory
+
+    if (!state.interactionLog) state.interactionLog = [];
+    state.interactionLog.push({
+      type: 'purchase',
+      item: service.name,
+      price: finalPrice,
+      buyer: character?.name || 'Unknown'
+    });
+
+    this._updateRoomState(instance, roomInfo);
+
+    return {
+      success: true,
+      message: `Purchased ${service.name} for ${finalPrice} pearls.`,
+      item: service,
+      price: finalPrice
+    };
+  }
+
+  /**
+   * Handle NPC negotiation (haggle/intimidate/persuade)
+   */
+  _handleNpcNegotiation(capstoneId, instance, roomInfo, action, params, character) {
+    const state = roomInfo.state;
+    const npc = state.npc;
+
+    const npcAction = npc.actions.find(a => a.id === action);
+    if (!npcAction) {
+      return { success: false, error: `${npc.name} doesn't respond to that approach.` };
+    }
+
+    return this._executeNpcAction(capstoneId, instance, roomInfo, npcAction, character);
+  }
+
+  /**
+   * Get character's skill modifier
+   */
+  _getCharacterSkillMod(character, skill) {
+    if (!character) return 0;
     
-    const puzzle = roomInfo.state.puzzle;
+    // Map skills to abilities
+    const skillAbilityMap = {
+      persuasion: 'charisma',
+      intimidation: 'charisma', 
+      deception: 'charisma',
+      perception: 'wisdom',
+      investigation: 'intelligence',
+      survival: 'wisdom',
+      medicine: 'wisdom',
+      athletics: 'strength',
+      acrobatics: 'dexterity',
+      sleight_of_hand: 'dexterity',
+      arcana: 'intelligence'
+    };
+
+    const ability = skillAbilityMap[skill] || 'wisdom';
+    const stats = typeof character.stats === 'string' ? JSON.parse(character.stats) : character.stats;
+    const abilityScore = stats?.[ability] || 10;
     
-    switch (action) {
-      case 'examine':
-      case 'look':
-        return {
-          success: true,
-          puzzle: {
-            name: puzzle.name,
-            description: puzzle.description,
-            hint: puzzle.hint
-          }
-        };
-        
-      case 'solve':
-      case 'attempt':
-        if (puzzle.skillCheck) {
-          // Skill check puzzle
-          const roll = Math.floor(Math.random() * 20) + 1 + (params.modifier || 0);
-          if (roll >= puzzle.skillCheck.dc) {
-            roomInfo.state.solved = true;
-            roomInfo.cleared = true;
-            this._updateRoomState(instance, roomInfo);
-            this._markRoomCleared(capstoneId, roomInfo.id);
-            return {
-              success: true,
-              message: `Puzzle solved! (Rolled ${roll} vs DC ${puzzle.skillCheck.dc})`,
-              reward: puzzle.reward,
-              cleared: true
-            };
-          }
-          return {
-            success: false,
-            message: `Failed to solve puzzle (Rolled ${roll} vs DC ${puzzle.skillCheck.dc}). Try again.`
-          };
-        } else if (puzzle.solution) {
-          // Sequence puzzle
-          const answer = params.answer || params.solution;
-          if (!answer) {
-            return { success: false, error: 'Provide answer parameter' };
-          }
-          
-          const answerArray = Array.isArray(answer) ? answer : answer.split(',').map(s => s.trim().toLowerCase());
-          if (JSON.stringify(answerArray) === JSON.stringify(puzzle.solution)) {
-            roomInfo.state.solved = true;
-            roomInfo.cleared = true;
-            this._updateRoomState(instance, roomInfo);
-            this._markRoomCleared(capstoneId, roomInfo.id);
-            return {
-              success: true,
-              message: 'Puzzle solved!',
-              reward: puzzle.reward,
-              cleared: true
-            };
-          }
-          return { success: false, message: 'Incorrect solution. The mechanism resets.' };
+    return Math.floor((abilityScore - 10) / 2);
+  }
+
+  /**
+   * Get description for NPC action
+   */
+  _getNpcActionDescription(action) {
+    const descriptions = {
+      buy: 'Browse available goods and services',
+      haggle: 'Try to negotiate a lower price',
+      intimidate: 'Threaten for a discount (may backfire)',
+      persuade: 'Appeal to their better nature',
+      deceive: 'Trick them into a deal',
+      ask_info: 'Request information about dangers ahead',
+      plead: 'Beg for free services',
+      donate: 'Give extra for a blessing',
+      heal: 'Share your supplies to help them',
+      medicine: 'Use medical skills to treat their wounds',
+      recruit: 'Ask them to join your party',
+      leave: 'End the conversation'
+    };
+    return descriptions[action.id] || action.name;
+  }
+
+  /**
+   * Get help text for event actions
+   */
+  _getEventHelp(eventType) {
+    const help = {
+      trap: {
+        actions: ['look', 'actions', 'choose action=<id>', 'speak text="..."', 'proceed'],
+        hint: 'Each party member can choose how to handle the trap. Use "actions" to see options.'
+      },
+      treasure: {
+        actions: ['look', 'actions', 'choose action=<id>', 'speak text="..."', 'proceed'],
+        hint: 'Decide how to approach the treasure. Some actions may have consequences!'
+      },
+      npc: {
+        actions: ['look', 'buy', 'buy item=<id>', 'haggle', 'intimidate', 'persuade', 'speak text="..."', 'leave'],
+        hint: 'Interact with the NPC. Negotiate for better prices or request services.'
+      }
+    };
+
+    return {
+      success: false,
+      error: 'Unknown action',
+      ...help[eventType]
+    };
+  }
+
+  // ============================================================================
+  // AI PERSONALITY & ROLEPLAY SYSTEM
+  // ============================================================================
+
+  /**
+   * Get AI-suggested action based on character personality
+   * Returns recommended action and in-character reasoning
+   */
+  getAISuggestedAction(capstoneId, agentId) {
+    const instance = this.db.prepare('SELECT * FROM capstone_instances WHERE id = ?').get(capstoneId);
+    if (!instance) return { success: false, error: 'Capstone not found' };
+
+    const layout = JSON.parse(instance.room_states || '{}');
+    const roomInfo = this._getRoomInfo(instance.current_floor, instance.current_room, layout);
+    
+    if (!roomInfo.state.event && !roomInfo.state.npc) {
+      return { success: false, error: 'Not in an event room' };
+    }
+
+    // Get character with personality
+    const partyMember = this.db.prepare(
+      'SELECT * FROM capstone_party WHERE capstone_id = ? AND agent_id = ?'
+    ).get(capstoneId, agentId);
+    
+    if (!partyMember) {
+      return { success: false, error: 'Not in this party' };
+    }
+
+    const character = this.db.prepare('SELECT * FROM clawds WHERE id = ?').get(partyMember.character_id);
+    if (!character) {
+      return { success: false, error: 'Character not found' };
+    }
+
+    const personality = typeof character.personality === 'string' 
+      ? JSON.parse(character.personality || '{}') 
+      : (character.personality || {});
+    
+    const speakingStyle = character.speaking_style || '';
+
+    // Get available actions
+    const actions = roomInfo.state.eventType === 'npc'
+      ? roomInfo.state.npc.actions
+      : roomInfo.state.event.actions;
+
+    // Score each action based on personality
+    const scoredActions = actions.map(action => {
+      let score = 50; // Base score
+      const reasons = [];
+
+      // Courage trait influences risky actions
+      if (personality.courage === 'brave') {
+        if (action.id.includes('rush') || action.id.includes('tank') || action.id.includes('smash')) {
+          score += 30;
+          reasons.push('brave enough to face danger head-on');
         }
-        break;
-        
-      case 'skip':
-        // Can skip puzzle but no reward
-        roomInfo.cleared = true;
-        this._updateRoomState(instance, roomInfo);
-        this._markRoomCleared(capstoneId, roomInfo.id);
-        return {
-          success: true,
-          message: 'Skipped puzzle. No reward obtained.',
-          cleared: true
-        };
-        
-      default:
-        return { success: false, error: 'Unknown action. Available: examine, solve, skip' };
+      } else if (personality.courage === 'cautious') {
+        if (action.id.includes('study') || action.id.includes('inspect') || action.id.includes('wait')) {
+          score += 30;
+          reasons.push('prefers to assess the situation first');
+        }
+        if (action.id.includes('rush') || action.id.includes('tank')) {
+          score -= 20;
+          reasons.push('too risky');
+        }
+      } else if (personality.courage === 'reckless') {
+        if (action.id.includes('rush') || action.id.includes('smash') || action.id.includes('reach_in')) {
+          score += 40;
+          reasons.push('throws caution to the wind');
+        }
+      }
+
+      // Greed trait influences treasure/loot actions
+      if (personality.greed === 'greedy') {
+        if (action.id.includes('loot') || action.id.includes('open') || action.id.includes('take')) {
+          score += 25;
+          reasons.push('can\'t resist treasure');
+        }
+        if (action.id === 'leave') {
+          score -= 30;
+          reasons.push('would never leave treasure behind');
+        }
+      } else if (personality.greed === 'generous') {
+        if (action.id.includes('respectful') || action.id.includes('donate') || action.id === 'heal') {
+          score += 20;
+          reasons.push('values others over gold');
+        }
+      }
+
+      // Trust trait influences NPC interactions
+      if (personality.trust === 'trusting') {
+        if (action.id === 'buy' || action.id === 'ask_info') {
+          score += 15;
+          reasons.push('willing to give them a chance');
+        }
+        if (action.id === 'intimidate') {
+          score -= 20;
+          reasons.push('prefers not to threaten');
+        }
+      } else if (personality.trust === 'suspicious') {
+        if (action.id.includes('inspect') || action.id.includes('detect')) {
+          score += 20;
+          reasons.push('always looking for traps');
+        }
+        if (action.id === 'haggle' || action.id === 'deceive') {
+          score += 10;
+          reasons.push('assumes everyone is trying to cheat');
+        }
+      }
+
+      // Conflict trait influences confrontation
+      if (personality.conflict === 'aggressive') {
+        if (action.id === 'intimidate' || action.id.includes('smash') || action.id.includes('force')) {
+          score += 25;
+          reasons.push('prefers direct confrontation');
+        }
+      } else if (personality.conflict === 'diplomatic') {
+        if (action.id === 'haggle' || action.id === 'persuade' || action.id === 'plead') {
+          score += 25;
+          reasons.push('believes in talking things out');
+        }
+      } else if (personality.conflict === 'cunning') {
+        if (action.id === 'deceive' || action.id.includes('disarm') || action.id.includes('pick')) {
+          score += 25;
+          reasons.push('prefers clever solutions');
+        }
+      }
+
+      // Morality trait
+      if (personality.morality === 'honorable') {
+        if (action.id === 'respectful' || action.id === 'donate' || action.id === 'help_navigate') {
+          score += 20;
+          reasons.push('follows a code of honor');
+        }
+        if (action.id === 'intimidate' || action.id === 'deceive' || action.karmaLoss) {
+          score -= 30;
+          reasons.push('refuses to compromise principles');
+        }
+      } else if (personality.morality === 'ruthless') {
+        if (action.id === 'intimidate' || action.karmaLoss) {
+          score += 15;
+          reasons.push('will do whatever it takes');
+        }
+      }
+
+      // Factor in character stats
+      if (action.skill) {
+        const skillMod = this._getCharacterSkillMod(character, action.skill);
+        score += skillMod * 5; // Higher skill = more likely to attempt
+        if (skillMod >= 3) {
+          reasons.push(`skilled in ${action.skill}`);
+        }
+      }
+
+      return {
+        action: action.id,
+        name: action.name,
+        score,
+        reasons
+      };
+    });
+
+    // Sort by score
+    scoredActions.sort((a, b) => b.score - a.score);
+    const recommended = scoredActions[0];
+
+    // Generate in-character reasoning
+    const characterThought = this._generateCharacterThought(
+      character, 
+      recommended, 
+      roomInfo, 
+      personality, 
+      speakingStyle
+    );
+
+    return {
+      success: true,
+      recommended: recommended.action,
+      reasoning: recommended.reasons,
+      characterThought,
+      allOptions: scoredActions,
+      character: {
+        name: character.name,
+        personality,
+        speakingStyle
+      }
+    };
+  }
+
+  /**
+   * Generate an in-character thought/dialogue for action choice
+   */
+  _generateCharacterThought(character, recommended, roomInfo, personality, speakingStyle) {
+    const templates = {
+      brave: [
+        "I'll handle this. Stand back.",
+        "Nothing ventured, nothing gained!",
+        "Fear is for the weak. Let's go."
+      ],
+      cautious: [
+        "Hold on, let me check this first...",
+        "Something feels off here.",
+        "Better safe than sorry."
+      ],
+      greedy: [
+        "Ooh, shiny! It's mine!",
+        "Think of the pearls we could get!",
+        "I call dibs on the good stuff."
+      ],
+      aggressive: [
+        "Try that again. I dare you.",
+        "We do this my way.",
+        "Talk is cheap. Let's fight."
+      ],
+      diplomatic: [
+        "Perhaps we can come to an arrangement?",
+        "Let's hear them out first.",
+        "Violence isn't always the answer."
+      ],
+      cunning: [
+        "I have an idea...",
+        "Watch and learn.",
+        "There's always another way."
+      ]
+    };
+
+    // Pick template based on dominant personality trait
+    const dominantTrait = Object.entries(personality)[0];
+    const trait = dominantTrait ? dominantTrait[1] : 'cautious';
+    const templateList = templates[trait] || templates.cautious;
+    const template = templateList[Math.floor(Math.random() * templateList.length)];
+
+    // Add speaking style flavor if present
+    if (speakingStyle && speakingStyle.toLowerCase().includes('formal')) {
+      return `*${character.name} considers carefully* "${template}"`;
+    } else if (speakingStyle && speakingStyle.toLowerCase().includes('rough')) {
+      return `*${character.name} grunts* "${template}"`;
     }
+
+    return `*${character.name}* "${template}"`;
+  }
+
+  /**
+   * Get party chat/strategy for current situation
+   */
+  getPartyStrategy(capstoneId) {
+    const instance = this.db.prepare('SELECT * FROM capstone_instances WHERE id = ?').get(capstoneId);
+    if (!instance) return { success: false, error: 'Capstone not found' };
+
+    const layout = JSON.parse(instance.room_states || '{}');
+    const roomInfo = this._getRoomInfo(instance.current_floor, instance.current_room, layout);
+    
+    const party = this.db.prepare('SELECT * FROM capstone_party WHERE capstone_id = ?').all(capstoneId);
+    const suggestions = [];
+
+    for (const member of party) {
+      if (member.status !== 'alive') continue;
+      
+      const suggestion = this.getAISuggestedAction(capstoneId, member.agent_id);
+      if (suggestion.success) {
+        suggestions.push({
+          agentId: member.agent_id,
+          characterName: suggestion.character.name,
+          recommended: suggestion.recommended,
+          thought: suggestion.characterThought,
+          reasoning: suggestion.reasoning
+        });
+      }
+    }
+
+    // Analyze party coordination
+    const actionCounts = {};
+    suggestions.forEach(s => {
+      actionCounts[s.recommended] = (actionCounts[s.recommended] || 0) + 1;
+    });
+
+    const coordination = Object.entries(actionCounts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([action, count]) => ({ action, supporters: count }));
+
+    return {
+      success: true,
+      room: {
+        type: roomInfo.type,
+        name: roomInfo.state.event?.name || roomInfo.state.npc?.name
+      },
+      suggestions,
+      coordination,
+      hint: coordination.length > 0 
+        ? `Most popular choice: ${coordination[0].action} (${coordination[0].supporters} votes)`
+        : 'No suggestions yet'
+    };
   }
   
   /**
@@ -1466,10 +2773,11 @@ class CapstoneManager {
         position: spawnPos
       });
       
-      // Add henchmen for this character
+      // Add the ACTIVE party henchman for this character (only 1 per agent)
       const henchmen = this.db.prepare(`
         SELECT ch.*, hp.name as template_name, hp.class as hench_class
         FROM character_henchmen ch
+        INNER JOIN character_party cp ON cp.henchman_instance_id = ch.id AND cp.character_id = ch.character_id
         LEFT JOIN (SELECT id, name, class FROM (
           SELECT 'sally_shrimp' as id, 'Sally the Shrimp' as name, 'fighter' as class
           UNION SELECT 'barnaby_barnacle', 'Barnaby', 'defender'
@@ -1482,12 +2790,24 @@ class CapstoneManager {
       for (const hench of henchmen) {
         const henchSpawn = this._getPartySpawnPosition(partySpawnIndex++, grid);
         const henchChar = hench.hench_class === 'defender' ? '🛡️' : hench.hench_class === 'support' ? '✨' : '🦐';
+        
+        // Get rarity from henchman pool
+        const { HENCHMAN_POOL } = require('./henchmen');
+        let henchRarity = 'common';
+        for (const [rarity, pool] of Object.entries(HENCHMAN_POOL)) {
+          if (pool.some(h => h.id === hench.henchman_id)) {
+            henchRarity = rarity;
+            break;
+          }
+        }
+        
         combat.addCombatant({
           id: `hench_${hench.id}`,
           name: hench.custom_name || hench.template_name || 'Henchman',
           char: henchChar,
           type: 'henchman',
           team: 'party',
+          rarity: henchRarity, // Pass rarity for disk color
           hp: hench.hp_current || 25,
           maxHp: hench.hp_max || 25,
           ac: 13,
@@ -1534,6 +2854,9 @@ class CapstoneManager {
         position: spawnPos
       });
     }
+    
+    // Register event broadcasting to spectators
+    this._registerCombatBroadcast(capstoneId, combat);
     
     // Roll initiative and start
     combat.rollInitiative();
@@ -1630,6 +2953,9 @@ class CapstoneManager {
         }
       }
     })));
+    
+    // Register event broadcasting to spectators
+    this._registerCombatBroadcast(capstoneId, combat);
     
     // Roll initiative and start
     combat.rollInitiative();
@@ -1993,6 +3319,9 @@ class CapstoneManager {
     // Store combat for spectating
     this.activeCombats.set(combatId, combat);
     
+    // Register event broadcasting to spectators
+    this._registerCombatBroadcast(combatId, combat);
+    
     // Start combat
     combat.rollInitiative();
     combat.startCombat();
@@ -2055,7 +3384,9 @@ module.exports = {
   MAX_PARTY_DEATHS,
   ROOM_TYPES,
   TRAPS,
-  PUZZLES,
+  NPC_ENCOUNTERS,
+  TRAP_EVENTS,
+  TREASURE_EVENTS,
   TREASURE_POOLS,
   initCapstoneSchema
 };

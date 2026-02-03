@@ -7,6 +7,100 @@
 const express = require('express');
 const { CapstoneManager, LEVEL_CAP, MAX_PARTY_SIZE, MAX_PARTY_DEATHS, DREADNOUGHT } = require('./capstone');
 
+// Track demo capstones that should auto-play
+const demoCapstones = new Map(); // capstoneId -> intervalId
+
+/**
+ * Auto-tick a demo capstone - AI takes actions automatically
+ */
+function autoTickDemo(capstoneManager, capstoneId) {
+  try {
+    // Get current room state
+    const roomData = capstoneManager.getCurrentRoom(capstoneId);
+    if (!roomData.success) {
+      console.log(`[Demo ${capstoneId.slice(0,8)}] Stopping - room fetch failed`);
+      clearDemoInterval(capstoneId);
+      return;
+    }
+
+    // Check if completed or failed
+    if (roomData.status === 'completed' || roomData.status === 'failed') {
+      console.log(`[Demo ${capstoneId.slice(0,8)}] Finished: ${roomData.status}`);
+      clearDemoInterval(capstoneId);
+      return;
+    }
+
+    const room = roomData.roomInfo;
+    const agentId = 'agent_faithful'; // Leader makes decisions
+
+    // If in combat, let autoBattle handle it - don't interfere
+    if (roomData.combat) {
+      // AutoBattle runs AI turns automatically with delays
+      // Just log we're in combat and wait
+      console.log(`[Demo ${capstoneId.slice(0,8)}] In combat, round ${roomData.combat.round} - autoBattle running`);
+      return;
+    }
+
+    // Room cleared? Move forward
+    if (room.cleared) {
+      const moveResult = capstoneManager.move(capstoneId, agentId, room.type === 'stairs' ? 'down' : 'forward');
+      console.log(`[Demo ${capstoneId.slice(0,8)}] Moving: ${moveResult.message || moveResult.error}`);
+      return;
+    }
+
+    // Handle room based on type
+    let action = 'proceed';
+    let params = {};
+    switch (room.type) {
+      case 'treasure':
+      case 'trap':
+        // Event rooms: auto-choose first available action
+        if (!room.state?.characterActions?.[agentId]) {
+          action = 'choose';
+          const eventActions = room.state?.event?.actions || [];
+          // Pick a reasonable action based on room type
+          if (room.type === 'trap') {
+            params.action = eventActions.find(a => a.id === 'study' || a.id === 'assess')?.id || eventActions[0]?.id;
+          } else {
+            params.action = eventActions.find(a => a.id === 'inspect' || a.id === 'loot')?.id || eventActions[0]?.id;
+          }
+        } else {
+          action = 'resolve';
+        }
+        break;
+      case 'npc':
+        // NPC rooms: just proceed through for demo
+        action = 'leave';
+        break;
+      case 'combat':
+        action = 'attack'; // Starts combat
+        break;
+      case 'rest':
+        action = 'rest';
+        break;
+      case 'boss':
+        action = 'fight';
+        break;
+      case 'stairs':
+        action = 'proceed';
+        break;
+    }
+
+    const result = capstoneManager.interact(capstoneId, agentId, action, params);
+    console.log(`[Demo ${capstoneId.slice(0,8)}] ${room.type}: ${action} -> ${result.message || result.error || 'ok'}`);
+  } catch (err) {
+    console.error(`[Demo ${capstoneId.slice(0,8)}] Error:`, err.message);
+  }
+}
+
+function clearDemoInterval(capstoneId) {
+  const intervalId = demoCapstones.get(capstoneId);
+  if (intervalId) {
+    clearInterval(intervalId);
+    demoCapstones.delete(capstoneId);
+  }
+}
+
 /**
  * Create capstone routes
  * @param {Object} db - Database instance
@@ -43,7 +137,7 @@ function createCapstoneRoutes(db, authenticateAgent) {
           bossFloor: 4,
           totalRooms: 16
         },
-        roomTypes: ['combat', 'trap', 'rest', 'treasure', 'puzzle', 'stairs', 'boss'],
+        roomTypes: ['combat', 'trap', 'rest', 'treasure', 'npc', 'stairs', 'boss'],
         boss: {
           name: DREADNOUGHT.name,
           baseHp: DREADNOUGHT.baseHp,
@@ -123,6 +217,62 @@ function createCapstoneRoutes(db, authenticateAgent) {
         res.status(400).json(result);
       }
     } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  /**
+   * POST /api/capstone/demo-run
+   * Start a full demo capstone run with 3 test agents + henchmen (no auth required)
+   */
+  router.post('/demo-run', async (req, res) => {
+    try {
+      // Clean up any existing runs for test agents
+      db.prepare(`
+        DELETE FROM capstone_party WHERE agent_id IN ('agent_faithful', 'agent_coral', 'agent_shell')
+      `).run();
+      db.prepare(`
+        DELETE FROM capstone_invites WHERE from_agent_id = 'agent_faithful' OR to_agent_id IN ('agent_coral', 'agent_shell')
+      `).run();
+      db.prepare(`
+        DELETE FROM capstone_instances WHERE leader_id = 'agent_faithful' AND status IN ('forming', 'active')
+      `).run();
+
+      // Create capstone with Faithful as leader
+      const createResult = capstoneManager.create('agent_faithful', 'char_faithful');
+      if (!createResult.success) {
+        return res.status(400).json(createResult);
+      }
+      const capstoneId = createResult.capstoneId;
+
+      // Invite Coral and Shell
+      capstoneManager.invite(capstoneId, 'agent_faithful', 'agent_coral', 'char_coral');
+      capstoneManager.invite(capstoneId, 'agent_faithful', 'agent_shell', 'char_shell');
+
+      // Have them join
+      capstoneManager.join(capstoneId, 'agent_coral', 'char_coral');
+      capstoneManager.join(capstoneId, 'agent_shell', 'char_shell');
+
+      // Start the dungeon
+      const startResult = capstoneManager.start(capstoneId, 'agent_faithful');
+      if (!startResult.success) {
+        return res.status(400).json(startResult);
+      }
+
+      // Start auto-play interval (tick every 3 seconds for smoother animations)
+      clearDemoInterval(capstoneId); // Clear any existing
+      const intervalId = setInterval(() => autoTickDemo(capstoneManager, capstoneId), 3000);
+      demoCapstones.set(capstoneId, intervalId);
+      console.log(`[Demo] Started auto-play for ${capstoneId}`);
+
+      res.json({
+        success: true,
+        message: 'Demo capstone run started with 3 agents + 3 henchmen! Auto-playing...',
+        capstoneId: capstoneId,
+        spectateUrl: `/capstone?id=${capstoneId}`
+      });
+    } catch (error) {
+      console.error('Demo run error:', error);
       res.status(500).json({ success: false, error: error.message });
     }
   });
@@ -375,11 +525,16 @@ function createCapstoneRoutes(db, authenticateAgent) {
    * 
    * Actions by room type:
    * - combat: attack, move, dodge, ability, end_turn
-   * - trap: search, disarm, proceed
-   * - treasure: loot, search
-   * - puzzle: examine, solve, skip
+   * - trap/treasure (event rooms): look, actions, choose action=<id>, speak text="...", resolve, proceed
+   * - npc: look, buy, buy item=<id>, haggle, intimidate, persuade, speak text="...", leave
    * - rest: rest, proceed
    * - boss: (same as combat)
+   * 
+   * Event rooms (trap/treasure/npc) use Pillars of Eternity style:
+   * - Each party member chooses an action independently
+   * - Actions may require skill checks with DCs
+   * - Results aggregate for final outcome
+   * - Characters can speak in-character during events
    */
   router.post('/:id/action', authenticateAgent, (req, res) => {
     try {
@@ -393,6 +548,48 @@ function createCapstoneRoutes(db, authenticateAgent) {
       }
       
       const result = capstoneManager.interact(req.params.id, req.user.id, action, params);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  // ============================================================================
+  // AI PERSONALITY & ROLEPLAY
+  // ============================================================================
+  
+  /**
+   * GET /api/capstone/:id/suggest
+   * Get AI-suggested action based on character personality
+   * Returns recommended action and in-character reasoning
+   */
+  router.get('/:id/suggest', authenticateAgent, (req, res) => {
+    try {
+      const result = capstoneManager.getAISuggestedAction(req.params.id, req.user.id);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+  
+  /**
+   * GET /api/capstone/:id/strategy
+   * Get full party strategy discussion for current room
+   * Shows each character's suggested action and in-character dialogue
+   */
+  router.get('/:id/strategy', authenticateAgent, (req, res) => {
+    try {
+      const result = capstoneManager.getPartyStrategy(req.params.id);
       
       if (result.success) {
         res.json(result);

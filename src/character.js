@@ -670,6 +670,20 @@ function initCharacterDB(db) {
     // Column already exists, ignore
   }
   
+  // Add personality column for AI roleplay (JSON: {courage, greed, trust, conflict, morality})
+  try {
+    db.exec(`ALTER TABLE clawds ADD COLUMN personality TEXT DEFAULT '{}'`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+  
+  // Add speaking_style column for AI dialogue generation
+  try {
+    db.exec(`ALTER TABLE clawds ADD COLUMN speaking_style TEXT DEFAULT ''`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+  
   // Inventory table
   db.exec(`
     CREATE TABLE IF NOT EXISTS character_inventory (
@@ -774,7 +788,9 @@ class CharacterManager {
       stats,
       statMethod = 'pointbuy', // Only point buy allowed
       skillChoices = [],
-      religion = 'none'
+      religion = 'none',
+      personality = {},
+      speakingStyle = ''
     } = options;
     
     // Validate religion
@@ -863,19 +879,37 @@ class CharacterManager {
     // Create character
     const characterId = crypto.randomUUID();
     
+    // Validate personality traits
+    const validTraits = {
+      courage: ['brave', 'cautious', 'reckless'],
+      greed: ['greedy', 'generous', 'practical'],
+      trust: ['trusting', 'suspicious', 'neutral'],
+      conflict: ['aggressive', 'diplomatic', 'cunning'],
+      morality: ['honorable', 'pragmatic', 'ruthless']
+    };
+    
+    const validatedPersonality = {};
+    for (const [trait, value] of Object.entries(personality || {})) {
+      if (validTraits[trait] && validTraits[trait].includes(value)) {
+        validatedPersonality[trait] = value;
+      }
+    }
+    
     try {
       this.db.prepare(`
         INSERT INTO clawds (
           id, agent_id, name, race, class,
           str, dex, con, int, wis, cha,
-          hp_current, hp_max, ac, speed, religion
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          hp_current, hp_max, ac, speed, religion,
+          personality, speaking_style
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       `).run(
         characterId, agentId, name, race, characterClass,
         finalStats.str, finalStats.dex, finalStats.con, 
         finalStats.int, finalStats.wis, finalStats.cha,
         finalHpMax, finalHpMax, 10 + dexMod,
-        raceData.speed, religion
+        raceData.speed, religion,
+        JSON.stringify(validatedPersonality), speakingStyle || ''
       );
       
       // Add starting equipment

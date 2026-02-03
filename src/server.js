@@ -168,6 +168,19 @@ function broadcastToCampaign(campaignId, event) {
   });
 }
 
+// Broadcast to capstone run subscribers (roguelike/spectator mode)
+function broadcastToRun(runId, event) {
+  const subscribers = runSubscribers.get(runId);
+  if (!subscribers) return;
+  
+  const message = JSON.stringify(event);
+  subscribers.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
+    }
+  });
+}
+
 // Update agent stats
 function updateStats(userId, updates) {
   const user = db.prepare('SELECT stats FROM users WHERE id = ?').get(userId);
@@ -2553,6 +2566,9 @@ console.log('📜 Quest system loaded');
 // === CAPSTONE DUNGEON ROUTES ===
 const { router: capstoneRouter, capstoneManager } = createCapstoneRoutes(db, authenticateAgent);
 app.use('/api/capstone', capstoneRouter);
+
+// Wire up broadcast function for RP events to spectators
+capstoneManager.setBroadcastFunction(broadcastToRun);
 console.log('🐉 Capstone dungeon system loaded');
 
 // === RUNS API (for theater compatibility with demo combats) ===

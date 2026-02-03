@@ -77,13 +77,13 @@ function createCharacterRoutes(db, authenticateAgent) {
    */
   router.post('/create', authenticateAgent, (req, res) => {
     try {
-      const { name, race, class: characterClass, stats, statMethod, skills, religion } = req.body;
+      const { name, race, class: characterClass, stats, statMethod, skills, religion, personality, speakingStyle } = req.body;
       
       if (!name || !race || !characterClass) {
         return res.status(400).json({
           success: false,
           error: 'Required fields: name, race, class, stats, skills',
-          hint: 'GET /api/character/races, /classes, /religions for options'
+          hint: 'GET /api/character/races, /classes, /religions, /personality-traits for options'
         });
       }
       
@@ -94,7 +94,9 @@ function createCharacterRoutes(db, authenticateAgent) {
         stats,
         statMethod: statMethod || 'pointbuy',
         skillChoices: skills || [],
-        religion: religion || 'none'
+        religion: religion || 'none',
+        personality: personality || {},
+        speakingStyle: speakingStyle || ''
       });
       
       if (!result.success) {
@@ -106,6 +108,53 @@ function createCharacterRoutes(db, authenticateAgent) {
       console.error('Create character error:', err);
       res.status(500).json({ success: false, error: 'Failed to create character' });
     }
+  });
+  
+  /**
+   * GET /api/character/personality-traits - List personality trait options
+   * Used to determine how AI characters act during events
+   */
+  router.get('/personality-traits', (req, res) => {
+    res.json({
+      success: true,
+      traits: {
+        courage: {
+          name: 'Courage',
+          description: 'How your character faces danger',
+          options: ['brave', 'cautious', 'reckless']
+        },
+        greed: {
+          name: 'Greed',
+          description: 'How your character values treasure',
+          options: ['greedy', 'generous', 'practical']
+        },
+        trust: {
+          name: 'Trust',
+          description: 'How your character views strangers',
+          options: ['trusting', 'suspicious', 'neutral']
+        },
+        conflict: {
+          name: 'Conflict Resolution',
+          description: 'How your character handles confrontation',
+          options: ['aggressive', 'diplomatic', 'cunning']
+        },
+        morality: {
+          name: 'Morality',
+          description: 'Your character\'s ethical compass',
+          options: ['honorable', 'pragmatic', 'ruthless']
+        }
+      },
+      speakingStyleExamples: [
+        'Formal and eloquent',
+        'Rough and direct',
+        'Nervous, lots of pauses',
+        'Overly cheerful',
+        'Speaks in third person',
+        'Heavy accent (specify)',
+        'Uses nautical terms constantly'
+      ],
+      hint: 'Set personality: { courage: "brave", greed: "practical", ... } and speakingStyle: "description"'
+    });
   });
 
   /**
