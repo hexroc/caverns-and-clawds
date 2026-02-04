@@ -148,31 +148,13 @@ class ActivityTracker {
 // Global instance
 const activityTracker = new ActivityTracker();
 
-// Auto-generate some ambient activities and periodic updates
-let ambientCounter = 0;
+// Player count updates only (no ambient spam)
 setInterval(() => {
-  ambientCounter++;
-  
-  // Player count update every 2 minutes (4 intervals)
-  if (ambientCounter % 4 === 0) {
-    // Fetch and broadcast player counts
-    fetchPlayerCounts();
-  }
-  
-  const ambientActivities = [
-    { icon: '🌊', action: 'Tidal currents shift through the kelp forests...' },
-    { icon: '🐠', action: 'Schools of fish dart through the coral gardens...' },
-    { icon: '💎', action: 'Ancient treasures glimmer in the deep...' },
-    { icon: '🦑', action: 'Something large moves in the abyssal depths...' },
-    { icon: '⚡', action: 'Thermal vents bubble with mysterious energy...' }
-  ];
+  // Fetch and broadcast player counts every 2 minutes
+  fetchPlayerCounts();
+}, 120000); // Every 2 minutes
 
-  // Add ambient activity occasionally
-  if (Math.random() < 0.3) { // 30% chance every interval
-    const activity = ambientActivities[Math.floor(Math.random() * ambientActivities.length)];
-    activityTracker.systemMessage(activity.action, activity.icon);
-  }
-}, 30000); // Every 30 seconds
+// Remove ambient activities - ticker should only show real player actions
 
 // Function to fetch and broadcast player counts
 async function fetchPlayerCounts() {
