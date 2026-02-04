@@ -5,7 +5,10 @@
   "main": "src/server.js",
   "scripts": {
     "start": "node src/server.js",
-    "dev": "node src/server.js"
+    "dev": "node src/server.js",
+    "check-balances": "node scripts/check-balances.js",
+    "fund-economy": "node scripts/fund-devnet-economy.js",
+    "init-economy": "node src/economy/init-economy.js"
   },
   "keywords": [
     "ai",
