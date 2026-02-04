@@ -4,6 +4,10 @@
  * All the creatures that want to eat you. 🦀
  */
 
+// Global difficulty scale (1.0 = normal, 0.5 = half difficulty)
+// Adjust this to make monsters easier/harder
+const DIFFICULTY_SCALE = 0.4;  // 40% of normal - much easier for economy testing
+
 // XP by Challenge Rating (5e)
 const CR_XP = {
   0: 10,
@@ -1078,14 +1082,24 @@ function spawnMonster(monsterId) {
   const template = MONSTERS[monsterId];
   if (!template) return null;
   
+  // Apply difficulty scaling to HP
+  const scaledHp = Math.max(1, Math.floor(template.stats.hp * DIFFICULTY_SCALE));
+  
+  // Scale down attack damage by reducing the hit bonus
+  const scaledAttacks = template.attacks.map(atk => ({
+    ...atk,
+    hit: Math.max(0, Math.floor(atk.hit * DIFFICULTY_SCALE)),  // Reduce hit bonus
+    // Damage dice stay same but monsters die faster with lower HP
+  }));
+  
   return {
     id: `${monsterId}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
     monsterId: template.id,
     name: template.name,
-    hp: template.stats.hp,
-    maxHp: template.stats.hp,
-    ac: template.stats.ac,
-    attacks: template.attacks,
+    hp: scaledHp,
+    maxHp: scaledHp,
+    ac: Math.max(8, template.stats.ac - 3),  // Reduce AC by 3 (min 8)
+    attacks: scaledAttacks,
     alive: true
   };
 }
