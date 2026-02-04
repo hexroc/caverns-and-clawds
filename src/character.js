@@ -22,8 +22,8 @@ const RELIGIONS = {
   none: {
     id: 'none',
     name: 'No Religion',
-    description: 'You place your faith in pearls, not prayers. The practical path.',
-    blessing: '+0.01% bonus pearls from quests',
+    description: 'You place your faith in USDC, not prayers. The practical path.',
+    blessing: '+0.01% bonus USDC from quests',
     effect: { type: 'pearl_bonus', multiplier: 1.0001 }
   }
 };
@@ -743,9 +743,7 @@ function initCharacterDB(db) {
       temp_hp INTEGER DEFAULT 0,
       ac INTEGER NOT NULL,
       
-      pearls INTEGER DEFAULT 50,
-      silver_scales INTEGER DEFAULT 0,
-      gold_shells INTEGER DEFAULT 0,
+      usdc_balance REAL DEFAULT 5.0,
       
       current_zone TEXT DEFAULT 'briny_flagon',
       
@@ -1190,9 +1188,7 @@ class CharacterManager {
       proficiencyBonus: profBonus,
       
       currency: {
-        pearls: char.pearls,
-        silverScales: char.silver_scales,
-        goldShells: char.gold_shells
+        usdc: char.usdc_balance || 0
       },
       
       location: char.current_zone,
@@ -1200,7 +1196,7 @@ class CharacterManager {
       religion: {
         id: char.religion || 'none',
         name: RELIGIONS[char.religion]?.name || 'No Religion',
-        blessing: RELIGIONS[char.religion]?.blessing || '+0.01% bonus pearls'
+        blessing: RELIGIONS[char.religion]?.blessing || '+0.01% bonus USDC'
       },
       
       deathSaves: {
@@ -1431,24 +1427,22 @@ class CharacterManager {
   
   // Update currency
   updateCurrency(characterId, currency, amount) {
-    const column = {
-      pearls: 'pearls',
-      silver_scales: 'silver_scales',
-      gold_shells: 'gold_shells'
-    }[currency];
-    
-    if (!column) return { success: false, error: 'Invalid currency' };
+    // USDC is the only currency now
+    if (currency !== 'usdc') {
+      return { success: false, error: 'Invalid currency. Use "usdc".' };
+    }
     
     const char = this.db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
     if (!char) return { success: false, error: 'Character not found' };
     
-    const newAmount = char[column] + amount;
-    if (newAmount < 0) return { success: false, error: 'Insufficient funds' };
+    const currentBalance = char.usdc_balance || 0;
+    const newAmount = currentBalance + amount;
+    if (newAmount < 0) return { success: false, error: 'Insufficient USDC' };
     
-    this.db.prepare(`UPDATE clawds SET ${column} = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`)
+    this.db.prepare('UPDATE clawds SET usdc_balance = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?')
       .run(newAmount, characterId);
     
-    return { success: true, currency, previousAmount: char[column], newAmount };
+    return { success: true, currency: 'usdc', previousAmount: currentBalance, newAmount };
   }
   
   /**

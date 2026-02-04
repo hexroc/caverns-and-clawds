@@ -39,7 +39,7 @@ function createHenchmanRoutes(db, authenticateAgent) {
         pullCosts: PULL_COSTS,
         rates: PULL_RATES,
         revival: {
-          resurrection: `${REVIVAL_OPTIONS.resurrection.cost} pearls`,
+          resurrection: `${REVIVAL_OPTIONS.resurrection.cost} USDC`,
           autoRevive: `${REVIVAL_OPTIONS.autoRevive.hours} hours`,
           dupeStarUp: 'Instant revive on star level up'
         },
@@ -51,7 +51,7 @@ function createHenchmanRoutes(db, authenticateAgent) {
         'GET /': 'This info',
         'GET /roster': 'Your henchmen (requires auth)',
         'POST /pull': 'Pull a henchman (requires auth)',
-        'POST /resurrect': 'Resurrect dead henchman for 300 pearls',
+        'POST /resurrect': 'Resurrect dead henchman for 5 USDC',
         'POST /party/set': 'Set active party member',
         'POST /party/dismiss': 'Dismiss party member',
         'GET /party': 'Get current party member'
@@ -76,7 +76,7 @@ function createHenchmanRoutes(db, authenticateAgent) {
     
     res.json({
       success: true,
-      character: { name: char.name, pearls: char.pearls },
+      character: { name: char.name, usdc: char.currency?.usdc || 0 },
       pullCosts: PULL_COSTS,
       count: roster.length,
       roster: roster.map(h => ({
@@ -118,44 +118,33 @@ function createHenchmanRoutes(db, authenticateAgent) {
       return res.status(404).json({ success: false, error: 'No character found. Create one first!' });
     }
     
-    const { paymentType = 'pearl' } = req.body;
+    // USDC is the only payment method now
+    const balance = char.currency?.usdc || 0;
+    const cost = PULL_COSTS.usdc;
     
-    if (paymentType !== 'pearl' && paymentType !== 'usdc') {
-      return res.status(400).json({ success: false, error: 'Invalid payment type. Use "pearl" or "usdc"' });
-    }
-    
-    // Check payment
-    if (paymentType === 'pearl') {
-      if (char.pearls < PULL_COSTS.pearl) {
-        return res.status(400).json({ 
-          success: false, 
-          error: `Not enough pearls. Need ${PULL_COSTS.pearl}, have ${char.pearls}` 
-        });
-      }
-      // Deduct pearls
-      db.prepare('UPDATE clawds SET pearls = pearls - ? WHERE id = ?')
-        .run(PULL_COSTS.pearl, char.id);
-    } else {
-      // USDC payment - would integrate with Solana in production
-      console.log(`[HENCHMAN] USDC pull requested by ${char.name}: $${PULL_COSTS.usdc}`);
+    if (balance < cost) {
       return res.status(400).json({ 
         success: false, 
-        error: 'USDC payments coming soon! Use pearls for now.' 
+        error: `Not enough USDC. Need ${cost}, have ${balance}` 
       });
     }
     
+    // Deduct USDC
+    db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+      .run(cost, char.id);
+    
     // DO THE PULL!
-    const result = henchmen.pullHenchman(char.id, paymentType);
+    const result = henchmen.pullHenchman(char.id, 'usdc');
     
     if (!result.success) {
       // Refund on error
-      db.prepare('UPDATE clawds SET pearls = pearls + ? WHERE id = ?')
-        .run(PULL_COSTS.pearl, char.id);
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+        .run(cost, char.id);
       return res.status(500).json(result);
     }
     
-    // Get updated pearl count
-    const updatedChar = db.prepare('SELECT pearls FROM clawds WHERE id = ?').get(char.id);
+    // Get updated USDC balance
+    const updatedChar = db.prepare('SELECT usdc_balance FROM clawds WHERE id = ?').get(char.id);
     
     // Build response
     const response = {
@@ -176,7 +165,7 @@ function createHenchmanRoutes(db, authenticateAgent) {
       skillPoints: result.skillPoints,
       dupesToNextStar: result.dupesToNextStar,
       cost: PULL_COSTS[paymentType],
-      pearlsRemaining: updatedChar.pearls,
+      usdcRemaining: updatedChar.usdc_balance,
       rates: result.rarityOdds
     };
     
@@ -223,12 +212,12 @@ function createHenchmanRoutes(db, authenticateAgent) {
       return res.status(400).json(result);
     }
     
-    // Get updated pearl count
-    const updatedChar = db.prepare('SELECT pearls FROM clawds WHERE id = ?').get(char.id);
+    // Get updated USDC balance
+    const updatedChar = db.prepare('SELECT usdc_balance FROM clawds WHERE id = ?').get(char.id);
     
     res.json({
       ...result,
-      pearlsRemaining: updatedChar.pearls
+      usdcRemaining: updatedChar.usdc_balance
     });
   });
   

@@ -804,8 +804,7 @@ const PULL_RATES = {
 };
 
 const PULL_COSTS = {
-  pearl: 500,        // 500 pearls per pull
-  usdc: 2.50         // $2.50 USDC per pull
+  usdc: 2.50         // $2.50 USDC per pull (only currency now)
 };
 
 // ============================================================================
@@ -814,8 +813,8 @@ const PULL_COSTS = {
 
 const REVIVAL_OPTIONS = {
   resurrection: {
-    cost: 300,       // 300 pearls to resurrect
-    currency: 'pearl'
+    cost: 5.00,      // 5 USDC to resurrect henchman
+    currency: 'usdc'
   },
   autoRevive: {
     hours: 4,        // Auto-revive after 4 hours
@@ -921,14 +920,15 @@ class HenchmanManager {
       return { success: false, error: 'Henchman is not dead' };
     }
     
-    // Check if player has enough pearls
-    const char = this.db.prepare('SELECT pearls FROM clawds WHERE id = ?').get(characterId);
-    if (!char || char.pearls < REVIVAL_OPTIONS.resurrection.cost) {
-      return { success: false, error: `Need ${REVIVAL_OPTIONS.resurrection.cost} pearls to resurrect (you have ${char?.pearls || 0})` };
+    // Check if player has enough USDC
+    const char = this.db.prepare('SELECT usdc_balance FROM clawds WHERE id = ?').get(characterId);
+    const balance = char?.usdc_balance || 0;
+    if (!char || balance < REVIVAL_OPTIONS.resurrection.cost) {
+      return { success: false, error: `Need ${REVIVAL_OPTIONS.resurrection.cost} USDC to resurrect (you have ${balance})` };
     }
     
-    // Deduct pearls and revive
-    this.db.prepare('UPDATE clawds SET pearls = pearls - ? WHERE id = ?')
+    // Deduct USDC and revive
+    this.db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
       .run(REVIVAL_OPTIONS.resurrection.cost, characterId);
     
     this.db.prepare(`

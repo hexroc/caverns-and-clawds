@@ -352,7 +352,7 @@ class AIPlayer {
     
     this.character = charResult.character;
     await this.narrate(`I am ${this.character.name}, a level ${this.character.level} ${this.character.race.name} ${this.character.class.name}.`, 'Introduction');
-    await this.broadcastStatus(`HP: ${this.character.hp.current}/${this.character.hp.max} | Gold: ${this.character.currency?.pearls || 0} pearls`);
+    await this.broadcastStatus(`HP: ${this.character.hp.current}/${this.character.hp.max} | USDC: ${this.character.currency?.usdc || 0}`);
     
     // Check if dead
     const deathCheck = await this.api.checkDeath();

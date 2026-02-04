@@ -35,8 +35,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 50,
       xp_per_level: 10,
-      pearls_base: 25,
-      pearls_per_level: 5
+      usdc_base: 2.5,
+      usdc_per_level: 0.5
     },
     repeatable: true,
     cooldown_hours: 20,
@@ -65,8 +65,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 75,
       xp_per_level: 15,
-      pearls_base: 40,
-      pearls_per_level: 8
+      usdc_base: 4.0,
+      usdc_per_level: 0.8
     },
     repeatable: true,
     cooldown_hours: 24,
@@ -94,8 +94,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 100,
       xp_per_level: 20,
-      pearls_base: 60,
-      pearls_per_level: 12
+      usdc_base: 6.0,
+      usdc_per_level: 1.2
     },
     repeatable: true,
     cooldown_hours: 48,
@@ -124,8 +124,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 150,
       xp_per_level: 25,
-      pearls_base: 80,
-      pearls_per_level: 15,
+      usdc_base: 8.0,
+      usdc_per_level: 1.5,
       items: [{ item_id: 'potion_healing', quantity: 1, chance: 0.5 }]
     },
     repeatable: true,
@@ -156,8 +156,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 100,
       xp_per_level: 15,
-      pearls_base: 50,
-      pearls_per_level: 10
+      usdc_base: 5.0,
+      usdc_per_level: 1.0
     },
     repeatable: true,
     cooldown_hours: 48,
@@ -185,8 +185,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 200,
       xp_per_level: 25,
-      pearls_base: 100,
-      pearls_per_level: 20
+      usdc_base: 100,
+      usdc_per_level: 20
     },
     repeatable: true,
     cooldown_hours: 72,
@@ -214,8 +214,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 175,
       xp_per_level: 30,
-      pearls_base: 90,
-      pearls_per_level: 18
+      usdc_base: 90,
+      usdc_per_level: 18
     },
     repeatable: true,
     cooldown_hours: 48,
@@ -232,7 +232,7 @@ const QUEST_TEMPLATES = {
     type: 'fetch',
     title_pattern: 'Lost Supplies',
     description_pattern: 'A supply crate was lost in the {zone_name}. Retrieve it and bring it back.',
-    flavor_text_pattern: '"We lost some supplies out there. Find the crate and bring it back - there\'s pearls in it for you."',
+    flavor_text_pattern: '"We lost some supplies out there. Find the crate and bring it back - there\'s USDC in it for you."',
     completion_text_pattern: '"You found it! These supplies will help many."',
     variables: {
       zone: ['kelp_forest'],
@@ -246,8 +246,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 75,
       xp_per_level: 12,
-      pearls_base: 45,
-      pearls_per_level: 8
+      usdc_base: 45,
+      usdc_per_level: 0.8
     },
     time_limit_minutes: 60,
     repeatable: true,
@@ -264,7 +264,7 @@ const QUEST_TEMPLATES = {
     type: 'fetch',
     title_pattern: 'Salvage Run: {item_name}',
     description_pattern: 'Salvage {item_name} from the shipwreck graveyard. Be careful - the wrecks are haunted.',
-    flavor_text_pattern: '"I\'ve got buyers waiting for these parts. Get me that {item_name} and there\'s pearls in it for you."',
+    flavor_text_pattern: '"I\'ve got buyers waiting for these parts. Get me that {item_name} and there\'s USDC in it for you."',
     completion_text_pattern: '"Perfect condition! You\'ve got a good eye for salvage."',
     variables: {
       item: ['ship_wheel', 'brass_compass', 'captain_log'],
@@ -278,8 +278,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 125,
       xp_per_level: 20,
-      pearls_base: 75,
-      pearls_per_level: 15,
+      usdc_base: 75,
+      usdc_per_level: 1.5,
       random_items: {
         pool: ['potion_healing', 'antitoxin', 'rations'],
         count: 1
@@ -313,8 +313,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 200,
       xp_per_level: 30,
-      pearls_base: 120,
-      pearls_per_level: 25,
+      usdc_base: 120,
+      usdc_per_level: 25,
       items: [{ item_id: 'potion_greater_healing', quantity: 1 }]
     },
     repeatable: false,
@@ -620,7 +620,7 @@ class QuestEngine {
     const levelDelta = Math.max(0, characterLevel - (template.prerequisites?.min_level || 1));
     const rewards = {
       xp: (template.rewards.xp_base || 0) + levelDelta * (template.rewards.xp_per_level || 0),
-      pearls: (template.rewards.pearls_base || 0) + levelDelta * (template.rewards.pearls_per_level || 0),
+      usdc: (template.rewards.usdc_base || 0) + levelDelta * (template.rewards.usdc_per_level || 0),
       items: template.rewards.items || [],
       random_items: template.rewards.random_items || null
     };
@@ -1368,12 +1368,12 @@ class QuestEngine {
     // Award rewards
     const rewards = quest.rewards;
     let xpGained = rewards.xp || 0;
-    let pearlsGained = rewards.pearls || 0;
+    let usdcGained = rewards.usdc || 0;
     const itemsReceived = [];
 
     // Apply religion bonuses
     if (char.religion === 'none') {
-      pearlsGained = Math.ceil(pearlsGained * 1.0001);
+      usdcGained = Math.ceil(usdcGained * 1.0001);
     }
 
     // Calculate new XP and check for level up
@@ -1392,8 +1392,8 @@ class QuestEngine {
     }
 
     // Update character
-    this.db.prepare('UPDATE clawds SET xp = ?, level = ?, pearls = pearls + ? WHERE id = ?')
-      .run(newXP, newLevel, pearlsGained, characterId);
+    this.db.prepare('UPDATE clawds SET xp = ?, level = ?, usdc_balance = usdc_balance + ? WHERE id = ?')
+      .run(newXP, newLevel, usdcGained, characterId);
 
     // Grant items
     if (rewards.items) {
@@ -1456,7 +1456,7 @@ class QuestEngine {
       VALUES (?, ?, ?, ?, 'completed', ?, ?, ?, ?, ?, ?)
     `).run(
       crypto.randomUUID(), characterId, quest.template_id, questId, quest.title,
-      JSON.stringify({ xp: xpGained, pearls: pearlsGained, items: itemsReceived }),
+      JSON.stringify({ xp: xpGained, usdc: usdcGained, items: itemsReceived }),
       quest.accepted_at, duration, quest.objectives.length, quest.objectives.length
     );
 
@@ -1464,7 +1464,7 @@ class QuestEngine {
     const messages = [
       `📜 **Quest Complete: ${quest.title}**`,
       `⭐ +${xpGained} XP`,
-      `🔮 +${pearlsGained} pearls`
+      `🔮 +${usdcGained} USDC`
     ];
 
     if (itemsReceived.length > 0) {
@@ -1484,7 +1484,7 @@ class QuestEngine {
       },
       rewards: {
         xp_gained: xpGained,
-        pearls_gained: pearlsGained,
+        pearls_gained: usdcGained,
         items_received: itemsReceived
       },
       level_up: leveledUp,

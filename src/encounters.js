@@ -237,7 +237,7 @@ const ENCOUNTER_TABLES = {
       'You find claw marks on a nearby rock.'
     ],
     discoveryMessages: [
-      'You find a small cache of pearls hidden in the kelp!',
+      'You find a small USDC credit chip hidden in the kelp!',
       'An old adventurer\'s pack lies abandoned here.',
       'You discover a healing spring bubbling from the rocks.',
       'A friendly hermit crab points you toward treasure.'
@@ -629,12 +629,12 @@ class EncounterManager {
       Math.floor(Math.random() * table.discoveryMessages.length)
     ];
     
-    // Random small reward
-    const pearls = Math.floor(Math.random() * 10) + 5;
+    // Random small USDC reward (0.50 - 1.50)
+    const usdc = (Math.random() * 1.0 + 0.5).toFixed(2);
     
-    // Add pearls to character
-    this.db.prepare('UPDATE clawds SET pearls = pearls + ? WHERE id = ?')
-      .run(pearls, characterId);
+    // Add USDC to character
+    this.db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+      .run(parseFloat(usdc), characterId);
     
     return {
       success: true,
@@ -642,7 +642,7 @@ class EncounterManager {
       discovery: true,
       zone: table.name,
       message,
-      reward: { pearls },
+      reward: { usdc: parseFloat(usdc) },
       hint: 'Continue exploring or return to safety.'
     };
   }
@@ -1875,14 +1875,15 @@ class EncounterManager {
     
     const options = [];
     
-    // Option 1: Paid resurrection (200 pearls, 10% XP loss)
+    // Option 1: Paid resurrection (25 USDC, 10% XP loss)
     const paidXPLoss = Math.floor(char.xp * 0.10);
+    const usdcBalance = char.usdc_balance || 0;
     options.push({
       type: 'paid',
-      cost: { pearls: 200 },
+      cost: { usdc: 25 },
       xpLoss: paidXPLoss,
       xpLossPercent: '10%',
-      available: char.pearls >= 200,
+      available: usdcBalance >= 25,
       description: 'Priestess Marina performs the rite. Lose 10% of your XP.'
     });
     
@@ -1918,7 +1919,7 @@ class EncounterManager {
         name: char.name,
         level: char.level,
         xp: char.xp,
-        pearls: char.pearls
+        usdc: char.usdc_balance || 0
       },
       options,
       warning: 'Choose wisely. XP loss can cause level loss!'
@@ -1934,16 +1935,17 @@ class EncounterManager {
     if (char.status !== 'dead') return { success: false, error: 'Character is not dead' };
     
     let xpLoss = 0;
-    let pearlCost = 0;
+    let usdcCost = 0;
     let useVoucher = false;
     let message = '';
     
     switch (method) {
       case 'paid':
-        if (char.pearls < 200) {
-          return { success: false, error: 'Not enough pearls. Need 200.' };
+        const currentUsdc = char.usdc_balance || 0;
+        if (currentUsdc < 25) {
+          return { success: false, error: 'Not enough USDC. Need 25.' };
         }
-        pearlCost = 200;
+        usdcCost = 25;
         xpLoss = Math.floor(char.xp * 0.10);  // 10% XP loss
         message = 'Priestess Marina channels the Ocean Mother\'s blessing. You gasp back to life.';
         break;
@@ -2021,9 +2023,9 @@ class EncounterManager {
     this.db.prepare(`
       UPDATE clawds 
       SET hp_current = ?, hp_max = ?, xp = ?, level = ?, 
-          pearls = pearls - ?, status = 'alive', current_zone = 'tide_temple'
+          usdc_balance = usdc_balance - ?, status = 'alive', current_zone = 'tide_temple'
       WHERE id = ?
-    `).run(respawnHP, newHPMax, newXP, newLevel, pearlCost, characterId);
+    `).run(respawnHP, newHPMax, newXP, newLevel, usdcCost, characterId);
     
     const result = {
       success: true,
@@ -2035,7 +2037,7 @@ class EncounterManager {
         hpMax: newHPMax
       },
       penalties: {
-        pearlsCost: pearlCost,
+        usdcCost: usdcCost,
         xpLost: xpLoss,
         previousXP: char.xp,
         newXP,

@@ -291,7 +291,7 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       }
       
       // Check if dead (need to get raw status)
-      const rawChar = db.prepare('SELECT status, pearls FROM clawds WHERE id = ?').get(char.id);
+      const rawChar = db.prepare('SELECT status, usdc_balance FROM clawds WHERE id = ?').get(char.id);
       
       if (rawChar.status !== 'dead') {
         return res.json({ 
@@ -324,7 +324,7 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       if (!method) {
         return res.status(400).json({ 
           success: false, 
-          error: 'method required: paid (200 pearls, 10% XP loss), free (35% XP loss), or voucher (no penalty)' 
+          error: 'method required: paid (25 USDC, 10% XP loss), free (35% XP loss), or voucher (no penalty)' 
         });
       }
       

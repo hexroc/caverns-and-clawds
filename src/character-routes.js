@@ -278,7 +278,7 @@ function createCharacterRoutes(db, authenticateAgent) {
       if (!currency || amount === undefined) {
         return res.status(400).json({
           success: false,
-          error: 'Required: currency (pearls|silver_scales|gold_shells), amount'
+          error: 'Required: currency (usdc), amount'
         });
       }
       

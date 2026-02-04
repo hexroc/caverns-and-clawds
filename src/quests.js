@@ -26,7 +26,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 50,
-      pearls: 25,
+      usdc: 2.5,
       items: []
     },
     levelReq: 1,
@@ -48,7 +48,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 75,
-      pearls: 30,
+      usdc: 3.0,
       items: []
     },
     levelReq: 1,
@@ -70,7 +70,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 150,
-      pearls: 75,
+      usdc: 7.5,
       items: ['potion_healing', 'potion_healing']
     },
     levelReq: 2,
@@ -91,7 +91,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 100,
-      pearls: 50,
+      usdc: 5.0,
       items: []
     },
     levelReq: 2,
@@ -113,7 +113,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 125,
-      pearls: 60,
+      usdc: 6.0,
       items: ['antitoxin']
     },
     levelReq: 2,
@@ -137,7 +137,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 150,
-      pearls: 75,
+      usdc: 7.5,
       items: ['potion_healing', 'potion_healing']
     },
     levelReq: 3,
@@ -159,7 +159,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 200,
-      pearls: 100,
+      usdc: 10.0,
       items: []
     },
     levelReq: 3,
@@ -181,7 +181,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 250,
-      pearls: 125,
+      usdc: 12.5,
       items: ['antitoxin']
     },
     levelReq: 4,
@@ -203,7 +203,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 200,
-      pearls: 90,
+      usdc: 9.0,
       items: ['rations', 'rations', 'rations']
     },
     levelReq: 3,
@@ -225,7 +225,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 300,
-      pearls: 150,
+      usdc: 15.0,
       items: ['potion_greater_healing']
     },
     levelReq: 4,
@@ -247,7 +247,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 350,
-      pearls: 175,
+      usdc: 175,
       items: ['potion_greater_healing']
     },
     levelReq: 4,
@@ -268,7 +268,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 700,
-      pearls: 350,
+      usdc: 350,
       items: ['potion_greater_healing', 'potion_greater_healing', 'scroll_depth_charge']
     },
     levelReq: 5,
@@ -293,7 +293,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 2000,
-      pearls: 1000,
+      usdc: 10.00,
       items: ['legendary_claw_trident', 'potion_superior_healing', 'potion_superior_healing'],
       unlocks: ['henchman_hiring']  // Unlocks henchman system
     },
@@ -347,7 +347,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 25,
-      pearls: 15,
+      usdc: 15,
       items: ['potion_healing']
     },
     levelReq: 1,
@@ -673,8 +673,8 @@ class QuestManager {
     // XP with religion bonus
     let xpGained = rewards.xp;
     if (char.religion === 'none') {
-      // +0.01% pearl bonus for non-believers
-      rewards.pearls = Math.ceil(rewards.pearls * 1.0001);
+      // +0.01% USDC bonus for non-believers
+      rewards.usdc = Math.ceil(rewards.usdc * 1.0001);
     }
     
     // Update character
@@ -694,8 +694,8 @@ class QuestManager {
     }
     
     this.db.prepare(
-      'UPDATE clawds SET xp = ?, level = ?, pearls = pearls + ? WHERE id = ?'
-    ).run(newXP, newLevel, rewards.pearls, characterId);
+      'UPDATE clawds SET xp = ?, level = ?, usdc_balance = usdc_balance + ? WHERE id = ?'
+    ).run(newXP, newLevel, rewards.usdc, characterId);
     
     // Add items to inventory
     for (const itemId of rewards.items || []) {
@@ -730,7 +730,7 @@ class QuestManager {
     const messages = [
       `📜 **Quest Complete: ${quest.name}**`,
       `⭐ +${xpGained} XP`,
-      `🔮 +${rewards.pearls} pearls`
+      `🔮 +${rewards.usdc} USDC`
     ];
     
     if (rewards.items && rewards.items.length > 0) {
@@ -746,7 +746,7 @@ class QuestManager {
       quest: quest.name,
       rewards: {
         xp: xpGained,
-        pearls: rewards.pearls,
+        usdc: rewards.usdc,
         items: rewards.items || []
       },
       leveledUp,

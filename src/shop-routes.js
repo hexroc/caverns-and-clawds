@@ -131,7 +131,7 @@ function createShopRoutes(db, authenticateAgent) {
           greeting: npc.dialogue.greeting[Math.floor(Math.random() * npc.dialogue.greeting.length)]
         },
         inventory: grouped,
-        yourPearls: char.currency.pearls
+        yourUsdc: char.currency.usdc
       });
     } catch (err) {
       console.error('Shop inventory error:', err);
@@ -191,17 +191,17 @@ function createShopRoutes(db, authenticateAgent) {
       const totalCost = unitPrice * quantity;
 
       // Check if player can afford it
-      if (char.currency.pearls < totalCost) {
+      if (char.currency.usdc < totalCost) {
         return res.status(400).json({ 
           success: false, 
-          error: `Not enough pearls. Need ${totalCost}, have ${char.currency.pearls}.`,
-          dialogue: "*looks sympathetic* Perhaps come back when you've gathered more pearls?"
+          error: `Not enough USDC. Need ${totalCost}, have ${char.currency.usdc}.`,
+          dialogue: "*looks sympathetic* Perhaps come back when you've earned more USDC?"
         });
       }
 
       // Process transaction
-      // 1. Deduct pearls
-      const currencyResult = characters.updateCurrency(char.id, 'pearls', -totalCost);
+      // 1. Deduct USDC
+      const currencyResult = characters.updateCurrency(char.id, 'usdc', -totalCost);
       if (!currencyResult.success) {
         return res.status(400).json(currencyResult);
       }
@@ -236,8 +236,8 @@ function createShopRoutes(db, authenticateAgent) {
         },
         newBalance: currencyResult.newAmount,
         dialogue: quantity > 1 
-          ? `*wraps up the ${item.name}s carefully* ${quantity} for ${totalCost} pearls. A wise investment!`
-          : `*hands over the ${item.name}* That'll be ${totalCost} pearls. Use it wisely!`
+          ? `*wraps up the ${item.name}s carefully* ${quantity} for ${totalCost} USDC. A wise investment!`
+          : `*hands over the ${item.name}* That'll be ${totalCost} USDC. Use it wisely!`
       });
     } catch (err) {
       console.error('Buy error:', err);
@@ -302,8 +302,8 @@ function createShopRoutes(db, authenticateAgent) {
       const totalValue = unitValue * quantity;
 
       // Process transaction
-      // 1. Add pearls
-      const currencyResult = characters.updateCurrency(char.id, 'pearls', totalValue);
+      // 1. Add USDC
+      const currencyResult = characters.updateCurrency(char.id, 'usdc', totalValue);
       if (!currencyResult.success) {
         return res.status(400).json(currencyResult);
       }
@@ -327,7 +327,7 @@ function createShopRoutes(db, authenticateAgent) {
           totalValue
         },
         newBalance: currencyResult.newAmount,
-        dialogue: `*examines the ${item.name}* I'll give you ${totalValue} pearls for this. *slides over the coins*`
+        dialogue: `*examines the ${item.name}* I'll give you ${totalValue} USDC for this. *slides over the coins*`
       });
     } catch (err) {
       console.error('Sell error:', err);
@@ -370,7 +370,7 @@ function createShopRoutes(db, authenticateAgent) {
         appraisal: {
           buyPrice,
           sellValue,
-          dialogue: `*adjusts spectacles* The ${item.name}? I'd sell it for ${buyPrice} pearls, or buy it from you for ${sellValue}.`
+          dialogue: `*adjusts spectacles* The ${item.name}? I'd sell it for ${buyPrice} USDC, or buy it from you for ${sellValue}.`
         }
       });
     } catch (err) {
