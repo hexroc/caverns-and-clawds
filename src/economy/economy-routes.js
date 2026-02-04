@@ -13,6 +13,7 @@ const express = require('express');
 const crypto = require('crypto');
 const wallet = require('./wallet');
 const { ENCRYPTION_KEY } = require('./init-economy');
+const { recordBalance } = require('./realestate');
 
 function createEconomyRoutes(db, authenticateAgent) {
   const router = express.Router();
@@ -392,6 +393,9 @@ function createEconomyRoutes(db, authenticateAgent) {
         SELECT deposited_balance FROM bank_accounts WHERE owner_type = 'player' AND owner_id = ?
       `).get(char.id);
       
+      // Record balance for mortgage seasoning
+      recordBalance(db, char.id);
+      
       res.json({
         success: true,
         deposited: amount,
@@ -489,8 +493,9 @@ function createEconomyRoutes(db, authenticateAgent) {
       }
       
       const { amount } = req.body;
-      if (!amount || amount <= 0 || amount > 100) {
-        return res.status(400).json({ success: false, error: 'Loan amount must be 1-100 USDC' });
+      // Strict type checking - must be a finite positive number
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 1 || amount > 100) {
+        return res.status(400).json({ success: false, error: 'Loan amount must be 1-100 USDC (number)' });
       }
       
       // Check existing loan
@@ -582,8 +587,17 @@ function createEconomyRoutes(db, authenticateAgent) {
       const totalOwed = Math.round(account.loan_balance * interestMultiplier * 100) / 100;
       
       const { amount } = req.body;
+      
+      // Strict validation - must be a positive number (or omit for full repayment)
+      if (amount !== undefined && amount !== null) {
+        if (typeof amount !== 'number' || !Number.isFinite(amount) || amount <= 0) {
+          return res.status(400).json({ success: false, error: 'Repay amount must be a positive number' });
+        }
+      }
+      
       // Cap payment at total owed - can't overpay
-      const payAmount = Math.min(amount || totalOwed, totalOwed);
+      // If amount not provided, pay full amount
+      const payAmount = Math.min(amount ?? totalOwed, totalOwed);
       
       if (!char.wallet_public_key || !char.wallet_encrypted_secret) {
         return res.status(400).json({ success: false, error: 'No wallet found' });

@@ -4,8 +4,43 @@
  * Tiers 1-3 crafting for levels 1-7
  * Materials → Recipes → Items
  * 
+ * Now unified with economy system - crafting uses player_materials table!
+ * 
  * All hail the claw. 🦞
  */
+
+// ============================================================================
+// MATERIAL ID MAPPING (Crafting → Economy)
+// Maps old crafting material IDs to economy material IDs
+// ============================================================================
+
+const MATERIAL_MAP = {
+  // Direct matches (same ID in both systems)
+  'fish_scales': 'fish_scales',
+  'sea_glass': 'sea_glass',
+  'shark_tooth': 'shark_tooth',
+  'driftwood': 'driftwood',
+  'sea_salt': 'sea_salt',
+  'luminescent_algae': 'luminescent_algae',
+  'eel_slime': 'eel_slime',
+  'coral_fragment': 'coral_fragment',
+  'moonstone_shard': 'moonstone_shard',
+  'abyssal_ink': 'abyssal_ink',
+  'prismatic_scale': 'prismatic_scale',
+  
+  // Mapped to similar economy materials
+  'kelp_fiber': 'kelp_bundle',      // kelp → kelp
+  'small_shell': 'crab_shell',       // shells
+  'crab_chitin': 'pristine_chitin',  // chitin
+  'clam_pearl': 'pearl',             // pearls
+  'pearl_dust': 'pearl',             // also pearls
+  'eel_skin': 'lurker_hide',         // hides
+};
+
+// Helper to get economy material ID from crafting material ID
+function getEconomyMaterialId(craftingId) {
+  return MATERIAL_MAP[craftingId] || craftingId;
+}
 
 // ============================================================================
 // MATERIALS
@@ -848,27 +883,34 @@ class CraftingManager {
     return { xp: newXP, level: newLevel, leveledUp };
   }
 
-  // Check if character has materials
+  // Check if character has materials (queries economy player_materials table)
   checkMaterials(characterId, materials) {
-    // This would interface with the inventory system
-    // For now, return a structure showing what's needed vs what's had
     const results = [];
     for (const mat of materials) {
+      const economyId = getEconomyMaterialId(mat.id);
       const material = MATERIALS[mat.id];
-      // TODO: Check actual inventory
+      
+      // Query player_materials table (economy system)
+      const playerMat = this.db.prepare(`
+        SELECT quantity FROM player_materials 
+        WHERE character_id = ? AND material_id = ?
+      `).get(characterId, economyId);
+      
+      const have = playerMat?.quantity || 0;
       results.push({
         id: mat.id,
+        economyId: economyId,
         name: material?.name || mat.id,
         required: mat.quantity,
-        have: 0, // Would query inventory
-        sufficient: false
+        have: have,
+        sufficient: have >= mat.quantity
       });
     }
     return results;
   }
 
-  // Craft an item
-  craft(characterId, recipeId, stationId, inventory) {
+  // Craft an item (now uses economy player_materials table directly)
+  craft(characterId, recipeId, stationId, options = {}) {
     const recipe = RECIPES[recipeId];
     if (!recipe) {
       return { success: false, error: 'Unknown recipe' };
@@ -887,8 +929,13 @@ class CraftingManager {
       return { success: false, error: 'You do not know this recipe' };
     }
 
-    // Check character level
-    const charLevel = inventory.characterLevel || 1;
+    // Get character level from DB if not provided
+    let charLevel = options.characterLevel;
+    if (!charLevel) {
+      const char = this.db.prepare('SELECT level FROM clawds WHERE id = ?').get(characterId);
+      charLevel = char?.level || 1;
+    }
+    
     if (charLevel < recipe.requiredLevel) {
       return { 
         success: false, 
@@ -896,13 +943,29 @@ class CraftingManager {
       };
     }
 
-    // Check materials
+    // Check materials from economy system (player_materials table)
     const missing = [];
+    const toConsume = [];
+    
     for (const mat of recipe.materials) {
-      const have = inventory.materials?.[mat.id] || 0;
+      const economyId = getEconomyMaterialId(mat.id);
+      const playerMat = this.db.prepare(`
+        SELECT id, quantity FROM player_materials 
+        WHERE character_id = ? AND material_id = ?
+      `).get(characterId, economyId);
+      
+      const have = playerMat?.quantity || 0;
       if (have < mat.quantity) {
         const material = MATERIALS[mat.id];
         missing.push(`${material?.name || mat.id} (need ${mat.quantity}, have ${have})`);
+      } else {
+        toConsume.push({ 
+          rowId: playerMat.id,
+          economyId, 
+          quantity: mat.quantity, 
+          currentQty: have,
+          name: MATERIALS[mat.id]?.name || mat.id
+        });
       }
     }
 
@@ -913,8 +976,19 @@ class CraftingManager {
       };
     }
 
-    // Consume materials (caller should handle inventory updates)
-    const consumed = recipe.materials.map(m => ({ ...m }));
+    // Consume materials from player_materials table
+    for (const mat of toConsume) {
+      if (mat.currentQty === mat.quantity) {
+        // Delete row if using all
+        this.db.prepare('DELETE FROM player_materials WHERE id = ?').run(mat.rowId);
+      } else {
+        // Reduce quantity
+        this.db.prepare('UPDATE player_materials SET quantity = quantity - ? WHERE id = ?')
+          .run(mat.quantity, mat.rowId);
+      }
+    }
+    
+    const consumed = toConsume.map(m => ({ id: m.economyId, name: m.name, quantity: m.quantity }));
 
     // Update times crafted
     this.db.prepare(`
@@ -945,6 +1019,64 @@ class CraftingManager {
       return recipe.materials.every(mat => seenMaterials.includes(mat.id));
     });
   }
+  
+  // Get player's crafting materials from economy system
+  // Returns object with material counts keyed by CRAFTING material ID
+  getPlayerMaterials(characterId) {
+    const materials = this.db.prepare(`
+      SELECT pm.material_id, pm.quantity, m.name
+      FROM player_materials pm
+      JOIN materials m ON pm.material_id = m.id
+      WHERE pm.character_id = ?
+    `).all(characterId);
+    
+    // Build lookup object, mapping economy IDs back to crafting IDs where needed
+    const result = {};
+    const reverseMap = {};
+    
+    // Build reverse mapping (economy → crafting)
+    for (const [craftId, econId] of Object.entries(MATERIAL_MAP)) {
+      if (!reverseMap[econId]) reverseMap[econId] = [];
+      reverseMap[econId].push(craftId);
+    }
+    
+    for (const mat of materials) {
+      // Direct match
+      result[mat.material_id] = (result[mat.material_id] || 0) + mat.quantity;
+      
+      // Also add under any crafting aliases
+      const aliases = reverseMap[mat.material_id] || [];
+      for (const alias of aliases) {
+        if (alias !== mat.material_id) {
+          result[alias] = (result[alias] || 0) + mat.quantity;
+        }
+      }
+    }
+    
+    return result;
+  }
+  
+  // Check what recipes a player can craft with current materials
+  getCraftableRecipes(characterId) {
+    const materials = this.getPlayerMaterials(characterId);
+    const skill = this.getCraftingSkill(characterId);
+    const char = this.db.prepare('SELECT level FROM clawds WHERE id = ?').get(characterId);
+    const charLevel = char?.level || 1;
+    
+    return Object.values(RECIPES).filter(recipe => {
+      // Check level
+      if (charLevel < recipe.requiredLevel) return false;
+      
+      // Check tier (tier 1 = free, higher tiers need to be learned)
+      if (recipe.tier > 1 && !this.knowsRecipe(characterId, recipe.id)) return false;
+      
+      // Check materials
+      return recipe.materials.every(mat => {
+        const have = materials[mat.id] || 0;
+        return have >= mat.quantity;
+      });
+    });
+  }
 }
 
 // ============================================================================
@@ -956,4 +1088,6 @@ module.exports = {
   MATERIALS,
   CRAFTING_STATIONS,
   RECIPES,
+  MATERIAL_MAP,
+  getEconomyMaterialId,
 };

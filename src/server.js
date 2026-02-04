@@ -46,6 +46,10 @@ const { createQuestEngineRoutes, getQuestEngine } = require('./quest-engine-rout
 const { createHenchmanRoutes } = require('./henchman-routes');
 const { createSocialRoutes } = require('./social-routes');
 const { createEconomyRoutes } = require('./economy/economy-routes');
+const { createRealEstateRoutes } = require('./economy/realestate-routes');
+const { initRealEstateDB } = require('./economy/realestate');
+const { createPlayerShopRoutes } = require('./economy/player-shop-routes');
+const { initPlayerShopsDB } = require('./economy/player-shops');
 
 // Twitter OAuth 2.0 config (set these in environment)
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID || '';
@@ -2839,6 +2843,16 @@ console.log('💬 Social system loaded (chat, emotes, presence)');
 // Mount Economy routes
 app.use('/api/economy', createEconomyRoutes(db, authenticateAgent));
 console.log('💰 Economy system loaded (USDC, banking, trading)');
+
+// Initialize and mount Real Estate routes
+initRealEstateDB(db);
+app.use('/api/realestate', createRealEstateRoutes(db, authenticateAgent));
+console.log('🏠 Real estate system loaded (properties, mortgages, rentals)');
+
+// Initialize and mount Player Shop routes
+initPlayerShopsDB(db);
+app.use('/api/player-shops', createPlayerShopRoutes(db, authenticateAgent));
+console.log('🏪 Player shop system loaded (Sims-style retail)');
 
 // (Capstone dungeon system removed - MUD direction)
 

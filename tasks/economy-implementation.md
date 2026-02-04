@@ -84,11 +84,34 @@
 - [x] Cancel auctions (no bids)
 - [x] My listings / my bids views
 
-## Phase 10: QA & Balance 🧪 TODO
+## Phase 10: Security Audit & Fixes 🔒 ✅ COMPLETE
+- [x] AI security testing (sub-agent exploit scanner)
+- [x] **FIX: Free auction buyout** - Added bank+wallet balance check
+- [x] **FIX: Phantom trade creation** - Lock materials/USDC when trade created
+- [x] **FIX: Zero/negative quantity validation** - All trades/auctions validated
+- [x] **FIX: Self-buyout** - Can't buyout own auction
+- [x] Return locked materials on trade cancel/reject/expire
+- [x] Expired trade cleanup function (processExpiredTrades)
+
+### Exploits Tested & BLOCKED ✅
+| Exploit | Status |
+|---------|--------|
+| Free auction buyout (0 USDC) | ✅ BLOCKED |
+| Phantom trade creation | ✅ BLOCKED |
+| Bidding without funds | ✅ BLOCKED |
+| 0 or negative quantities | ✅ BLOCKED |
+| Self-send USDC/materials | ✅ BLOCKED |
+| Accept own trade | ✅ BLOCKED |
+| Bid on own auction | ✅ BLOCKED |
+| Cancel auction with bids | ✅ BLOCKED |
+| **Repay 0 (free debt clear)** | ✅ BLOCKED |
+| **Negative repayment (increase debt)** | ✅ BLOCKED |
+| **String loan amount** | ✅ BLOCKED |
+
+## Phase 11: QA & Balance 🧪 TODO
 - [ ] Spawn test agents
 - [ ] Stress test economy
 - [ ] Adjust prices/rates
-- [ ] Fix bugs
 - [ ] Document for hackathon
 
 ---

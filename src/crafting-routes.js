@@ -6,7 +6,7 @@
 
 const express = require('express');
 const crypto = require('crypto');
-const { CraftingManager, MATERIALS, CRAFTING_STATIONS, RECIPES } = require('./crafting');
+const { CraftingManager, MATERIALS, CRAFTING_STATIONS, RECIPES, MATERIAL_MAP } = require('./crafting');
 
 function createCraftingRoutes(db, authenticateAgent) {
   const router = express.Router();
@@ -19,26 +19,42 @@ function createCraftingRoutes(db, authenticateAgent) {
     return characters.getCharacterByAgent(req.user.id);
   };
 
-  // Helper to get inventory (materials)
+  // Helper to get inventory (materials from ECONOMY system)
   const getInventory = (characterId) => {
     // Get character's level from clawds table
     const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
-    const inventoryItems = db.prepare(`
-      SELECT * FROM character_inventory WHERE character_id = ?
+    
+    // Read from player_materials (economy table) not character_inventory
+    const economyMaterials = db.prepare(`
+      SELECT material_id, quantity FROM player_materials WHERE character_id = ?
     `).all(characterId);
 
-    // Build materials map
+    // Build materials map with reverse mapping (economy → crafting)
     const materials = {};
-    inventoryItems.forEach(item => {
-      if (MATERIALS[item.item_id]) {
-        materials[item.item_id] = (materials[item.item_id] || 0) + item.quantity;
+    const reverseMap = {};
+    
+    // Build reverse mapping (economy → crafting aliases)
+    for (const [craftId, econId] of Object.entries(MATERIAL_MAP)) {
+      if (!reverseMap[econId]) reverseMap[econId] = [];
+      reverseMap[econId].push(craftId);
+    }
+    
+    economyMaterials.forEach(mat => {
+      // Add under economy ID
+      materials[mat.material_id] = (materials[mat.material_id] || 0) + mat.quantity;
+      
+      // Also add under any crafting aliases (so recipes can find them)
+      const aliases = reverseMap[mat.material_id] || [];
+      for (const alias of aliases) {
+        if (alias !== mat.material_id) {
+          materials[alias] = (materials[alias] || 0) + mat.quantity;
+        }
       }
     });
 
     return {
       characterLevel: char?.level || 1,
       materials: materials,
-      items: inventoryItems,
     };
   };
 
@@ -307,12 +323,27 @@ function createCraftingRoutes(db, authenticateAgent) {
         return res.status(404).json({ success: false, error: 'No character found' });
       }
 
-      const { recipe_id, station_id, quantity = 1 } = req.body;
+      const { recipe_id, station_id, quantity: rawQty } = req.body;
 
       if (!recipe_id || !station_id) {
         return res.status(400).json({ 
           success: false, 
           error: 'recipe_id and station_id required' 
+        });
+      }
+      
+      // Validate quantity - must be positive integer
+      const quantity = rawQty === undefined ? 1 : rawQty;
+      if (typeof quantity !== 'number' || !Number.isInteger(quantity) || quantity < 1) {
+        return res.status(400).json({
+          success: false,
+          error: 'quantity must be a positive integer'
+        });
+      }
+      if (quantity > 100) {
+        return res.status(400).json({
+          success: false,
+          error: 'Maximum craft quantity is 100'
         });
       }
 

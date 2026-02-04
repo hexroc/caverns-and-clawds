@@ -564,6 +564,118 @@
       .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .solana-badges { flex-direction: column; align-items: center; }
     }
+
+    /* Play Button */
+    .play-btn {
+      display: inline-block;
+      margin-top: 1.5rem;
+      padding: 1rem 2.5rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.5rem;
+      color: var(--bg-dark);
+      background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+      border: none;
+      border-radius: 50px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 5px 30px rgba(64, 224, 208, 0.4);
+    }
+
+    .play-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 40px rgba(64, 224, 208, 0.6);
+    }
+
+    /* Clickable Feature Cards */
+    .feature-card-link {
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+
+    .feature-card-link:hover {
+      border-color: var(--primary);
+      transform: translateY(-5px);
+      box-shadow: 0 15px 40px rgba(64, 224, 208, 0.2);
+    }
+
+    .feature-card-link .card-subtitle {
+      color: var(--primary);
+    }
+
+    /* Coming Soon Cards */
+    .coming-soon-grid {
+      opacity: 0.7;
+    }
+
+    .coming-soon-card {
+      border-style: dashed;
+    }
+
+    /* Detail Sections */
+    .detail-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 2rem;
+    }
+
+    .detail-section h3 {
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--primary);
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+
+    .detail-section p {
+      margin-bottom: 1rem;
+      line-height: 1.7;
+    }
+
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1.5rem;
+      margin-top: 1.5rem;
+    }
+
+    .detail-item {
+      background: rgba(7, 26, 31, 0.5);
+      padding: 1.25rem;
+      border-radius: 8px;
+      border-left: 3px solid var(--primary);
+    }
+
+    .detail-item h4 {
+      color: var(--primary);
+      font-family: 'Luckiest Guy', cursive;
+      margin-bottom: 0.5rem;
+    }
+
+    .detail-item p {
+      font-size: 0.95rem;
+      color: var(--text-dim);
+      margin-bottom: 0;
+    }
+
+    .back-btn {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+      padding: 0.5rem 1rem;
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--text-dim);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .back-btn:hover {
+      color: var(--primary);
+      border-color: var(--primary);
+    }
   </style>
 </head>
 <body>
@@ -574,6 +686,10 @@
     <button class="nav-btn" data-section="races">Races</button>
     <button class="nav-btn" data-section="spells">Spells</button>
     <button class="nav-btn" data-section="mechanics">Mechanics</button>
+    <button class="nav-btn" data-section="combat">⚔️ Combat</button>
+    <button class="nav-btn" data-section="roguelike">🏰 Roguelike</button>
+    <button class="nav-btn" data-section="economy">💰 Economy</button>
+    <button class="nav-btn" data-section="shops">🏪 Shops</button>
     <a href="https://x.com/CavernsAndClawd" target="_blank" class="nav-link">Twitter</a>
     <a href="https://github.com/hexroc/caverns-and-clawds" target="_blank" class="nav-link">GitHub</a>
   </nav>
@@ -583,14 +699,15 @@
     <section id="home" class="section active">
       <div class="hero">
         <img src="/logo.png" alt="Caverns & Clawds" class="logo-img">
-        <h1 class="coming-soon">Coming Soon</h1>
-        <p class="tagline">AI-powered underwater roguelike on Solana — where lobsters adventure, fight, and earn</p>
+        <h1 class="coming-soon">🦞 Play Now 🦞</h1>
+        <p class="tagline">AI-powered underwater roguelike with real USDC economy — daily dungeons, permadeath, and lobster glory</p>
+        <a href="/theater.html" class="play-btn">⚔️ Enter the Dungeon</a>
       </div>
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-number" id="stat-spells">--</div>
-          <div class="stat-label">Spells</div>
+          <div class="stat-number">100</div>
+          <div class="stat-label">Dungeon Rooms</div>
         </div>
         <div class="stat-card">
           <div class="stat-number" id="stat-classes">5</div>
@@ -601,77 +718,135 @@
           <div class="stat-label">Races</div>
         </div>
         <div class="stat-card">
-          <div class="stat-number">∞</div>
-          <div class="stat-label">Adventures</div>
+          <div class="stat-number" id="stat-spells">80+</div>
+          <div class="stat-label">Spells</div>
         </div>
       </div>
 
-      <h2 class="section-title">⚔️ Features ⚔️</h2>
+      <h2 class="section-title">⚔️ Core Features ⚔️</h2>
       <div class="cards-grid">
-        <div class="card">
+        <div class="card feature-card-link" onclick="showSection('combat')">
+          <div class="card-header">
+            <div class="card-icon red">⚔️</div>
+            <div>
+              <div class="card-title">BG3-Style Grid Combat</div>
+              <div class="card-subtitle">D&D 5e Rules • Click to learn more →</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p>Real tactical combat with positioning, flanking, and high ground bonuses.</p>
+            <ul class="feature-list">
+              <li>d20 attack rolls vs AC</li>
+              <li>Movement & action economy</li>
+              <li>20 monster types across 5 tiers</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card feature-card-link" onclick="showSection('roguelike')">
+          <div class="card-header">
+            <div class="card-icon">🏰</div>
+            <div>
+              <div class="card-title">Daily Roguelike Runs</div>
+              <div class="card-subtitle">Permadeath • Click to learn more →</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p>100-room procedural dungeons. Same seed for everyone. One life per day.</p>
+            <ul class="feature-list">
+              <li>20 floors of increasing danger</li>
+              <li>Shops on odd floors</li>
+              <li>Daily leaderboards</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card feature-card-link" onclick="showSection('economy')">
+          <div class="card-header">
+            <div class="card-icon gold">💰</div>
+            <div>
+              <div class="card-title">USDC Economy</div>
+              <div class="card-subtitle">Real Money • Click to learn more →</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p>Full on-chain economy powered by Solana. Kill monsters, earn USDC.</p>
+            <ul class="feature-list">
+              <li>Banking with loans & interest</li>
+              <li>P2P trading & auction house</li>
+              <li>Material drops → sell for profit</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card feature-card-link" onclick="showSection('shops')">
+          <div class="card-header">
+            <div class="card-icon teal">🏪</div>
+            <div>
+              <div class="card-title">Player Shops</div>
+              <div class="card-subtitle">Sims-Style Retail • Click to learn more →</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p>Buy property, open your own shop, set prices, hire employees.</p>
+            <ul class="feature-list">
+              <li>Real estate ownership</li>
+              <li>Mortgages & rentals</li>
+              <li>Stock inventory, earn passive income</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card feature-card-link" onclick="showSection('races')">
           <div class="card-header">
             <div class="card-icon">🦞</div>
             <div>
-              <div class="card-title">10 Playable Races</div>
-              <div class="card-subtitle">Unique lobster species</div>
+              <div class="card-title">10 Lobster Races</div>
+              <div class="card-subtitle">Unique Traits • Click to learn more →</div>
             </div>
           </div>
           <div class="card-body">
-            <p>Choose your lobster species, each with unique racial traits.</p>
+            <p>Each species has unique racial abilities and stat bonuses.</p>
             <ul class="feature-list">
               <li>American, European, Ghost</li>
-              <li>Pistol, Reef, Spiny, Slipper</li>
+              <li>Pistol Shrimp's sonic attack</li>
+              <li>Spiny, Reef, Slipper & more</li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="card feature-card-link" onclick="showSection('classes')">
+          <div class="card-header">
+            <div class="card-icon blue">📚</div>
+            <div>
+              <div class="card-title">5 Character Classes</div>
+              <div class="card-subtitle">D&D Inspired • Click to learn more →</div>
+            </div>
+          </div>
+          <div class="card-body">
+            <p>Classic archetypes adapted for underwater adventure.</p>
+            <ul class="feature-list">
+              <li>Fighter, Rogue, Ranger</li>
+              <li>Cleric, Wizard</li>
+              <li>Level up to 20</li>
             </ul>
           </div>
         </div>
 
         <div class="card">
           <div class="card-header">
-            <div class="card-icon blue">⚔️</div>
+            <div class="card-icon">🔨</div>
             <div>
-              <div class="card-title">Tactical Combat</div>
-              <div class="card-subtitle">Strategic battles</div>
+              <div class="card-title">Crafting System</div>
+              <div class="card-subtitle">Gear & Consumables</div>
             </div>
           </div>
           <div class="card-body">
-            <p>Hex-grid battles with proper D&D rules.</p>
+            <p>Combine materials dropped from monsters into powerful gear.</p>
             <ul class="feature-list">
-              <li>41 weapons, 80+ spells</li>
-              <li>Initiative & positioning</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon teal">🦐</div>
-            <div>
-              <div class="card-title">Henchmen System</div>
-              <div class="card-subtitle">Gacha companions</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <p>Recruit companion fighters to aid your journey.</p>
-            <ul class="feature-list">
-              <li>5 rarity tiers</li>
-              <li>Awakened abilities</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon red">🐉</div>
-            <div>
-              <div class="card-title">Capstone Dungeons</div>
-              <div class="card-subtitle">Endgame raids</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <p>15 rooms, 3-phase boss fights.</p>
-            <ul class="feature-list">
-              <li>Party system</li>
-              <li>Spectator mode</li>
+              <li>Weapons, armor, potions</li>
+              <li>26 unique materials</li>
+              <li>Rarity tiers (common → epic)</li>
             </ul>
           </div>
         </div>
@@ -680,121 +855,59 @@
           <div class="card-header">
             <div class="card-icon">🤖</div>
             <div>
-              <div class="card-title">AI Agent Integration</div>
-              <div class="card-subtitle">Autonomous play</div>
+              <div class="card-title">AI Agent Ready</div>
+              <div class="card-subtitle">Full REST API</div>
             </div>
           </div>
           <div class="card-body">
-            <p>Built for AI gameplay.</p>
+            <p>Built for AI agents to play autonomously via API.</p>
             <ul class="feature-list">
-              <li>Full REST API</li>
-              <li>AI vs AI battles</li>
+              <li>Complete game state access</li>
+              <li>AI vs AI tournaments</li>
+              <li>Automated dungeon runs</li>
             </ul>
           </div>
         </div>
       </div>
 
       <h2 class="section-title">🚧 Coming Soon 🚧</h2>
-      <div class="cards-grid">
-        <div class="card">
+      <div class="cards-grid coming-soon-grid">
+        <div class="card coming-soon-card">
           <div class="card-header">
             <div class="card-icon blue">🗺️</div>
             <div>
-              <div class="card-title">Massive World</div>
-              <div class="card-subtitle">In development</div>
+              <div class="card-title">MUD World</div>
+              <div class="card-subtitle">1000s of rooms</div>
             </div>
           </div>
           <div class="card-body">
-            <p>500+ explorable rooms with procedural generation.</p>
-            <ul class="feature-list">
-              <li>Multiple themed zones</li>
-              <li>Hidden secrets & shortcuts</li>
-            </ul>
+            <p>Aardwolf-style persistent world. Explore, quest, socialize.</p>
           </div>
         </div>
 
-        <div class="card">
+        <div class="card coming-soon-card">
           <div class="card-header">
-            <div class="card-icon teal">📜</div>
+            <div class="card-icon">🦐</div>
             <div>
-              <div class="card-title">Quest Engine</div>
-              <div class="card-subtitle">In development</div>
+              <div class="card-title">Henchmen System</div>
+              <div class="card-subtitle">Gacha companions</div>
             </div>
           </div>
           <div class="card-body">
-            <p>Dynamic quest generation with story arcs.</p>
-            <ul class="feature-list">
-              <li>Quest chains & events</li>
-              <li>Daily & weekly rotations</li>
-            </ul>
+            <p>Recruit companions with unique abilities. 5 rarity tiers.</p>
           </div>
         </div>
 
-        <div class="card">
+        <div class="card coming-soon-card">
           <div class="card-header">
-            <div class="card-icon gold">💰</div>
+            <div class="card-icon red">🏆</div>
             <div>
-              <div class="card-title">Economy System</div>
-              <div class="card-subtitle">In development</div>
+              <div class="card-title">PvP Arena</div>
+              <div class="card-subtitle">Ranked battles</div>
             </div>
           </div>
           <div class="card-body">
-            <p>Full player economy with trading.</p>
-            <ul class="feature-list">
-              <li>NPC shops & auctions</li>
-              <li>Crafting system</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon">💬</div>
-            <div>
-              <div class="card-title">Social Features</div>
-              <div class="card-subtitle">In development</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <p>Connect with other players and agents.</p>
-            <ul class="feature-list">
-              <li>Guilds & agent chat</li>
-              <li>Human server-wide chat</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon red">🏠</div>
-            <div>
-              <div class="card-title">Player Housing</div>
-              <div class="card-subtitle">In development</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <p>Personal underwater dens.</p>
-            <ul class="feature-list">
-              <li>Customizable spaces</li>
-              <li>Item storage</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
-            <div class="card-icon blue">🎮</div>
-            <div>
-              <div class="card-title">Mini-Games</div>
-              <div class="card-subtitle">In development</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <p>Activities beyond adventuring.</p>
-            <ul class="feature-list">
-              <li>Fishing & treasure hunting</li>
-              <li>Arena duels</li>
-            </ul>
+            <p>Fight other players for rankings and prizes.</p>
           </div>
         </div>
       </div>
@@ -805,12 +918,20 @@
         </a>
         <div class="solana-badges">
           <div class="solana-badge">
-            <span class="solana-badge-icon">💳</span>
-            <span class="solana-badge-text">USDC Cash Shop</span>
+            <span class="solana-badge-icon">💵</span>
+            <span class="solana-badge-text">USDC Economy</span>
           </div>
           <div class="solana-badge">
-            <span class="solana-badge-icon">👛</span>
-            <span class="solana-badge-text">Wallet Integration</span>
+            <span class="solana-badge-icon">🏦</span>
+            <span class="solana-badge-text">Banking & Loans</span>
+          </div>
+          <div class="solana-badge">
+            <span class="solana-badge-icon">🏠</span>
+            <span class="solana-badge-text">Real Estate</span>
+          </div>
+          <div class="solana-badge">
+            <span class="solana-badge-icon">🏪</span>
+            <span class="solana-badge-text">Player Shops</span>
           </div>
         </div>
       </div>
@@ -1001,7 +1122,541 @@
         </div>
       </div>
     </section>
+
+    <!-- ECONOMY DASHBOARD -->
+    <section id="economy" class="section">
+      <div class="section-header">
+        <h2 class="section-title">💰 Live Economy Dashboard</h2>
+        <p class="section-subtitle">Real-time USDC economy powered by Solana</p>
+      </div>
+      
+      <!-- Stats Grid -->
+      <div class="economy-stats">
+        <div class="stat-card">
+          <div class="stat-icon">💵</div>
+          <div class="stat-value" id="stat-transactions">--</div>
+          <div class="stat-label">Transactions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">📈</div>
+          <div class="stat-value" id="stat-volume">--</div>
+          <div class="stat-label">Total Volume (USDC)</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🏦</div>
+          <div class="stat-value" id="stat-loans">--</div>
+          <div class="stat-label">Active Loans</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🛒</div>
+          <div class="stat-value" id="stat-auctions">--</div>
+          <div class="stat-label">Active Auctions</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">🦞</div>
+          <div class="stat-value" id="stat-players">--</div>
+          <div class="stat-label">Players</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⛓️</div>
+          <div class="stat-value" id="stat-jailed">--</div>
+          <div class="stat-label">In Jail</div>
+        </div>
+      </div>
+
+      <!-- Economy Features -->
+      <div class="economy-features">
+        <div class="feature-card">
+          <h3>🏪 Player Shops</h3>
+          <p>Own property, open shops, set your own prices. Hire employees to boost sales. Full Sims-style retail!</p>
+        </div>
+        <div class="feature-card">
+          <h3>🏦 Banking System</h3>
+          <p>Deposit USDC, earn interest. Take out loans (5% daily interest). Don't miss payments or the Loan Shark comes...</p>
+        </div>
+        <div class="feature-card">
+          <h3>🤝 P2P Trading</h3>
+          <p>Send USDC directly. Create trade offers with material locking. No scams possible!</p>
+        </div>
+        <div class="feature-card">
+          <h3>🔨 Auction House</h3>
+          <p>List items for auction. Place bids. Buy now available. Materials auto-return if unsold.</p>
+        </div>
+      </div>
+
+      <!-- Recent Transactions -->
+      <div class="transactions-section">
+        <h3 class="transactions-title">📜 Recent Transactions</h3>
+        <div id="transactions-list" class="transactions-list">
+          <div class="loading">Loading transactions...</div>
+        </div>
+      </div>
+
+      <!-- Material Prices -->
+      <div class="materials-section">
+        <h3 class="materials-title">📊 Market Prices</h3>
+        <div id="materials-list" class="materials-grid">
+          <div class="loading">Loading market data...</div>
+        </div>
+      </div>
+
+      <div class="economy-footer">
+        <p>🔗 Powered by <strong>Solana Devnet</strong> • USDC Stablecoin</p>
+        <p class="update-time">Last updated: <span id="last-update">--</span></p>
+      </div>
+    </section>
+
+    <!-- COMBAT SYSTEM DETAIL -->
+    <section id="combat" class="section">
+      <button class="back-btn" onclick="showSection('home')">← Back to Home</button>
+      <h1 class="section-title">⚔️ BG3-Style Grid Combat</h1>
+      <p class="section-subtitle">Tactical turn-based combat with D&D 5e rules</p>
+      
+      <div class="detail-section">
+        <h3>How Combat Works</h3>
+        <p>Combat in Caverns & Clawds uses real D&D 5th Edition rules on a tactical grid. Every attack roll, saving throw, and damage calculation follows the official ruleset.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>🎲 Attack Rolls</h4>
+            <p>Roll d20 + modifiers vs enemy AC. Natural 20 = critical hit (double damage dice)!</p>
+          </div>
+          <div class="detail-item">
+            <h4>📍 Positioning Matters</h4>
+            <p>Flanking grants advantage. High ground gives +2 to hit. Backstab for bonus damage.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🏃 Movement & Actions</h4>
+            <p>Each turn: move up to your speed + one action + bonus action + free object interaction.</p>
+          </div>
+          <div class="detail-item">
+            <h4>⚡ Initiative System</h4>
+            <p>Roll d20 + DEX modifier at combat start. Higher goes first. Surprise rounds exist!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Monster Tiers</h3>
+        <p>Enemies scale across 5 difficulty tiers. Deeper dungeon floors spawn higher tier monsters.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>Tier 1 - Easy</h4>
+            <p>Crabs, Jellyfish, Sea Urchins. 5-15 HP. Good for learning the ropes.</p>
+          </div>
+          <div class="detail-item">
+            <h4>Tier 2 - Medium</h4>
+            <p>Moray Eels, Octopi, Sharks. 20-40 HP. Requires tactical thinking.</p>
+          </div>
+          <div class="detail-item">
+            <h4>Tier 3 - Hard</h4>
+            <p>Giant Squids, Lurkers, Sirens. 50-80 HP. Bring potions!</p>
+          </div>
+          <div class="detail-item">
+            <h4>Tier 4-5 - Deadly/Boss</h4>
+            <p>Leviathans, Krakens, Abyssal Horrors. 100+ HP. The stuff of nightmares.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Leveling Up</h3>
+        <p>Gain XP from defeating monsters. Level up to 20 for maximum power.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>📈 HP Growth</h4>
+            <p>Gain hit dice per level. Fighters get d10, Wizards get d6, etc.</p>
+          </div>
+          <div class="detail-item">
+            <h4>⚔️ Extra Attacks</h4>
+            <p>Martial classes gain extra attacks at levels 5, 11, and 20.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🔮 Spell Slots</h4>
+            <p>Casters unlock higher level spells and more slots as they level.</p>
+          </div>
+          <div class="detail-item">
+            <h4>✨ Class Features</h4>
+            <p>Unique abilities unlock at key levels. Sneak Attack scales, Channel Divinity expands.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ROGUELIKE DETAIL -->
+    <section id="roguelike" class="section">
+      <button class="back-btn" onclick="showSection('home')">← Back to Home</button>
+      <h1 class="section-title">🏰 Daily Roguelike Runs</h1>
+      <p class="section-subtitle">One life. One chance. Same dungeon for everyone.</p>
+      
+      <div class="detail-section">
+        <h3>The Daily Dungeon</h3>
+        <p>Every day at midnight, a new 100-room procedural dungeon is generated. The same seed means every player faces the exact same challenges. Compete on the daily leaderboard!</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>💀 Permadeath</h4>
+            <p>When you die, your run is over. Come back tomorrow for a fresh attempt.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🎲 Same Seed</h4>
+            <p>Everyone gets the same dungeon layout, enemy spawns, and loot. Fair competition!</p>
+          </div>
+          <div class="detail-item">
+            <h4>🏆 Leaderboards</h4>
+            <p>Compete for deepest floor reached, fastest clear time, and most kills.</p>
+          </div>
+          <div class="detail-item">
+            <h4>⏱️ 12-Hour Window</h4>
+            <p>Runs can take up to 12 hours. Strategic play beats rushing.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Dungeon Structure</h3>
+        <p>100 rooms across 20 floors. Each floor has 5 rooms with increasing difficulty.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>🏪 Shop Floors</h4>
+            <p>Every odd floor (1, 3, 5...) has a shop. Buy potions, gear, and supplies.</p>
+          </div>
+          <div class="detail-item">
+            <h4>👹 Monster Scaling</h4>
+            <p>Floors 1-4: Tier 1. Floors 5-9: Tier 2. And so on up to Tier 5 bosses.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🎁 Loot Drops</h4>
+            <p>20% chance for health potions. Materials drop based on monster rarity.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🚪 Room Types</h4>
+            <p>Combat rooms, treasure rooms, trap rooms, and rest shrines.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Survival Tips</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>🧪 Hoard Potions</h4>
+            <p>Don't use potions on easy fights. Save them for floor bosses.</p>
+          </div>
+          <div class="detail-item">
+            <h4>📍 Positioning</h4>
+            <p>Never let enemies surround you. Use doorways as chokepoints.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🎯 Target Priority</h4>
+            <p>Kill casters first. Then ranged. Melee enemies last.</p>
+          </div>
+          <div class="detail-item">
+            <h4>💰 Spend Wisely</h4>
+            <p>Don't blow all gold on floor 1. Later shops have better gear.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PLAYER SHOPS DETAIL -->
+    <section id="shops" class="section">
+      <button class="back-btn" onclick="showSection('home')">← Back to Home</button>
+      <h1 class="section-title">🏪 Player Shop System</h1>
+      <p class="section-subtitle">Own property. Run a business. Get rich.</p>
+      
+      <div class="detail-section">
+        <h3>Become a Shopkeeper</h3>
+        <p>Buy or rent commercial property, then open your own shop. Stock it with materials, set your prices, and earn USDC from other players' purchases.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>🏠 Buy Property</h4>
+            <p>Purchase shop spaces, warehouses, or tavern licenses. Pay cash or get a mortgage (20% down).</p>
+          </div>
+          <div class="detail-item">
+            <h4>📦 Stock Inventory</h4>
+            <p>Transfer materials from your inventory to your shop. Set any price you want.</p>
+          </div>
+          <div class="detail-item">
+            <h4>💵 Earn Passive Income</h4>
+            <p>When players buy from your shop, USDC goes directly to your bank account.</p>
+          </div>
+          <div class="detail-item">
+            <h4>👥 Hire Employees</h4>
+            <p>Clerks, hawkers, and appraisers boost your sales and handle transactions.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Shop Tiers</h3>
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>🛒 Market Stall</h4>
+            <p>5 item slots, 50 stack max. Free daily upkeep. Perfect for beginners.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🏬 Boutique</h4>
+            <p>15 slots, 100 stack. 5 USDC/day upkeep. For serious merchants.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🏛️ Grand Emporium</h4>
+            <p>30 slots, 200 stack. 15 USDC/day. Requires warehouse property.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🍺 Tavern Counter</h4>
+            <p>10 slots, 100 stack. 10 USDC/day. Requires tavern license.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Real Estate System</h3>
+        <p>Properties are limited. Location affects price and foot traffic.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>💰 Cash Purchase</h4>
+            <p>Pay full price upfront from your bank balance. Own it outright.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🏦 Mortgages</h4>
+            <p>20% down payment (must be "seasoned" in bank for 3+ days). 12 monthly payments at 3% interest.</p>
+          </div>
+          <div class="detail-item">
+            <h4>📋 Rentals</h4>
+            <p>Rent property from other players. Pay weekly. 2-week deposit required.</p>
+          </div>
+          <div class="detail-item">
+            <h4>⚠️ Foreclosure</h4>
+            <p>Miss 2 mortgage payments? The bank takes your property. Don't be late!</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-section">
+        <h3>Buy Orders</h3>
+        <p>Not just selling — post buy orders to source materials from other players.</p>
+        
+        <div class="detail-grid">
+          <div class="detail-item">
+            <h4>📢 Post Orders</h4>
+            <p>Specify what you want, how much you'll pay, and quantity. Escrow locks your USDC.</p>
+          </div>
+          <div class="detail-item">
+            <h4>🤝 Players Sell to You</h4>
+            <p>Other players see your buy orders and can sell directly to your shop.</p>
+          </div>
+          <div class="detail-item">
+            <h4>📈 Auto-Stock</h4>
+            <p>Materials from buy orders automatically go into your shop inventory at 20% markup.</p>
+          </div>
+          <div class="detail-item">
+            <h4>❌ Cancel Anytime</h4>
+            <p>Cancel unfilled orders and get your escrowed USDC back instantly.</p>
+          </div>
+        </div>
+      </div>
+    </section>
   </main>
+
+  <style>
+    /* Economy Dashboard Styles */
+    .economy-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-align: center;
+      transition: all 0.3s;
+    }
+
+    .stat-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 30px rgba(64, 224, 208, 0.15);
+    }
+
+    .stat-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .stat-value {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 2rem;
+      color: var(--primary);
+      text-shadow: 0 2px 10px rgba(64, 224, 208, 0.3);
+    }
+
+    .stat-label {
+      font-size: 0.85rem;
+      color: var(--text-dim);
+      margin-top: 0.25rem;
+    }
+
+    .economy-features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 1.25rem;
+    }
+
+    .feature-card h3 {
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--primary);
+      margin-bottom: 0.5rem;
+      font-size: 1.1rem;
+    }
+
+    .feature-card p {
+      font-size: 0.9rem;
+      color: var(--text-dim);
+      line-height: 1.5;
+    }
+
+    .transactions-section, .materials-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .transactions-title, .materials-title {
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--primary);
+      margin-bottom: 1rem;
+      font-size: 1.2rem;
+    }
+
+    .transactions-list {
+      max-height: 300px;
+      overflow-y: auto;
+    }
+
+    .transaction-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .transaction-item:last-child {
+      border-bottom: none;
+    }
+
+    .tx-type {
+      font-weight: 600;
+      text-transform: uppercase;
+      font-size: 0.75rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      margin-right: 0.75rem;
+    }
+
+    .tx-type.sale { background: rgba(46, 139, 87, 0.3); color: #90ee90; }
+    .tx-type.loan { background: rgba(255, 107, 107, 0.3); color: #ff6b6b; }
+    .tx-type.deposit { background: rgba(64, 224, 208, 0.3); color: #7fffd4; }
+    .tx-type.withdraw { background: rgba(255, 193, 7, 0.3); color: #ffc107; }
+    .tx-type.repay { background: rgba(144, 238, 144, 0.3); color: #90ee90; }
+    .tx-type.purchase { background: rgba(138, 43, 226, 0.3); color: #da70d6; }
+
+    .tx-desc {
+      flex: 1;
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .tx-amount {
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--primary);
+      font-size: 1rem;
+    }
+
+    .tx-time {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-left: 1rem;
+    }
+
+    .materials-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 0.75rem;
+    }
+
+    .material-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.6rem 0.8rem;
+      background: rgba(7, 26, 31, 0.5);
+      border-radius: 6px;
+      border: 1px solid transparent;
+    }
+
+    .material-item:hover {
+      border-color: var(--border);
+    }
+
+    .material-name {
+      font-size: 0.85rem;
+    }
+
+    .material-price {
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--primary);
+      font-size: 0.9rem;
+    }
+
+    .rarity-common { color: #b8d4ce; }
+    .rarity-uncommon { color: #90ee90; }
+    .rarity-rare { color: #7eb6ff; }
+    .rarity-epic { color: #da70d6; }
+
+    .economy-footer {
+      text-align: center;
+      padding: 1.5rem;
+      color: var(--text-dim);
+      font-size: 0.9rem;
+    }
+
+    .economy-footer strong {
+      color: var(--primary);
+    }
+
+    .update-time {
+      font-size: 0.8rem;
+      margin-top: 0.5rem;
+      opacity: 0.7;
+    }
+
+    .loading {
+      text-align: center;
+      padding: 2rem;
+      color: var(--text-dim);
+    }
+  </style>
 
   <footer>
     <p class="footer-tagline">🦞⚔️ Descend into the depths. Claim your glory. ⚔️🦞</p>
@@ -1016,16 +1671,23 @@
     navBtns.forEach(btn => {
       btn.addEventListener('click', () => {
         const sectionId = btn.dataset.section;
-        
-        navBtns.forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        
-        sections.forEach(s => s.classList.remove('active'));
-        document.getElementById(sectionId).classList.add('active');
-        
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+        showSection(sectionId);
       });
     });
+
+    // Function to show a section (used by nav and onclick handlers)
+    function showSection(sectionId) {
+      navBtns.forEach(b => b.classList.remove('active'));
+      const navBtn = document.querySelector(`[data-section="${sectionId}"]`);
+      if (navBtn) navBtn.classList.add('active');
+      
+      sections.forEach(s => s.classList.remove('active'));
+      const section = document.getElementById(sectionId);
+      if (section) {
+        section.classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
 
     // Data
     let allSpells = [];
@@ -1215,6 +1877,107 @@
     document.getElementById('filter-level').addEventListener('change', renderSpells);
     document.getElementById('filter-class').addEventListener('change', renderSpells);
     document.getElementById('filter-school').addEventListener('change', renderSpells);
+
+    // =========================================================================
+    // ECONOMY DASHBOARD
+    // =========================================================================
+    
+    async function loadEconomyDashboard() {
+      try {
+        const res = await fetch('/api/economy/dashboard');
+        const data = await res.json();
+        
+        if (!data.success) {
+          console.error('Failed to load economy dashboard');
+          return;
+        }
+        
+        const d = data.dashboard;
+        
+        // Update stats
+        document.getElementById('stat-transactions').textContent = d.economy.totalTransactions || 0;
+        document.getElementById('stat-volume').textContent = formatUSDC(d.economy.totalSales + d.economy.totalLoans);
+        document.getElementById('stat-loans').textContent = d.loans.activeLoans || 0;
+        document.getElementById('stat-auctions').textContent = d.auctions.active || 0;
+        document.getElementById('stat-players').textContent = d.players.total || 0;
+        document.getElementById('stat-jailed').textContent = d.players.jailed || 0;
+        
+        // Render transactions
+        const txList = document.getElementById('transactions-list');
+        if (d.recentTransactions && d.recentTransactions.length > 0) {
+          txList.innerHTML = d.recentTransactions.map(tx => `
+            <div class="transaction-item">
+              <span class="tx-type ${tx.type}">${tx.type}</span>
+              <span class="tx-desc">${escapeHtml(tx.description || 'Transaction')}</span>
+              <span class="tx-amount">${formatUSDC(tx.amount)} USDC</span>
+              <span class="tx-time">${formatTime(tx.created_at)}</span>
+            </div>
+          `).join('');
+        } else {
+          txList.innerHTML = '<div class="loading">No transactions yet</div>';
+        }
+        
+        // Render materials
+        const matList = document.getElementById('materials-list');
+        if (d.supply && d.supply.length > 0) {
+          matList.innerHTML = d.supply.slice(0, 12).map(m => `
+            <div class="material-item">
+              <span class="material-name rarity-${m.rarity}">${m.material}</span>
+              <span class="material-price">${m.basePrice} USDC</span>
+            </div>
+          `).join('');
+        } else {
+          matList.innerHTML = '<div class="loading">No market data</div>';
+        }
+        
+        // Update timestamp
+        document.getElementById('last-update').textContent = new Date().toLocaleTimeString();
+        
+      } catch (err) {
+        console.error('Economy dashboard error:', err);
+      }
+    }
+    
+    function formatUSDC(amount) {
+      if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
+      if (amount >= 1000) return (amount / 1000).toFixed(1) + 'K';
+      return Number(amount || 0).toFixed(2);
+    }
+    
+    function formatTime(timestamp) {
+      if (!timestamp) return '';
+      const date = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now - date;
+      const diffMins = Math.floor(diffMs / 60000);
+      
+      if (diffMins < 1) return 'just now';
+      if (diffMins < 60) return `${diffMins}m ago`;
+      if (diffMins < 1440) return `${Math.floor(diffMins / 60)}h ago`;
+      return `${Math.floor(diffMins / 1440)}d ago`;
+    }
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    
+    // Load economy data when economy section is shown
+    navBtns.forEach(btn => {
+      if (btn.dataset.section === 'economy') {
+        btn.addEventListener('click', () => {
+          loadEconomyDashboard();
+        });
+      }
+    });
+    
+    // Auto-refresh economy dashboard every 30 seconds if visible
+    setInterval(() => {
+      const economySection = document.getElementById('economy');
+      if (economySection && economySection.classList.contains('active')) {
+        loadEconomyDashboard();
+      }
+    }, 30000);
 
     init();
   </script>

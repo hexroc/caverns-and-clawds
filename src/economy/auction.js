@@ -150,13 +150,22 @@ async function placeBid(db, bidderId, auctionId, bidAmount) {
     return { success: false, error: 'You need a wallet to bid' };
   }
   
-  const bidderBalance = await wallet.getUSDCBalance(bidder.wallet_public_key);
-  if (bidderBalance < bidAmount) {
+  // Check bank + wallet balance (since on-chain is simulated)
+  const bidderBank = db.prepare(`
+    SELECT deposited_balance FROM bank_accounts WHERE owner_type = 'player' AND owner_id = ?
+  `).get(bidderId);
+  const bidderBankBalance = bidderBank?.deposited_balance || 0;
+  const bidderOnChain = await wallet.getUSDCBalance(bidder.wallet_public_key);
+  const totalAvailable = bidderBankBalance + bidderOnChain;
+  
+  if (totalAvailable < bidAmount) {
     return { 
       success: false, 
       error: 'Insufficient USDC to cover your bid',
-      have: bidderBalance,
-      need: bidAmount
+      have: totalAvailable,
+      need: bidAmount,
+      bankBalance: bidderBankBalance,
+      walletBalance: bidderOnChain
     };
   }
   
@@ -195,6 +204,10 @@ async function buyout(db, buyerId, auctionId) {
     return { success: false, error: `Auction is ${auction.status}` };
   }
   
+  if (auction.seller_id === buyerId) {
+    return { success: false, error: 'Cannot buy your own auction' };
+  }
+  
   const buyer = db.prepare('SELECT * FROM clawds WHERE id = ?').get(buyerId);
   const seller = db.prepare('SELECT * FROM clawds WHERE id = ?').get(auction.seller_id);
   
@@ -207,14 +220,34 @@ async function buyout(db, buyerId, auctionId) {
     return { success: false, error: 'You need a wallet to purchase' };
   }
   
-  const buyerBalance = await wallet.getUSDCBalance(buyer.wallet_public_key);
-  if (buyerBalance < auction.buyout_price) {
+  // Check bank balance as source of funds (since on-chain is simulated)
+  const buyerBank = db.prepare(`
+    SELECT deposited_balance FROM bank_accounts WHERE owner_type = 'player' AND owner_id = ?
+  `).get(buyerId);
+  const buyerBankBalance = buyerBank?.deposited_balance || 0;
+  
+  // Also check on-chain balance
+  const buyerOnChain = await wallet.getUSDCBalance(buyer.wallet_public_key);
+  const totalAvailable = buyerBankBalance + buyerOnChain;
+  
+  if (totalAvailable < auction.buyout_price) {
     return { 
       success: false, 
       error: 'Insufficient USDC',
-      have: buyerBalance,
-      need: auction.buyout_price
+      have: totalAvailable,
+      need: auction.buyout_price,
+      bankBalance: buyerBankBalance,
+      walletBalance: buyerOnChain
     };
+  }
+  
+  // Deduct from bank first, then wallet
+  let remaining = auction.buyout_price;
+  if (buyerBankBalance > 0) {
+    const fromBank = Math.min(buyerBankBalance, remaining);
+    db.prepare(`UPDATE bank_accounts SET deposited_balance = deposited_balance - ? WHERE owner_type = 'player' AND owner_id = ?`)
+      .run(fromBank, buyerId);
+    remaining -= fromBank;
   }
   
   // Transfer USDC: Buyer -> Seller

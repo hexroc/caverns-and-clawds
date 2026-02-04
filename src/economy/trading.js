@@ -147,6 +147,7 @@ function sendMaterials(db, fromCharId, toCharId, materialId, quantity) {
 
 /**
  * Create a trade offer
+ * IMPORTANT: Materials are LOCKED when offer is created, returned if cancelled/expired
  */
 function createTradeOffer(db, fromCharId, offer) {
   const { 
@@ -163,15 +164,38 @@ function createTradeOffer(db, fromCharId, offer) {
     return { success: false, error: 'Character not found' };
   }
   
-  // Validate offering
-  if (offeringUsdc && offeringUsdc < 0) {
-    return { success: false, error: 'Invalid USDC amount' };
+  // Validate USDC offering
+  if (offeringUsdc !== undefined && offeringUsdc !== null) {
+    if (offeringUsdc < 0) {
+      return { success: false, error: 'Invalid USDC amount' };
+    }
+    if (offeringUsdc > 0) {
+      // Check bank balance for USDC offers
+      const bank = db.prepare(`
+        SELECT deposited_balance FROM bank_accounts WHERE owner_type = 'player' AND owner_id = ?
+      `).get(fromCharId);
+      if (!bank || bank.deposited_balance < offeringUsdc) {
+        return { 
+          success: false, 
+          error: 'Insufficient USDC in bank',
+          have: bank?.deposited_balance || 0,
+          need: offeringUsdc
+        };
+      }
+    }
   }
   
-  if (offeringMaterials) {
+  // Validate and LOCK offering materials
+  const materialsToLock = [];
+  if (offeringMaterials && offeringMaterials.length > 0) {
     for (const mat of offeringMaterials) {
+      // Validate quantity
+      if (!mat.quantity || mat.quantity < 1) {
+        return { success: false, error: `Invalid quantity for ${mat.materialId}` };
+      }
+      
       const playerMat = db.prepare(`
-        SELECT quantity FROM player_materials WHERE character_id = ? AND material_id = ?
+        SELECT * FROM player_materials WHERE character_id = ? AND material_id = ?
       `).get(fromCharId, mat.materialId);
       
       if (!playerMat || playerMat.quantity < mat.quantity) {
@@ -182,7 +206,32 @@ function createTradeOffer(db, fromCharId, offer) {
           need: mat.quantity
         };
       }
+      
+      materialsToLock.push({ 
+        id: playerMat.id, 
+        materialId: mat.materialId, 
+        quantity: mat.quantity,
+        currentQty: playerMat.quantity 
+      });
     }
+    
+    // Lock materials (remove from inventory)
+    for (const lock of materialsToLock) {
+      if (lock.currentQty === lock.quantity) {
+        db.prepare('DELETE FROM player_materials WHERE id = ?').run(lock.id);
+      } else {
+        db.prepare('UPDATE player_materials SET quantity = quantity - ? WHERE id = ?')
+          .run(lock.quantity, lock.id);
+      }
+    }
+  }
+  
+  // Lock USDC in bank if offering any
+  if (offeringUsdc && offeringUsdc > 0) {
+    db.prepare(`
+      UPDATE bank_accounts SET deposited_balance = deposited_balance - ? 
+      WHERE owner_type = 'player' AND owner_id = ?
+    `).run(offeringUsdc, fromCharId);
   }
   
   const offerId = crypto.randomUUID();
@@ -212,6 +261,10 @@ function createTradeOffer(db, fromCharId, offer) {
     success: true,
     offerId,
     expiresAt,
+    locked: {
+      usdc: offeringUsdc || 0,
+      materials: materialsToLock.map(m => ({ id: m.materialId, qty: m.quantity }))
+    },
     message: toCharId 
       ? `Trade offer sent to ${db.prepare('SELECT name FROM clawds WHERE id = ?').get(toCharId)?.name}`
       : 'Open trade offer created'
@@ -279,22 +332,34 @@ async function acceptTradeOffer(db, offerId, acceptingCharId) {
   // Execute the trade
   const results = [];
   
-  // Transfer offering USDC (from offerer to accepter)
+  // OFFERING: Items were LOCKED when trade was created, give them to accepter
+  // Give locked USDC to accepter (credit their bank directly)
   if (offer.offering_usdc > 0) {
-    const usdcResult = await sendUSDC(db, offer.from_character_id, acceptingCharId, offer.offering_usdc);
-    results.push({ type: 'usdc', direction: 'received', amount: offer.offering_usdc, ...usdcResult });
+    db.prepare(`
+      INSERT INTO bank_accounts (id, owner_type, owner_id, deposited_balance)
+      VALUES (?, 'player', ?, ?)
+      ON CONFLICT(owner_type, owner_id) DO UPDATE SET deposited_balance = deposited_balance + ?
+    `).run(crypto.randomUUID(), acceptingCharId, offer.offering_usdc, offer.offering_usdc);
+    
+    results.push({ type: 'usdc', direction: 'received', amount: offer.offering_usdc, success: true });
   }
   
+  // Give locked materials to accepter (they were removed from offerer when created)
+  for (const mat of offeringMaterials) {
+    db.prepare(`
+      INSERT INTO player_materials (id, character_id, material_id, quantity)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(character_id, material_id) DO UPDATE SET quantity = quantity + ?
+    `).run(crypto.randomUUID(), acceptingCharId, mat.materialId, mat.quantity, mat.quantity);
+    
+    results.push({ type: 'material', direction: 'received', materialId: mat.materialId, quantity: mat.quantity, success: true });
+  }
+  
+  // WANTING: These come from the accepter, use normal transfer
   // Transfer wanting USDC (from accepter to offerer)
   if (offer.wanting_usdc > 0) {
     const usdcResult = await sendUSDC(db, acceptingCharId, offer.from_character_id, offer.wanting_usdc);
     results.push({ type: 'usdc', direction: 'sent', amount: offer.wanting_usdc, ...usdcResult });
-  }
-  
-  // Transfer offering materials (from offerer to accepter)
-  for (const mat of offeringMaterials) {
-    const matResult = sendMaterials(db, offer.from_character_id, acceptingCharId, mat.materialId, mat.quantity);
-    results.push({ type: 'material', direction: 'received', ...matResult });
   }
   
   // Transfer wanting materials (from accepter to offerer)
@@ -316,6 +381,7 @@ async function acceptTradeOffer(db, offerId, acceptingCharId) {
 
 /**
  * Reject/cancel a trade offer
+ * Returns locked materials/USDC to the offerer
  */
 function rejectTradeOffer(db, offerId, characterId) {
   const offer = db.prepare('SELECT * FROM trade_offers WHERE id = ?').get(offerId);
@@ -334,9 +400,36 @@ function rejectTradeOffer(db, offerId, characterId) {
   }
   
   const status = offer.from_character_id === characterId ? 'cancelled' : 'rejected';
+  
+  // Return locked materials to offerer
+  const offeringMaterials = JSON.parse(offer.offering_materials || '[]');
+  for (const mat of offeringMaterials) {
+    db.prepare(`
+      INSERT INTO player_materials (id, character_id, material_id, quantity)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(character_id, material_id) DO UPDATE SET quantity = quantity + ?
+    `).run(crypto.randomUUID(), offer.from_character_id, mat.materialId, mat.quantity, mat.quantity);
+  }
+  
+  // Return locked USDC to offerer's bank
+  if (offer.offering_usdc > 0) {
+    db.prepare(`
+      INSERT INTO bank_accounts (id, owner_type, owner_id, deposited_balance)
+      VALUES (?, 'player', ?, ?)
+      ON CONFLICT(owner_type, owner_id) DO UPDATE SET deposited_balance = deposited_balance + ?
+    `).run(crypto.randomUUID(), offer.from_character_id, offer.offering_usdc, offer.offering_usdc);
+  }
+  
   db.prepare('UPDATE trade_offers SET status = ? WHERE id = ?').run(status, offerId);
   
-  return { success: true, status };
+  return { 
+    success: true, 
+    status,
+    returned: {
+      usdc: offer.offering_usdc,
+      materials: offeringMaterials
+    }
+  };
 }
 
 /**
@@ -395,6 +488,52 @@ function searchPlayers(db, query, excludeCharId) {
   `).all(excludeCharId, `%${query}%`, `%${query}%`);
 }
 
+/**
+ * Process expired trades and return locked items to offerers
+ * Call this from a cron job
+ */
+function processExpiredTrades(db) {
+  const expired = db.prepare(`
+    SELECT * FROM trade_offers 
+    WHERE status = 'pending' AND expires_at < datetime('now')
+  `).all();
+  
+  const results = [];
+  for (const offer of expired) {
+    // Return locked materials
+    const offeringMaterials = JSON.parse(offer.offering_materials || '[]');
+    for (const mat of offeringMaterials) {
+      db.prepare(`
+        INSERT INTO player_materials (id, character_id, material_id, quantity)
+        VALUES (?, ?, ?, ?)
+        ON CONFLICT(character_id, material_id) DO UPDATE SET quantity = quantity + ?
+      `).run(crypto.randomUUID(), offer.from_character_id, mat.materialId, mat.quantity, mat.quantity);
+    }
+    
+    // Return locked USDC
+    if (offer.offering_usdc > 0) {
+      db.prepare(`
+        INSERT INTO bank_accounts (id, owner_type, owner_id, deposited_balance)
+        VALUES (?, 'player', ?, ?)
+        ON CONFLICT(owner_type, owner_id) DO UPDATE SET deposited_balance = deposited_balance + ?
+      `).run(crypto.randomUUID(), offer.from_character_id, offer.offering_usdc, offer.offering_usdc);
+    }
+    
+    // Mark as expired
+    db.prepare('UPDATE trade_offers SET status = ? WHERE id = ?').run('expired', offer.id);
+    
+    results.push({
+      offerId: offer.id,
+      returned: {
+        usdc: offer.offering_usdc,
+        materials: offeringMaterials
+      }
+    });
+  }
+  
+  return { processed: results.length, results };
+}
+
 module.exports = {
   sendUSDC,
   sendMaterials,
@@ -402,5 +541,6 @@ module.exports = {
   acceptTradeOffer,
   rejectTradeOffer,
   getTradeOffers,
-  searchPlayers
+  searchPlayers,
+  processExpiredTrades
 };
