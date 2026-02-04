@@ -706,10 +706,11 @@ class ZoneManager {
     
     // Record discovery
     const crypto = require('crypto');
+    const zone = room.zone || roomId.split('_').slice(0, 2).join('_') || 'unknown';
     this.db.prepare(`
-      INSERT INTO room_discoveries (id, character_id, room_id)
-      VALUES (?, ?, ?)
-    `).run(crypto.randomUUID(), characterId, roomId);
+      INSERT INTO room_discoveries (id, character_id, room_id, zone)
+      VALUES (?, ?, ?, ?)
+    `).run(crypto.randomUUID(), characterId, roomId, zone);
     
     // Update room if first discovery
     if (!room.discovered) {

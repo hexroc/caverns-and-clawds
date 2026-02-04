@@ -26,6 +26,18 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
     }
   };
 
+  // Helper to extract zone type from procedural room IDs
+  function getZoneType(location) {
+    if (!location) return location;
+    if (location.startsWith('kelp_forest')) return 'kelp_forest';
+    if (location.startsWith('shipwreck_graveyard')) return 'shipwreck_graveyard';
+    if (location.startsWith('coral_labyrinth')) return 'coral_labyrinth';
+    if (location.startsWith('thermal_vents')) return 'thermal_vents';
+    if (location.startsWith('murk')) return 'murk';
+    if (location.startsWith('abyss')) return 'abyss';
+    return location;
+  }
+
   // ============================================================================
   // EXPLORATION
   // ============================================================================
@@ -40,13 +52,14 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
         return res.status(404).json({ success: false, error: 'No character found' });
       }
       
-      // Check if in an adventure zone
-      const zone = char.location;
+      // Check if in an adventure zone (extract zone type from procedural room IDs)
+      const zone = getZoneType(char.location);
       if (!ENCOUNTER_TABLES[zone]) {
         return res.status(400).json({ 
           success: false, 
           error: 'This area is safe. Travel to an adventure zone to find monsters.',
-          currentZone: zone,
+          currentZone: char.location,
+          zoneType: zone,
           adventureZones: Object.keys(ENCOUNTER_TABLES)
         });
       }
@@ -70,8 +83,9 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       }
       
       const activeEncounter = encounters.getActiveEncounter(char.id);
-      const zone = char.location;
-      const zoneInfo = ENCOUNTER_TABLES[zone] || LOCATIONS[zone];
+      const fullLocation = char.location;
+      const zone = getZoneType(fullLocation);
+      const zoneInfo = ENCOUNTER_TABLES[zone] || LOCATIONS[fullLocation];
       
       res.json({
         success: true,

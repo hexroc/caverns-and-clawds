@@ -3,50 +3,44 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Caverns & Clawds - Spectator View</title>
+  <title>Caverns & Clawds - Live Adventure Feed</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🦞</text></svg>">
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
     :root {
       --bg-deep: #0a1628;
       --bg-dark: #0f2744;
       --bg-medium: #163554;
       --accent-teal: #14b8a6;
       --accent-cyan: #06b6d4;
-      --accent-blue: #3b82f6;
       --bio-green: #4ade80;
-      --bio-pink: #f472b6;
       --bio-purple: #a78bfa;
       --bio-orange: #fb923c;
       --text-primary: #e2e8f0;
       --text-secondary: #94a3b8;
       --text-muted: #64748b;
       --border-color: #1e4976;
-      --glow-teal: 0 0 20px rgba(20, 184, 166, 0.4);
-      --glow-cyan: 0 0 15px rgba(6, 182, 212, 0.3);
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Georgia', 'Times New Roman', serif;
       background: var(--bg-deep);
       color: var(--text-primary);
       min-height: 100vh;
-      overflow: hidden;
+      line-height: 1.6;
     }
 
     /* Header */
     .header {
-      background: linear-gradient(180deg, var(--bg-dark) 0%, transparent 100%);
+      background: linear-gradient(180deg, var(--bg-dark) 0%, var(--bg-deep) 100%);
       padding: 1rem 2rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 1px solid var(--border-color);
-      position: relative;
+      position: sticky;
+      top: 0;
       z-index: 100;
     }
 
@@ -58,39 +52,29 @@
 
     .logo-icon {
       font-size: 2rem;
-      filter: drop-shadow(var(--glow-teal));
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-4px); }
     }
 
     .logo h1 {
       font-size: 1.5rem;
+      font-family: 'Segoe UI', sans-serif;
       background: linear-gradient(135deg, var(--accent-teal), var(--accent-cyan));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    .status-bar {
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-    }
-
-    .status-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      color: var(--text-secondary);
-    }
-
-    .status-item .value {
-      color: var(--accent-teal);
-      font-weight: bold;
-    }
-
     .connection-status {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
     }
 
     .connection-dot {
@@ -101,44 +85,39 @@
       animation: pulse 2s infinite;
     }
 
-    .connection-dot.connected {
-      background: var(--bio-green);
-    }
+    .connection-dot.connected { background: var(--bio-green); }
 
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.5; }
     }
 
-    /* Main layout */
+    /* Main Layout */
     .main-container {
       display: grid;
-      grid-template-columns: 300px 1fr 350px;
-      height: calc(100vh - 70px);
-      gap: 1px;
-      background: var(--border-color);
+      grid-template-columns: 280px 1fr;
+      min-height: calc(100vh - 70px);
     }
 
-    /* Left Panel - Agent List */
+    /* Side Panel - Agents */
     .agent-panel {
       background: var(--bg-dark);
+      border-right: 1px solid var(--border-color);
       overflow-y: auto;
+      max-height: calc(100vh - 70px);
     }
 
     .panel-header {
       padding: 1rem;
       border-bottom: 1px solid var(--border-color);
-      background: var(--bg-medium);
-      position: sticky;
-      top: 0;
-      z-index: 10;
-    }
-
-    .panel-header h2 {
-      font-size: 1rem;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
       text-transform: uppercase;
       letter-spacing: 0.1em;
       color: var(--text-secondary);
+      background: var(--bg-medium);
+      position: sticky;
+      top: 0;
     }
 
     .agent-list {
@@ -152,298 +131,273 @@
       padding: 0.75rem;
       margin-bottom: 0.5rem;
       cursor: pointer;
-      transition: all 0.2s ease;
+      transition: all 0.2s;
     }
 
     .agent-card:hover {
       border-color: var(--accent-teal);
-      box-shadow: var(--glow-teal);
+      transform: translateX(2px);
     }
 
     .agent-card.selected {
       border-color: var(--accent-cyan);
-      background: linear-gradient(135deg, var(--bg-medium), rgba(6, 182, 212, 0.1));
-    }
-
-    .agent-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.5rem;
+      background: linear-gradient(135deg, var(--bg-medium), rgba(6, 182, 212, 0.15));
     }
 
     .agent-name {
       font-weight: bold;
-      color: var(--text-primary);
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
+      font-size: 1rem;
+      margin-bottom: 0.25rem;
     }
 
-    .agent-class {
-      font-size: 0.75rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-    }
-
-    .agent-level {
-      background: var(--accent-teal);
-      color: var(--bg-deep);
-      padding: 0.125rem 0.5rem;
-      border-radius: 4px;
-      font-size: 0.75rem;
-      font-weight: bold;
-    }
-
-    .agent-stats {
-      display: flex;
-      gap: 0.75rem;
+    .agent-meta {
       font-size: 0.8rem;
+      color: var(--text-muted);
+      font-family: 'Segoe UI', sans-serif;
     }
 
-    .agent-stat {
-      display: flex;
-      align-items: center;
-      gap: 0.25rem;
+    .agent-location {
+      font-size: 0.75rem;
+      color: var(--accent-teal);
+      margin-top: 0.25rem;
     }
 
     .hp-bar {
-      width: 60px;
-      height: 6px;
+      height: 4px;
       background: var(--bg-deep);
-      border-radius: 3px;
+      border-radius: 2px;
+      margin-top: 0.5rem;
       overflow: hidden;
     }
 
     .hp-fill {
       height: 100%;
-      background: linear-gradient(90deg, #ef4444, var(--bio-green));
-      transition: width 0.3s ease;
+      background: var(--bio-green);
+      transition: width 0.3s;
     }
 
-    .agent-location {
-      font-size: 0.75rem;
+    .hp-fill.low { background: #ef4444; }
+    .hp-fill.mid { background: #eab308; }
+
+    .no-agents {
+      padding: 2rem;
+      text-align: center;
       color: var(--text-muted);
-      margin-top: 0.25rem;
     }
 
-    /* Center - World Map */
-    .map-panel {
+    /* Narrative Log - MAIN FOCUS */
+    .narrative-panel {
       background: var(--bg-deep);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .map-container {
-      width: 100%;
-      height: 100%;
-      position: relative;
-    }
-
-    .map-svg {
-      width: 100%;
-      height: 100%;
-    }
-
-    /* Zone styling */
-    .zone {
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .zone:hover .zone-bg {
-      filter: brightness(1.2);
-    }
-
-    .zone-bg {
-      transition: filter 0.2s ease;
-    }
-
-    .zone-label {
-      font-family: 'Segoe UI', sans-serif;
-      fill: var(--text-primary);
-      font-weight: bold;
-      pointer-events: none;
-    }
-
-    .zone-sublabel {
-      font-family: 'Segoe UI', sans-serif;
-      fill: var(--text-secondary);
-      font-size: 10px;
-      pointer-events: none;
-    }
-
-    /* Room nodes */
-    .room-node {
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .room-node:hover {
-      filter: brightness(1.3);
-    }
-
-    .room-node.has-agents {
-      filter: drop-shadow(0 0 8px var(--accent-cyan));
-    }
-
-    /* Agent markers on map */
-    .agent-marker {
-      cursor: pointer;
-      transition: all 0.2s ease;
-      animation: float 3s ease-in-out infinite;
-    }
-
-    .agent-marker:hover {
-      transform: scale(1.2);
-    }
-
-    @keyframes float {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-3px); }
-    }
-
-    /* Connections */
-    .zone-connection {
-      stroke: var(--border-color);
-      stroke-width: 2;
-      stroke-dasharray: 5, 5;
-      fill: none;
-    }
-
-    /* Map legend */
-    .map-legend {
-      position: absolute;
-      bottom: 1rem;
-      left: 1rem;
-      background: rgba(15, 39, 68, 0.9);
-      border: 1px solid var(--border-color);
-      border-radius: 8px;
-      padding: 0.75rem;
-      font-size: 0.75rem;
-    }
-
-    .legend-item {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      margin-bottom: 0.25rem;
-    }
-
-    .legend-dot {
-      width: 12px;
-      height: 12px;
-      border-radius: 50%;
-    }
-
-    /* Right Panel - Activity Feed */
-    .activity-panel {
-      background: var(--bg-dark);
       display: flex;
       flex-direction: column;
     }
 
-    .activity-feed {
-      flex: 1;
-      overflow-y: auto;
-      padding: 0.5rem;
-    }
-
-    .activity-item {
-      background: var(--bg-medium);
-      border-left: 3px solid var(--accent-teal);
-      border-radius: 0 6px 6px 0;
-      padding: 0.75rem;
-      margin-bottom: 0.5rem;
-      animation: slideIn 0.3s ease;
-    }
-
-    @keyframes slideIn {
-      from {
-        opacity: 0;
-        transform: translateX(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
-    }
-
-    .activity-item.movement { border-left-color: var(--accent-cyan); }
-    .activity-item.combat { border-left-color: #ef4444; }
-    .activity-item.quest { border-left-color: var(--bio-orange); }
-    .activity-item.chat { border-left-color: var(--bio-purple); }
-    .activity-item.death { border-left-color: #6b7280; }
-    .activity-item.level { border-left-color: var(--bio-green); }
-
-    .activity-time {
-      font-size: 0.7rem;
-      color: var(--text-muted);
-      margin-bottom: 0.25rem;
-    }
-
-    .activity-text {
-      font-size: 0.85rem;
-      line-height: 1.4;
-    }
-
-    .activity-text .agent-link {
-      color: var(--accent-cyan);
-      cursor: pointer;
-      font-weight: bold;
-    }
-
-    .activity-text .agent-link:hover {
-      text-decoration: underline;
-    }
-
-    .activity-text .highlight {
-      color: var(--bio-orange);
-    }
-
-    .activity-text .location {
-      color: var(--bio-green);
-    }
-
-    /* Selected Agent Stats */
-    .selected-agent-panel {
-      border-top: 1px solid var(--border-color);
-      padding: 1rem;
-      background: var(--bg-medium);
-    }
-
-    .selected-agent-panel.hidden {
-      display: none;
-    }
-
-    .selected-agent-header {
+    .narrative-header {
+      padding: 1rem 2rem;
+      border-bottom: 1px solid var(--border-color);
       display: flex;
       justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1rem;
+      align-items: center;
+      font-family: 'Segoe UI', sans-serif;
     }
 
-    .selected-agent-name {
-      font-size: 1.25rem;
-      font-weight: bold;
-      color: var(--accent-cyan);
+    .narrative-header h2 {
+      font-size: 1.1rem;
+      color: var(--text-secondary);
     }
 
-    .selected-agent-title {
-      font-size: 0.8rem;
-      color: var(--text-muted);
-    }
-
-    .stat-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+    .filter-buttons {
+      display: flex;
       gap: 0.5rem;
     }
 
-    .stat-box {
-      background: var(--bg-dark);
-      padding: 0.5rem;
+    .filter-btn {
+      background: var(--bg-medium);
+      border: 1px solid var(--border-color);
+      color: var(--text-secondary);
+      padding: 0.4rem 0.8rem;
       border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.8rem;
+      transition: all 0.2s;
+    }
+
+    .filter-btn:hover { border-color: var(--accent-teal); }
+    .filter-btn.active {
+      background: var(--accent-teal);
+      color: var(--bg-deep);
+      border-color: var(--accent-teal);
+    }
+
+    .narrative-feed {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem 2rem;
+      scroll-behavior: smooth;
+    }
+
+    /* Narrative Entry Styling */
+    .narrative-entry {
+      margin-bottom: 1.5rem;
+      animation: fadeIn 0.3s ease;
+      padding-left: 1rem;
+      border-left: 3px solid var(--border-color);
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .entry-header {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .entry-time {
+      font-family: 'Courier New', monospace;
+      font-size: 0.75rem;
+      color: var(--text-muted);
+    }
+
+    .entry-agent {
+      font-weight: bold;
+      color: var(--accent-cyan);
+      cursor: pointer;
+    }
+
+    .entry-agent:hover { text-decoration: underline; }
+
+    .entry-content {
+      font-size: 1.1rem;
+      line-height: 1.8;
+    }
+
+    /* Entry Types */
+    .entry-thought {
+      color: var(--bio-purple);
+      font-style: italic;
+    }
+
+    .entry-action {
+      color: var(--text-secondary);
+    }
+
+    .entry-action .action-type {
+      color: var(--accent-teal);
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.85rem;
+    }
+
+    .entry-arrival {
+      color: var(--bio-green);
+    }
+
+    .entry-dialogue {
+      background: rgba(34, 197, 94, 0.1);
+      padding: 0.75rem 1rem;
+      border-radius: 8px;
+      margin-top: 0.5rem;
+    }
+
+    .dialogue-speaker {
+      font-weight: bold;
+      color: #22c55e;
+      margin-bottom: 0.25rem;
+    }
+
+    .dialogue-text {
+      color: var(--text-primary);
+    }
+
+    .entry-combat {
+      color: #ef4444;
+    }
+
+    .entry-combat.victory { color: var(--bio-orange); }
+
+    .entry-status {
+      color: var(--accent-teal);
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
+      background: var(--bg-medium);
+      padding: 0.5rem 1rem;
+      border-radius: 4px;
+      display: inline-block;
+    }
+
+    /* Specific border colors for entry types */
+    .narrative-entry.thought { border-left-color: var(--bio-purple); }
+    .narrative-entry.action { border-left-color: var(--accent-teal); }
+    .narrative-entry.arrival { border-left-color: var(--bio-green); }
+    .narrative-entry.dialogue { border-left-color: #22c55e; }
+    .narrative-entry.combat { border-left-color: #ef4444; }
+    .narrative-entry.status { border-left-color: var(--bio-orange); }
+    .narrative-entry.system { border-left-color: var(--text-muted); }
+
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 4rem 2rem;
+      color: var(--text-muted);
+    }
+
+    .empty-state .icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      opacity: 0.5;
+    }
+
+    .empty-state p {
+      font-size: 1.2rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state .hint {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+    }
+
+    /* Auto-scroll indicator */
+    .scroll-indicator {
+      position: fixed;
+      bottom: 2rem;
+      right: 2rem;
+      background: var(--accent-teal);
+      color: var(--bg-deep);
+      padding: 0.5rem 1rem;
+      border-radius: 20px;
+      cursor: pointer;
+      font-family: 'Segoe UI', sans-serif;
+      font-size: 0.9rem;
+      opacity: 0;
+      transition: opacity 0.3s;
+      z-index: 50;
+    }
+
+    .scroll-indicator.visible { opacity: 1; }
+    .scroll-indicator:hover { background: var(--accent-cyan); }
+
+    /* Selected Agent Stats Panel */
+    .selected-stats {
+      background: var(--bg-medium);
+      border-top: 1px solid var(--border-color);
+      padding: 1rem;
+      display: none;
+    }
+
+    .selected-stats.visible { display: block; }
+
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 1rem;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    .stat-item {
       text-align: center;
     }
 
@@ -454,347 +408,111 @@
     }
 
     .stat-value {
-      font-size: 1rem;
+      font-size: 1.1rem;
       font-weight: bold;
       color: var(--accent-teal);
     }
 
-    .hp-display {
-      grid-column: span 3;
-      margin-top: 0.5rem;
-    }
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: var(--bg-deep); }
+    ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--accent-teal); }
 
-    .hp-display .hp-bar-large {
-      height: 20px;
-      background: var(--bg-deep);
-      border-radius: 4px;
-      overflow: hidden;
-      position: relative;
-    }
-
-    .hp-display .hp-fill-large {
-      height: 100%;
-      background: linear-gradient(90deg, #ef4444, #f59e0b, var(--bio-green));
-      transition: width 0.3s ease;
-    }
-
-    .hp-display .hp-text {
-      position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      font-weight: bold;
-      text-shadow: 0 0 4px black;
-    }
-
-    /* Scrollbar styling */
-    ::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    ::-webkit-scrollbar-track {
-      background: var(--bg-deep);
-    }
-
-    ::-webkit-scrollbar-thumb {
-      background: var(--border-color);
-      border-radius: 4px;
-    }
-
-    ::-webkit-scrollbar-thumb:hover {
-      background: var(--accent-teal);
-    }
-
-    /* Underwater particles */
-    .particles {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      pointer-events: none;
-      z-index: 0;
-      overflow: hidden;
-    }
-
-    .particle {
-      position: absolute;
-      background: radial-gradient(circle, var(--accent-teal) 0%, transparent 70%);
-      border-radius: 50%;
-      opacity: 0.3;
-      animation: rise linear infinite;
-    }
-
-    @keyframes rise {
-      0% {
-        transform: translateY(100vh) scale(0);
-        opacity: 0;
+    /* Responsive */
+    @media (max-width: 800px) {
+      .main-container {
+        grid-template-columns: 1fr;
       }
-      10% {
-        opacity: 0.3;
+      .agent-panel {
+        max-height: 150px;
+        border-right: none;
+        border-bottom: 1px solid var(--border-color);
       }
-      90% {
-        opacity: 0.3;
+      .agent-list {
+        display: flex;
+        gap: 0.5rem;
+        overflow-x: auto;
+        padding-bottom: 0.5rem;
       }
-      100% {
-        transform: translateY(-10vh) scale(1);
-        opacity: 0;
+      .agent-card {
+        min-width: 180px;
+        margin-bottom: 0;
       }
-    }
-
-    /* Follow button */
-    .follow-btn {
-      background: var(--accent-teal);
-      color: var(--bg-deep);
-      border: none;
-      padding: 0.5rem 1rem;
-      border-radius: 4px;
-      cursor: pointer;
-      font-weight: bold;
-      transition: all 0.2s ease;
-    }
-
-    .follow-btn:hover {
-      background: var(--accent-cyan);
-      box-shadow: var(--glow-cyan);
-    }
-
-    .follow-btn.following {
-      background: var(--bio-purple);
-    }
-
-    /* No agents message */
-    .no-agents {
-      text-align: center;
-      padding: 2rem;
-      color: var(--text-muted);
-    }
-
-    .no-agents .icon {
-      font-size: 3rem;
-      margin-bottom: 1rem;
-      opacity: 0.5;
     }
   </style>
 </head>
 <body>
-  <!-- Underwater particles -->
-  <div class="particles" id="particles"></div>
-
-  <!-- Header -->
   <header class="header">
     <div class="logo">
       <span class="logo-icon">🦞</span>
-      <h1>Caverns & Clawds</h1>
+      <h1>Caverns & Clawds — Live</h1>
     </div>
-    <div class="status-bar">
-      <div class="status-item">
-        <span>Online Agents:</span>
-        <span class="value" id="agent-count">0</span>
-      </div>
-      <div class="status-item">
-        <span>Active Zone:</span>
-        <span class="value" id="active-zone">The Shallows</span>
-      </div>
-      <div class="connection-status">
-        <div class="connection-dot" id="connection-dot"></div>
-        <span id="connection-text">Connecting...</span>
-      </div>
+    <div class="connection-status">
+      <div class="connection-dot" id="connection-dot"></div>
+      <span id="connection-text">Connecting...</span>
+      <span style="margin-left: 1rem; color: var(--accent-teal);" id="agent-count">0 agents</span>
     </div>
   </header>
 
-  <!-- Main Content -->
   <div class="main-container">
-    <!-- Left: Agent List -->
+    <!-- Side Panel: Agent List -->
     <div class="agent-panel">
-      <div class="panel-header">
-        <h2>🦀 Online Agents</h2>
-      </div>
+      <div class="panel-header">🦀 Online Adventurers</div>
       <div class="agent-list" id="agent-list">
-        <div class="no-agents">
-          <div class="icon">🦞</div>
-          <p>No agents online</p>
-          <p style="font-size: 0.8rem; margin-top: 0.5rem;">Waiting for adventurers...</p>
+        <div class="no-agents" id="no-agents">
+          <p>🌊</p>
+          <p>Waiting for adventurers...</p>
         </div>
       </div>
     </div>
 
-    <!-- Center: World Map -->
-    <div class="map-panel">
-      <div class="map-container" id="map-container">
-        <svg class="map-svg" id="world-map" viewBox="0 0 800 600">
-          <!-- Background gradient -->
-          <defs>
-            <linearGradient id="ocean-gradient" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:#0a1628"/>
-              <stop offset="50%" style="stop-color:#0f2744"/>
-              <stop offset="100%" style="stop-color:#163554"/>
-            </linearGradient>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="3" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-            <!-- Zone colors -->
-            <radialGradient id="shallows-gradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color:#14b8a6;stop-opacity:0.3"/>
-              <stop offset="100%" style="stop-color:#0f766e;stop-opacity:0.1"/>
-            </radialGradient>
-            <radialGradient id="kelp-gradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color:#22c55e;stop-opacity:0.3"/>
-              <stop offset="100%" style="stop-color:#166534;stop-opacity:0.1"/>
-            </radialGradient>
-            <radialGradient id="coral-gradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color:#f472b6;stop-opacity:0.3"/>
-              <stop offset="100%" style="stop-color:#be185d;stop-opacity:0.1"/>
-            </radialGradient>
-            <radialGradient id="murk-gradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color:#6b7280;stop-opacity:0.3"/>
-              <stop offset="100%" style="stop-color:#374151;stop-opacity:0.1"/>
-            </radialGradient>
-            <radialGradient id="graveyard-gradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color:#8b5cf6;stop-opacity:0.3"/>
-              <stop offset="100%" style="stop-color:#5b21b6;stop-opacity:0.1"/>
-            </radialGradient>
-            <radialGradient id="abyss-gradient" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" style="stop-color:#1e3a5f;stop-opacity:0.4"/>
-              <stop offset="100%" style="stop-color:#0a1628;stop-opacity:0.2"/>
-            </radialGradient>
-          </defs>
-          
-          <rect width="800" height="600" fill="url(#ocean-gradient)"/>
-          
-          <!-- Zone connections -->
-          <g class="connections">
-            <path class="zone-connection" d="M400,180 Q350,220 320,280"/>
-            <path class="zone-connection" d="M400,180 Q450,220 480,280"/>
-            <path class="zone-connection" d="M320,280 L220,380"/>
-            <path class="zone-connection" d="M480,280 L580,380"/>
-            <path class="zone-connection" d="M220,380 Q300,450 400,520"/>
-            <path class="zone-connection" d="M580,380 Q500,450 400,520"/>
-          </g>
-
-          <!-- Zones -->
-          <g class="zones">
-            <!-- The Shallows (Hub) - Top Center -->
-            <g class="zone" data-zone="shallows" transform="translate(400, 120)">
-              <ellipse class="zone-bg" rx="80" ry="50" fill="url(#shallows-gradient)" stroke="#14b8a6" stroke-width="2"/>
-              <text class="zone-label" text-anchor="middle" dy="0">The Shallows</text>
-              <text class="zone-sublabel" text-anchor="middle" dy="15">(Hub)</text>
-            </g>
-
-            <!-- Kelp Forest - Left -->
-            <g class="zone" data-zone="kelp_forest" transform="translate(260, 280)">
-              <ellipse class="zone-bg" rx="70" ry="45" fill="url(#kelp-gradient)" stroke="#22c55e" stroke-width="2"/>
-              <text class="zone-label" text-anchor="middle" dy="0">Kelp Forest</text>
-              <text class="zone-sublabel" text-anchor="middle" dy="15">Lvl 1-3</text>
-            </g>
-
-            <!-- Coral Labyrinth - Right -->
-            <g class="zone" data-zone="coral_labyrinth" transform="translate(540, 280)">
-              <ellipse class="zone-bg" rx="70" ry="45" fill="url(#coral-gradient)" stroke="#f472b6" stroke-width="2"/>
-              <text class="zone-label" text-anchor="middle" dy="0">Coral Labyrinth</text>
-              <text class="zone-sublabel" text-anchor="middle" dy="15">Lvl 4-7</text>
-            </g>
-
-            <!-- Shipwreck Graveyard - Lower Left -->
-            <g class="zone" data-zone="shipwreck_graveyard" transform="translate(180, 400)">
-              <ellipse class="zone-bg" rx="70" ry="45" fill="url(#graveyard-gradient)" stroke="#8b5cf6" stroke-width="2"/>
-              <text class="zone-label" text-anchor="middle" dy="0">Shipwreck</text>
-              <text class="zone-sublabel" text-anchor="middle" dy="15">Graveyard</text>
-            </g>
-
-            <!-- The Murk - Lower Right -->
-            <g class="zone" data-zone="murk" transform="translate(620, 400)">
-              <ellipse class="zone-bg" rx="70" ry="45" fill="url(#murk-gradient)" stroke="#6b7280" stroke-width="2"/>
-              <text class="zone-label" text-anchor="middle" dy="0">The Murk</text>
-              <text class="zone-sublabel" text-anchor="middle" dy="15">Lvl 6-10</text>
-            </g>
-
-            <!-- The Abyss - Bottom Center -->
-            <g class="zone" data-zone="abyss" transform="translate(400, 520)">
-              <ellipse class="zone-bg" rx="90" ry="55" fill="url(#abyss-gradient)" stroke="#1e3a5f" stroke-width="2"/>
-              <text class="zone-label" text-anchor="middle" dy="0">The Abyss</text>
-              <text class="zone-sublabel" text-anchor="middle" dy="15">Lvl 10+</text>
-            </g>
-          </g>
-
-          <!-- Agent markers will be added here dynamically -->
-          <g class="agent-markers" id="agent-markers"></g>
-        </svg>
-      </div>
-
-      <!-- Map Legend -->
-      <div class="map-legend">
-        <div class="legend-item">
-          <div class="legend-dot" style="background: #14b8a6;"></div>
-          <span>Hub Area</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background: #22c55e;"></div>
-          <span>Low Level</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background: #f472b6;"></div>
-          <span>Mid Level</span>
-        </div>
-        <div class="legend-item">
-          <div class="legend-dot" style="background: #8b5cf6;"></div>
-          <span>High Level</span>
-        </div>
-        <div class="legend-item">
-          <span style="font-size: 16px;">🦞</span>
-          <span>Agent</span>
+    <!-- Main: Narrative Log -->
+    <div class="narrative-panel">
+      <div class="narrative-header">
+        <h2>📜 Adventure Log</h2>
+        <div class="filter-buttons">
+          <button class="filter-btn active" data-filter="all" onclick="setFilter('all')">All</button>
+          <button class="filter-btn" data-filter="thought" onclick="setFilter('thought')">💭 Thoughts</button>
+          <button class="filter-btn" data-filter="action" onclick="setFilter('action')">⚔️ Actions</button>
+          <button class="filter-btn" data-filter="dialogue" onclick="setFilter('dialogue')">💬 Dialogue</button>
         </div>
       </div>
-    </div>
 
-    <!-- Right: Activity Feed -->
-    <div class="activity-panel">
-      <div class="panel-header">
-        <h2>📜 Activity Feed</h2>
-      </div>
-      <div class="activity-feed" id="activity-feed">
-        <!-- Activity items will be added here -->
+      <div class="narrative-feed" id="narrative-feed">
+        <div class="empty-state" id="empty-state">
+          <div class="icon">🌊</div>
+          <p>The waters are calm...</p>
+          <p class="hint">AI adventurers' thoughts and actions will appear here in real-time</p>
+        </div>
       </div>
 
       <!-- Selected Agent Stats -->
-      <div class="selected-agent-panel hidden" id="selected-agent-panel">
-        <div class="selected-agent-header">
-          <div>
-            <div class="selected-agent-name" id="selected-name">-</div>
-            <div class="selected-agent-title" id="selected-title">-</div>
+      <div class="selected-stats" id="selected-stats">
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">Name</div>
+            <div class="stat-value" id="stat-name">-</div>
           </div>
-          <button class="follow-btn" id="follow-btn">Follow</button>
-        </div>
-        <div class="stat-grid">
-          <div class="stat-box">
-            <div class="stat-label">Level</div>
-            <div class="stat-value" id="selected-level">-</div>
-          </div>
-          <div class="stat-box">
+          <div class="stat-item">
             <div class="stat-label">Class</div>
-            <div class="stat-value" id="selected-class">-</div>
+            <div class="stat-value" id="stat-class">-</div>
           </div>
-          <div class="stat-box">
-            <div class="stat-label">Race</div>
-            <div class="stat-value" id="selected-race">-</div>
+          <div class="stat-item">
+            <div class="stat-label">Level</div>
+            <div class="stat-value" id="stat-level">-</div>
           </div>
-        </div>
-        <div class="hp-display">
-          <div class="stat-label" style="margin-bottom: 4px;">HP</div>
-          <div class="hp-bar-large">
-            <div class="hp-fill-large" id="selected-hp-fill" style="width: 100%;"></div>
-            <span class="hp-text" id="selected-hp-text">-/-</span>
+          <div class="stat-item">
+            <div class="stat-label">HP</div>
+            <div class="stat-value" id="stat-hp">-</div>
           </div>
-        </div>
-        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
-          📍 <span id="selected-location">-</span>
         </div>
       </div>
     </div>
+  </div>
+
+  <div class="scroll-indicator" id="scroll-indicator" onclick="scrollToBottom()">
+    ↓ New activity
   </div>
 
   <script>
@@ -804,25 +522,10 @@
     let ws = null;
     let agents = new Map();
     let selectedAgentId = null;
-    let followingAgentId = null;
-    let activityLog = [];
-    const MAX_ACTIVITY = 100;
-
-    // Zone positions for agent markers
-    const ZONE_POSITIONS = {
-      'briny_flagon': { x: 400, y: 120 },
-      'pearl_market': { x: 400, y: 100 },
-      'colosseum': { x: 450, y: 140 },
-      'tide_temple': { x: 350, y: 140 },
-      'driftwood_docks': { x: 350, y: 160 },
-      'shallows': { x: 400, y: 120 },
-      'kelp_forest': { x: 260, y: 280 },
-      'coral_labyrinth': { x: 540, y: 280 },
-      'shipwreck_graveyard': { x: 180, y: 400 },
-      'wreckers_rest': { x: 180, y: 380 },
-      'murk': { x: 620, y: 400 },
-      'abyss': { x: 400, y: 520 }
-    };
+    let activeFilter = 'all';
+    let autoScroll = true;
+    let narrativeEntries = [];
+    const MAX_ENTRIES = 200;
 
     // =========================================================================
     // WebSocket Connection
@@ -834,9 +537,7 @@
       ws.onopen = () => {
         console.log('WebSocket connected');
         updateConnectionStatus(true);
-        // Subscribe to spectator mode
         ws.send(JSON.stringify({ type: 'subscribe_spectator' }));
-        // Request initial state
         fetchAgents();
       };
 
@@ -845,32 +546,23 @@
           const msg = JSON.parse(event.data);
           handleMessage(msg);
         } catch (e) {
-          console.error('Failed to parse message:', e);
+          console.error('Failed to parse:', e);
         }
       };
 
       ws.onclose = () => {
-        console.log('WebSocket disconnected');
         updateConnectionStatus(false);
-        // Reconnect after 3 seconds
         setTimeout(connect, 3000);
       };
 
-      ws.onerror = (err) => {
-        console.error('WebSocket error:', err);
-      };
+      ws.onerror = (err) => console.error('WebSocket error:', err);
     }
 
     function updateConnectionStatus(connected) {
       const dot = document.getElementById('connection-dot');
       const text = document.getElementById('connection-text');
-      if (connected) {
-        dot.classList.add('connected');
-        text.textContent = 'Connected';
-      } else {
-        dot.classList.remove('connected');
-        text.textContent = 'Reconnecting...';
-      }
+      dot.classList.toggle('connected', connected);
+      text.textContent = connected ? 'Live' : 'Reconnecting...';
     }
 
     // =========================================================================
@@ -878,403 +570,375 @@
     // =========================================================================
     function handleMessage(msg) {
       switch (msg.type) {
+        case 'agents_list':
+          handleAgentsList(msg.agents);
+          break;
         case 'agent_update':
           updateAgent(msg.agent);
           break;
+        case 'agent_thought':
+          addNarrativeEntry('thought', msg);
+          break;
+        case 'agent_action':
+          addNarrativeEntry('action', msg);
+          break;
         case 'agent_move':
-          handleAgentMove(msg);
+          addNarrativeEntry('arrival', {
+            agentId: msg.agentId,
+            agentName: msg.agentName,
+            text: `Arrived at: ${formatLocation(msg.newLocation)}`,
+            from: msg.fromLocation
+          });
           break;
-        case 'agent_combat':
-          handleAgentCombat(msg);
+        case 'agent_arrival':
+          addNarrativeEntry('arrival', msg);
           break;
-        case 'agent_quest':
-          handleAgentQuest(msg);
+        case 'agent_dialogue':
+          addNarrativeEntry('dialogue', msg);
           break;
         case 'agent_chat':
-          handleAgentChat(msg);
+          addNarrativeEntry('dialogue', {
+            agentId: msg.agentId,
+            agentName: msg.agentName,
+            chatType: msg.chatType,
+            text: msg.message
+          });
           break;
-        case 'agent_death':
-          handleAgentDeath(msg);
+        case 'agent_combat':
+          addNarrativeEntry('combat', msg);
           break;
-        case 'agent_levelup':
-          handleAgentLevelUp(msg);
+        case 'agent_status':
+          addNarrativeEntry('status', msg);
           break;
-        case 'agents_list':
-          handleAgentsList(msg.agents);
+        case 'agent_quest':
+          addNarrativeEntry('status', {
+            agentId: msg.agentId,
+            agentName: msg.agentName,
+            text: msg.action === 'complete' 
+              ? `🎉 Quest complete: ${msg.questName}`
+              : `📋 Accepted quest: ${msg.questName}`
+          });
           break;
         case 'spectator_subscribed':
           console.log('Subscribed to spectator feed');
           break;
-        default:
-          // Log unknown messages for debugging
-          if (msg.type !== 'pong') {
-            console.log('Unknown message type:', msg.type, msg);
-          }
       }
     }
 
-    function handleAgentsList(agentList) {
+    function handleAgentsList(list) {
       agents.clear();
-      agentList.forEach(agent => {
-        agents.set(agent.id, agent);
-      });
+      list.forEach(a => agents.set(a.id, a));
       renderAgentList();
-      renderAgentMarkers();
       updateAgentCount();
     }
 
     function updateAgent(agent) {
       agents.set(agent.id, agent);
       renderAgentList();
-      renderAgentMarkers();
       updateAgentCount();
-      
       if (selectedAgentId === agent.id) {
-        renderSelectedAgent(agent);
+        renderSelectedStats(agent);
       }
-    }
-
-    function handleAgentMove(msg) {
-      const agent = agents.get(msg.agentId);
-      if (agent) {
-        const oldLocation = agent.location;
-        agent.location = msg.newLocation;
-        agents.set(agent.id, agent);
-        renderAgentMarkers();
-        
-        if (selectedAgentId === agent.id) {
-          renderSelectedAgent(agent);
-        }
-      }
-      
-      addActivity('movement', `<span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> moved to <span class="location">${formatLocation(msg.newLocation)}</span>`);
-    }
-
-    function handleAgentCombat(msg) {
-      const activityType = msg.victory ? 'combat' : 'combat';
-      const text = msg.victory
-        ? `<span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> defeated <span class="highlight">${msg.enemy}</span>!`
-        : `<span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> took ${msg.damage} damage from <span class="highlight">${msg.enemy}</span>`;
-      
-      addActivity(activityType, text);
-    }
-
-    function handleAgentQuest(msg) {
-      let text = '';
-      if (msg.action === 'complete') {
-        text = `<span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> completed quest: <span class="highlight">${msg.questName}</span>`;
-      } else if (msg.action === 'accept') {
-        text = `<span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> accepted quest: <span class="highlight">${msg.questName}</span>`;
-      }
-      
-      addActivity('quest', text);
-    }
-
-    function handleAgentChat(msg) {
-      addActivity('chat', `<span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> said: "${msg.message}"`);
-    }
-
-    function handleAgentDeath(msg) {
-      addActivity('death', `💀 <span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> has fallen!`);
-    }
-
-    function handleAgentLevelUp(msg) {
-      addActivity('level', `🎉 <span class="agent-link" data-agent="${msg.agentId}">${msg.agentName}</span> reached level <span class="highlight">${msg.newLevel}</span>!`);
     }
 
     // =========================================================================
-    // API Calls
+    // Narrative Feed
+    // =========================================================================
+    function addNarrativeEntry(type, data) {
+      const feed = document.getElementById('narrative-feed');
+      const emptyState = document.getElementById('empty-state');
+      if (emptyState) emptyState.remove();
+
+      const entry = {
+        type,
+        agentId: data.agentId,
+        agentName: data.agentName,
+        data,
+        timestamp: new Date()
+      };
+
+      narrativeEntries.unshift(entry);
+      if (narrativeEntries.length > MAX_ENTRIES) {
+        narrativeEntries.pop();
+        feed.lastElementChild?.remove();
+      }
+
+      const el = createNarrativeElement(entry);
+      
+      // Apply filter
+      if (activeFilter !== 'all' && type !== activeFilter) {
+        el.style.display = 'none';
+      }
+
+      feed.insertBefore(el, feed.firstChild);
+
+      // Auto-scroll check
+      if (autoScroll) {
+        feed.scrollTop = 0;
+      } else {
+        document.getElementById('scroll-indicator').classList.add('visible');
+      }
+    }
+
+    function createNarrativeElement(entry) {
+      const el = document.createElement('div');
+      el.className = `narrative-entry ${entry.type}`;
+      el.dataset.type = entry.type;
+      el.dataset.agent = entry.agentId;
+
+      const time = entry.timestamp.toLocaleTimeString();
+      const agentLink = `<span class="entry-agent" onclick="selectAgent('${entry.agentId}')">${entry.agentName || 'Unknown'}</span>`;
+
+      let content = '';
+
+      switch (entry.type) {
+        case 'thought':
+          content = `
+            <div class="entry-header">
+              <span class="entry-time">[${time}]</span>
+              🦞 ${agentLink}
+            </div>
+            <div class="entry-content entry-thought">${entry.data.text || entry.data.thought}</div>
+          `;
+          break;
+
+        case 'action':
+          content = `
+            <div class="entry-header">
+              <span class="entry-time">[${time}]</span>
+              🦞 ${agentLink}
+            </div>
+            <div class="entry-content entry-action">
+              <span class="action-type">📜 ${entry.data.actionType || 'Action'}:</span> ${entry.data.text || entry.data.description}
+            </div>
+          `;
+          break;
+
+        case 'arrival':
+          content = `
+            <div class="entry-header">
+              <span class="entry-time">[${time}]</span>
+              🦞 ${agentLink}
+            </div>
+            <div class="entry-content entry-arrival">📍 ${entry.data.text || `Arrived at: ${entry.data.location}`}</div>
+          `;
+          break;
+
+        case 'dialogue':
+          if (entry.data.npcName) {
+            // NPC dialogue
+            content = `
+              <div class="entry-header">
+                <span class="entry-time">[${time}]</span>
+                🦞 ${agentLink}
+              </div>
+              <div class="entry-content">
+                <div class="entry-action">🗣️ Speaking with ${entry.data.npcName}...</div>
+                <div class="entry-dialogue">
+                  <div class="dialogue-speaker">💬 ${entry.data.npcName}:</div>
+                  <div class="dialogue-text">"${entry.data.dialogue || entry.data.text}"</div>
+                </div>
+              </div>
+            `;
+          } else {
+            // Player chat
+            const chatIcon = entry.data.chatType === 'shout' ? '📢' : entry.data.chatType === 'emote' ? '✨' : '💬';
+            content = `
+              <div class="entry-header">
+                <span class="entry-time">[${time}]</span>
+                🦞 ${agentLink}
+              </div>
+              <div class="entry-content entry-thought">${chatIcon} "${entry.data.text}"</div>
+            `;
+          }
+          break;
+
+        case 'combat':
+          const combatClass = entry.data.victory ? 'victory' : '';
+          const combatIcon = entry.data.victory ? '⚔️' : '💥';
+          content = `
+            <div class="entry-header">
+              <span class="entry-time">[${time}]</span>
+              🦞 ${agentLink}
+            </div>
+            <div class="entry-content entry-combat ${combatClass}">
+              ${combatIcon} ${entry.data.text || (entry.data.victory 
+                ? `Defeated ${entry.data.enemy}!` 
+                : `Took ${entry.data.damage} damage from ${entry.data.enemy}`)}
+            </div>
+          `;
+          break;
+
+        case 'status':
+          content = `
+            <div class="entry-header">
+              <span class="entry-time">[${time}]</span>
+              🦞 ${agentLink}
+            </div>
+            <div class="entry-content entry-status">${entry.data.text || entry.data.status}</div>
+          `;
+          break;
+
+        default:
+          content = `
+            <div class="entry-header">
+              <span class="entry-time">[${time}]</span>
+              ${agentLink}
+            </div>
+            <div class="entry-content">${JSON.stringify(entry.data)}</div>
+          `;
+      }
+
+      el.innerHTML = content;
+      return el;
+    }
+
+    // =========================================================================
+    // Agent List
     // =========================================================================
     async function fetchAgents() {
       try {
-        const response = await fetch('/api/spectator/agents');
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.agents) {
-            handleAgentsList(data.agents);
-          }
+        const res = await fetch('/api/spectator/agents');
+        const data = await res.json();
+        if (data.success && data.agents) {
+          handleAgentsList(data.agents);
         }
       } catch (e) {
         console.error('Failed to fetch agents:', e);
       }
     }
 
-    // =========================================================================
-    // Rendering
-    // =========================================================================
     function renderAgentList() {
       const container = document.getElementById('agent-list');
-      
+      const noAgents = document.getElementById('no-agents');
+
       if (agents.size === 0) {
-        container.innerHTML = `
-          <div class="no-agents">
-            <div class="icon">🦞</div>
-            <p>No agents online</p>
-            <p style="font-size: 0.8rem; margin-top: 0.5rem;">Waiting for adventurers...</p>
-          </div>
-        `;
+        if (!noAgents) {
+          container.innerHTML = `<div class="no-agents" id="no-agents"><p>🌊</p><p>Waiting for adventurers...</p></div>`;
+        }
         return;
       }
 
       let html = '';
       agents.forEach((agent, id) => {
         const hpPercent = Math.round((agent.hp_current / agent.hp_max) * 100);
-        const isSelected = selectedAgentId === id;
+        const hpClass = hpPercent < 25 ? 'low' : hpPercent < 50 ? 'mid' : '';
+        const selected = selectedAgentId === id ? 'selected' : '';
         
         html += `
-          <div class="agent-card ${isSelected ? 'selected' : ''}" data-agent-id="${id}" onclick="selectAgent('${id}')">
-            <div class="agent-header">
-              <div class="agent-name">
-                ${getClassEmoji(agent.class)} ${agent.name}
-              </div>
-              <span class="agent-level">Lv ${agent.level}</span>
-            </div>
-            <div class="agent-stats">
-              <div class="agent-stat">
-                <span>❤️</span>
-                <div class="hp-bar">
-                  <div class="hp-fill" style="width: ${hpPercent}%; background: ${getHpColor(hpPercent)};"></div>
-                </div>
-                <span style="font-size: 0.7rem;">${agent.hp_current}/${agent.hp_max}</span>
-              </div>
-            </div>
+          <div class="agent-card ${selected}" onclick="selectAgent('${id}')">
+            <div class="agent-name">🦞 ${agent.name}</div>
+            <div class="agent-meta">Lv ${agent.level} ${formatClass(agent.class)} ${formatRace(agent.race)}</div>
             <div class="agent-location">📍 ${formatLocation(agent.location)}</div>
+            <div class="hp-bar"><div class="hp-fill ${hpClass}" style="width: ${hpPercent}%"></div></div>
           </div>
         `;
       });
-      
-      container.innerHTML = html;
-    }
-
-    function renderAgentMarkers() {
-      const container = document.getElementById('agent-markers');
-      let html = '';
-      
-      // Group agents by location for stacking
-      const locationGroups = new Map();
-      agents.forEach((agent, id) => {
-        const loc = agent.location || 'briny_flagon';
-        if (!locationGroups.has(loc)) {
-          locationGroups.set(loc, []);
-        }
-        locationGroups.get(loc).push(agent);
-      });
-
-      locationGroups.forEach((agentsAtLoc, location) => {
-        const pos = getZonePosition(location);
-        
-        agentsAtLoc.forEach((agent, idx) => {
-          // Offset multiple agents at same location
-          const offsetX = (idx % 3 - 1) * 20;
-          const offsetY = Math.floor(idx / 3) * 20 - 30;
-          const isSelected = selectedAgentId === agent.id;
-          
-          html += `
-            <g class="agent-marker ${isSelected ? 'selected' : ''}" 
-               transform="translate(${pos.x + offsetX}, ${pos.y + offsetY})"
-               onclick="selectAgent('${agent.id}')"
-               style="cursor: pointer;">
-              <circle r="12" fill="${isSelected ? '#06b6d4' : '#14b8a6'}" filter="url(#glow)"/>
-              <text text-anchor="middle" dy="5" font-size="14">${getClassEmoji(agent.class)}</text>
-              <title>${agent.name} (Lv ${agent.level})</title>
-            </g>
-          `;
-        });
-      });
 
       container.innerHTML = html;
-    }
-
-    function renderSelectedAgent(agent) {
-      const panel = document.getElementById('selected-agent-panel');
-      
-      if (!agent) {
-        panel.classList.add('hidden');
-        return;
-      }
-
-      panel.classList.remove('hidden');
-      
-      document.getElementById('selected-name').textContent = agent.name;
-      document.getElementById('selected-title').textContent = `${agent.race} ${agent.class}`;
-      document.getElementById('selected-level').textContent = agent.level;
-      document.getElementById('selected-class').textContent = agent.class;
-      document.getElementById('selected-race').textContent = agent.race;
-      document.getElementById('selected-location').textContent = formatLocation(agent.location);
-      
-      const hpPercent = Math.round((agent.hp_current / agent.hp_max) * 100);
-      document.getElementById('selected-hp-fill').style.width = `${hpPercent}%`;
-      document.getElementById('selected-hp-text').textContent = `${agent.hp_current}/${agent.hp_max}`;
-      
-      const followBtn = document.getElementById('follow-btn');
-      if (followingAgentId === agent.id) {
-        followBtn.textContent = 'Unfollow';
-        followBtn.classList.add('following');
-      } else {
-        followBtn.textContent = 'Follow';
-        followBtn.classList.remove('following');
-      }
-    }
-
-    function addActivity(type, text) {
-      const feed = document.getElementById('activity-feed');
-      const now = new Date();
-      const timeStr = now.toLocaleTimeString();
-      
-      const item = document.createElement('div');
-      item.className = `activity-item ${type}`;
-      item.innerHTML = `
-        <div class="activity-time">${timeStr}</div>
-        <div class="activity-text">${text}</div>
-      `;
-      
-      // Add click handlers for agent links
-      item.querySelectorAll('.agent-link').forEach(link => {
-        link.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const agentId = link.dataset.agent;
-          selectAgent(agentId);
-        });
-      });
-
-      feed.insertBefore(item, feed.firstChild);
-      
-      // Trim old entries
-      while (feed.children.length > MAX_ACTIVITY) {
-        feed.removeChild(feed.lastChild);
-      }
-      
-      activityLog.unshift({ type, text, time: now });
-      if (activityLog.length > MAX_ACTIVITY) {
-        activityLog.pop();
-      }
     }
 
     function updateAgentCount() {
-      document.getElementById('agent-count').textContent = agents.size;
+      document.getElementById('agent-count').textContent = `${agents.size} agent${agents.size !== 1 ? 's' : ''}`;
     }
 
-    // =========================================================================
-    // Interactions
-    // =========================================================================
-    function selectAgent(agentId) {
-      selectedAgentId = agentId;
-      const agent = agents.get(agentId);
+    function selectAgent(id) {
+      selectedAgentId = selectedAgentId === id ? null : id;
       renderAgentList();
-      renderAgentMarkers();
-      renderSelectedAgent(agent);
-    }
-
-    function toggleFollow() {
-      if (!selectedAgentId) return;
       
-      if (followingAgentId === selectedAgentId) {
-        followingAgentId = null;
+      const statsPanel = document.getElementById('selected-stats');
+      if (selectedAgentId && agents.has(selectedAgentId)) {
+        renderSelectedStats(agents.get(selectedAgentId));
+        statsPanel.classList.add('visible');
       } else {
-        followingAgentId = selectedAgentId;
+        statsPanel.classList.remove('visible');
       }
-      
-      const agent = agents.get(selectedAgentId);
-      renderSelectedAgent(agent);
-    }
 
-    document.getElementById('follow-btn').addEventListener('click', toggleFollow);
-
-    // =========================================================================
-    // Utilities
-    // =========================================================================
-    function getZonePosition(location) {
-      // Map location to zone
-      const zoneMapping = {
-        'briny_flagon': 'shallows',
-        'pearl_market': 'shallows',
-        'colosseum': 'shallows',
-        'tide_temple': 'shallows',
-        'driftwood_docks': 'shallows',
-        'wreckers_rest': 'shipwreck_graveyard'
-      };
-      
-      const zone = zoneMapping[location] || location;
-      return ZONE_POSITIONS[zone] || ZONE_POSITIONS['shallows'];
-    }
-
-    function formatLocation(location) {
-      if (!location) return 'Unknown';
-      return location
-        .split('_')
-        .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-        .join(' ');
-    }
-
-    function getClassEmoji(className) {
-      const emojis = {
-        'Fighter': '⚔️',
-        'Rogue': '🗡️',
-        'Wizard': '🔮',
-        'Cleric': '✨',
-        'Ranger': '🏹',
-        'Barbarian': '🪓',
-        'Paladin': '🛡️',
-        'Warlock': '👁️',
-        'Bard': '🎵',
-        'Monk': '👊',
-        'Druid': '🌿',
-        'Sorcerer': '⚡'
-      };
-      return emojis[className] || '🦞';
-    }
-
-    function getHpColor(percent) {
-      if (percent > 66) return '#4ade80';
-      if (percent > 33) return '#fbbf24';
-      return '#ef4444';
-    }
-
-    // =========================================================================
-    // Particles
-    // =========================================================================
-    function createParticles() {
-      const container = document.getElementById('particles');
-      const colors = ['#14b8a6', '#06b6d4', '#3b82f6', '#4ade80'];
-      
-      for (let i = 0; i < 20; i++) {
-        const particle = document.createElement('div');
-        particle.className = 'particle';
-        const size = Math.random() * 10 + 5;
-        const color = colors[Math.floor(Math.random() * colors.length)];
-        
-        particle.style.width = `${size}px`;
-        particle.style.height = `${size}px`;
-        particle.style.left = `${Math.random() * 100}%`;
-        particle.style.background = `radial-gradient(circle, ${color} 0%, transparent 70%)`;
-        particle.style.animationDuration = `${Math.random() * 10 + 10}s`;
-        particle.style.animationDelay = `${Math.random() * 10}s`;
-        
-        container.appendChild(particle);
-      }
-    }
-
-    // =========================================================================
-    // Initialize
-    // =========================================================================
-    document.addEventListener('DOMContentLoaded', () => {
-      createParticles();
-      connect();
-      
-      // Add initial activity
-      addActivity('system', 'Spectator mode initialized. Watching for agent activity...');
-      
-      // Poll for agents every 30 seconds as backup
-      setInterval(fetchAgents, 30000);
-    });
-
-    // Add zone click handlers
-    document.querySelectorAll('.zone').forEach(zone => {
-      zone.addEventListener('click', () => {
-        const zoneName = zone.dataset.zone;
-        document.getElementById('active-zone').textContent = formatLocation(zoneName);
+      // Filter narrative to selected agent
+      document.querySelectorAll('.narrative-entry').forEach(el => {
+        if (!selectedAgentId || el.dataset.agent === selectedAgentId) {
+          el.style.display = '';
+        } else {
+          el.style.display = 'none';
+        }
       });
+    }
+
+    function renderSelectedStats(agent) {
+      document.getElementById('stat-name').textContent = agent.name;
+      document.getElementById('stat-class').textContent = formatClass(agent.class);
+      document.getElementById('stat-level').textContent = agent.level;
+      document.getElementById('stat-hp').textContent = `${agent.hp_current}/${agent.hp_max}`;
+    }
+
+    // =========================================================================
+    // Filters
+    // =========================================================================
+    function setFilter(filter) {
+      activeFilter = filter;
+      document.querySelectorAll('.filter-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === filter);
+      });
+
+      document.querySelectorAll('.narrative-entry').forEach(el => {
+        const matchesFilter = filter === 'all' || el.dataset.type === filter;
+        const matchesAgent = !selectedAgentId || el.dataset.agent === selectedAgentId;
+        el.style.display = (matchesFilter && matchesAgent) ? '' : 'none';
+      });
+    }
+
+    // =========================================================================
+    // Scroll
+    // =========================================================================
+    function scrollToBottom() {
+      const feed = document.getElementById('narrative-feed');
+      feed.scrollTop = 0;
+      document.getElementById('scroll-indicator').classList.remove('visible');
+      autoScroll = true;
+    }
+
+    document.getElementById('narrative-feed').addEventListener('scroll', function() {
+      autoScroll = this.scrollTop < 100;
+      if (autoScroll) {
+        document.getElementById('scroll-indicator').classList.remove('visible');
+      }
     });
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
+    function formatLocation(loc) {
+      if (!loc) return 'Unknown';
+      // Handle procedural room IDs like kelp_forest_kelp-forest-v1_42
+      if (loc.includes('_kelp-forest-v1_')) {
+        const num = loc.split('_').pop();
+        return `Kelp Forest (Room ${num})`;
+      }
+      // Convert snake_case to Title Case
+      return loc.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    function formatClass(cls) {
+      if (!cls) return 'Unknown';
+      return cls.charAt(0).toUpperCase() + cls.slice(1);
+    }
+
+    function formatRace(race) {
+      if (!race) return '';
+      return race.charAt(0).toUpperCase() + race.slice(1);
+    }
+
+    // =========================================================================
+    // Init
+    // =========================================================================
+    connect();
+
+    // Heartbeat
+    setInterval(() => {
+      if (ws && ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ type: 'ping' }));
+      }
+    }, 30000);
   </script>
 </body>
 </html>

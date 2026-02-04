@@ -5,36 +5,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Caverns & Clawds</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Crimson+Text:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     :root {
-      --gold: #d4af37;
-      --gold-light: #f4d03f;
-      --gold-dark: #aa8c2c;
-      --purple: #6b4c9a;
-      --purple-dark: #4a3470;
-      --red: #8b0000;
-      --blue: #1e4d6b;
-      --blue-light: #2a6a94;
-      --teal: #0d7377;
-      --bg-dark: #0a0a0f;
-      --bg-card: #12121a;
-      --bg-card-hover: #1a1a25;
+      /* Kelp Forest Theme */
+      --primary: #40e0d0;
+      --primary-light: #7fffd4;
+      --primary-dark: #2ab5a5;
+      --accent: #90ee90;
+      --accent-dark: #228b22;
+      --coral: #ff6b6b;
+      --seagreen: #2e8b57;
+      --bg-dark: #071a1f;
+      --bg-mid: #0d2f2b;
+      --bg-card: rgba(7, 26, 31, 0.95);
+      --bg-card-hover: rgba(13, 47, 43, 0.95);
       --text: #e8e8e8;
-      --text-dim: #888;
-      --border: rgba(212, 175, 55, 0.2);
+      --text-dim: #b8d4ce;
+      --border: rgba(46, 139, 87, 0.4);
+      /* Legacy support */
+      --gold: #40e0d0;
+      --gold-light: #7fffd4;
+      --gold-dark: #2ab5a5;
+      --teal: #40e0d0;
     }
 
     body {
       font-family: 'Crimson Text', Georgia, serif;
-      background: var(--bg-dark);
+      background: linear-gradient(180deg, #071a1f 0%, #0d2f2b 50%, #051916 100%);
       color: var(--text);
       min-height: 100vh;
-      background-image: 
-        radial-gradient(ellipse at top left, rgba(30, 77, 107, 0.2) 0%, transparent 40%),
-        radial-gradient(ellipse at bottom right, rgba(107, 76, 154, 0.15) 0%, transparent 40%);
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(34, 139, 34, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 60%, rgba(46, 139, 87, 0.1) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 10%, rgba(64, 224, 208, 0.08) 0%, transparent 40%),
+        linear-gradient(180deg, #071a1f 0%, #0d2f2b 50%, #051916 100%);
+      background-attachment: fixed;
     }
 
     /* Navigation */
@@ -48,7 +56,7 @@
       align-items: center;
       gap: 0.5rem;
       padding: 1rem;
-      background: rgba(10, 10, 15, 0.95);
+      background: rgba(7, 26, 31, 0.95);
       backdrop-filter: blur(10px);
       border-bottom: 1px solid var(--border);
       z-index: 100;
@@ -56,19 +64,18 @@
     }
 
     .nav-logo {
-      font-family: 'Cinzel', serif;
-      font-size: 1.2rem;
-      font-weight: 900;
-      color: var(--gold);
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.4rem;
+      color: var(--primary);
       margin-right: 1rem;
       text-decoration: none;
+      text-shadow: 0 2px 10px rgba(64, 224, 208, 0.3);
     }
 
     .nav-btn {
       padding: 0.5rem 1rem;
-      font-family: 'Cinzel', serif;
-      font-size: 0.85rem;
-      font-weight: 700;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 0.9rem;
       color: var(--text-dim);
       background: transparent;
       border: 1px solid transparent;
@@ -78,13 +85,13 @@
     }
 
     .nav-btn:hover, .nav-btn.active {
-      color: var(--gold);
-      border-color: var(--gold);
-      background: rgba(212, 175, 55, 0.1);
+      color: var(--primary);
+      border-color: var(--primary);
+      background: rgba(64, 224, 208, 0.1);
     }
 
     .nav-btn.active {
-      background: rgba(212, 175, 55, 0.2);
+      background: rgba(46, 139, 87, 0.3);
     }
 
     .nav-link {
@@ -125,13 +132,12 @@
     }
 
     .section-title {
-      font-family: 'Cinzel', serif;
+      font-family: 'Luckiest Guy', cursive;
       font-size: 2.5rem;
-      font-weight: 900;
-      color: var(--gold);
+      color: var(--primary);
       text-align: center;
       margin-bottom: 0.5rem;
-      text-shadow: 0 0 30px rgba(212, 175, 55, 0.3);
+      text-shadow: 0 2px 15px rgba(64, 224, 208, 0.4);
     }
 
     .section-subtitle {
@@ -155,17 +161,15 @@
       width: 90vw;
       height: auto;
       margin-bottom: 1.5rem;
-      filter: drop-shadow(0 0 30px rgba(212, 175, 55, 0.3));
+      filter: drop-shadow(0 0 30px rgba(64, 224, 208, 0.4));
     }
 
     .coming-soon {
-      font-family: 'Cinzel', serif;
-      font-size: 2.5rem;
-      font-weight: 900;
-      color: var(--gold);
-      text-shadow: 0 0 30px rgba(212, 175, 55, 0.5);
-      letter-spacing: 0.15em;
-      text-transform: uppercase;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 2.8rem;
+      color: var(--primary);
+      text-shadow: 0 2px 20px rgba(64, 224, 208, 0.5);
+      letter-spacing: 0.1em;
       animation: pulse 2s ease-in-out infinite;
     }
 
@@ -199,9 +203,9 @@
 
     .card:hover {
       background: var(--bg-card-hover);
-      border-color: var(--gold);
+      border-color: var(--primary);
       transform: translateY(-3px);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 10px 30px rgba(64, 224, 208, 0.15);
     }
 
     .card-header {
@@ -214,7 +218,7 @@
     .card-icon {
       width: 50px;
       height: 50px;
-      background: linear-gradient(135deg, var(--purple) 0%, var(--purple-dark) 100%);
+      background: linear-gradient(135deg, var(--seagreen) 0%, var(--accent-dark) 100%);
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -222,16 +226,15 @@
       font-size: 1.5rem;
     }
 
-    .card-icon.blue { background: linear-gradient(135deg, var(--blue) 0%, var(--blue-light) 100%); }
-    .card-icon.teal { background: linear-gradient(135deg, var(--teal) 0%, #0a5a5c 100%); }
-    .card-icon.red { background: linear-gradient(135deg, var(--red) 0%, #5c0000 100%); }
-    .card-icon.gold { background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%); }
+    .card-icon.blue { background: linear-gradient(135deg, #1e4d6b 0%, #2a6a94 100%); }
+    .card-icon.teal { background: linear-gradient(135deg, var(--primary-dark) 0%, var(--primary) 100%); }
+    .card-icon.red { background: linear-gradient(135deg, var(--coral) 0%, #cc5555 100%); }
+    .card-icon.gold { background: linear-gradient(135deg, var(--accent) 0%, var(--seagreen) 100%); }
 
     .card-title {
-      font-family: 'Cinzel', serif;
+      font-family: 'Luckiest Guy', cursive;
       font-size: 1.3rem;
-      font-weight: 700;
-      color: var(--gold-light);
+      color: var(--primary);
     }
 
     .card-subtitle {
@@ -457,11 +460,26 @@
 
     /* Solana Section */
     .solana-section {
-      background: linear-gradient(180deg, rgba(107, 76, 154, 0.1) 0%, transparent 100%);
+      background: linear-gradient(180deg, rgba(46, 139, 87, 0.1) 0%, transparent 100%);
       padding: 3rem 1rem;
       text-align: center;
       border-radius: 12px;
       margin-top: 2rem;
+    }
+
+    .solana-banner {
+      display: inline-block;
+      margin-bottom: 1.5rem;
+    }
+
+    .solana-logo {
+      height: 40px;
+      filter: brightness(1.2);
+      transition: transform 0.3s;
+    }
+
+    .solana-logo:hover {
+      transform: scale(1.05);
     }
 
     .solana-badges {
@@ -469,14 +487,14 @@
       justify-content: center;
       flex-wrap: wrap;
       gap: 1rem;
-      margin-top: 1.5rem;
+      margin-top: 1rem;
     }
 
     .solana-badge {
       background: var(--bg-card);
       padding: 0.75rem 1.5rem;
       border-radius: 30px;
-      border: 1px solid rgba(212, 175, 55, 0.3);
+      border: 1px solid var(--border);
       display: flex;
       align-items: center;
       gap: 0.5rem;
@@ -484,8 +502,8 @@
 
     .solana-badge-icon { font-size: 1.3rem; }
     .solana-badge-text {
-      font-family: 'Cinzel', serif;
-      color: var(--gold-light);
+      font-family: 'Luckiest Guy', cursive;
+      color: var(--primary);
       font-size: 0.9rem;
     }
 
@@ -498,9 +516,17 @@
     }
 
     .footer-tagline {
-      font-family: 'Cinzel', serif;
+      font-family: 'Luckiest Guy', cursive;
       font-size: 1.2rem;
-      color: var(--gold);
+      color: var(--primary);
+    }
+
+    .footer-credits {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1rem;
+      color: var(--accent);
+      margin-top: 1rem;
+      opacity: 0.8;
     }
 
     /* Loading */
@@ -652,23 +678,6 @@
 
         <div class="card">
           <div class="card-header">
-            <div class="card-icon gold">🎰</div>
-            <div>
-              <div class="card-title">Tavern Games</div>
-              <div class="card-subtitle">Gamble with SOL</div>
-            </div>
-          </div>
-          <div class="card-body">
-            <p>Classic casino games in the Briny Flagon.</p>
-            <ul class="feature-list">
-              <li>Blackjack, Poker</li>
-              <li>Fate Duel, Dungeon Draw</li>
-            </ul>
-          </div>
-        </div>
-
-        <div class="card">
-          <div class="card-header">
             <div class="card-icon">🤖</div>
             <div>
               <div class="card-title">AI Agent Integration</div>
@@ -791,7 +800,9 @@
       </div>
 
       <div class="solana-section">
-        <h2 class="section-title">💎 Solana Powered 💎</h2>
+        <a href="https://solana.com" target="_blank" class="solana-banner">
+          <img src="https://solana.com/src/img/branding/solanaLogo.svg" alt="Powered by Solana" class="solana-logo">
+        </a>
         <div class="solana-badges">
           <div class="solana-badge">
             <span class="solana-badge-icon">💳</span>
@@ -800,10 +811,6 @@
           <div class="solana-badge">
             <span class="solana-badge-icon">👛</span>
             <span class="solana-badge-text">Wallet Integration</span>
-          </div>
-          <div class="solana-badge">
-            <span class="solana-badge-icon">💰</span>
-            <span class="solana-badge-text">SOL Gambling</span>
           </div>
         </div>
       </div>
@@ -998,6 +1005,7 @@
 
   <footer>
     <p class="footer-tagline">🦞⚔️ Descend into the depths. Claim your glory. ⚔️🦞</p>
+    <p class="footer-credits">By B-Rock & Hex 🦞</p>
   </footer>
 
   <script>

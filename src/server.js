@@ -45,6 +45,7 @@ const { createQuestRoutes } = require('./quest-routes');
 const { createQuestEngineRoutes, getQuestEngine } = require('./quest-engine-routes');
 const { createHenchmanRoutes } = require('./henchman-routes');
 const { createSocialRoutes } = require('./social-routes');
+const { createEconomyRoutes } = require('./economy/economy-routes');
 
 // Twitter OAuth 2.0 config (set these in environment)
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID || '';
@@ -293,7 +294,7 @@ app.get('/api/spectator/agents', (req, res) => {
       level: a.level,
       hp_current: a.hp_current,
       hp_max: a.hp_max,
-      location: a.location || a.current_zone || 'briny_flagon',
+      location: a.current_zone || a.location || 'briny_flagon',
       status: a.status,
       agent_name: a.agent_name
     }));
@@ -348,6 +349,74 @@ app.get('/api/spectator/zones', (req, res) => {
   ];
   
   res.json({ success: true, zones });
+});
+
+/**
+ * POST /api/spectator/broadcast - AI agents broadcast narrative events
+ * 
+ * Allows AI players to broadcast their thoughts, actions, and status to spectators.
+ * Requires authentication (API key).
+ * 
+ * Event types:
+ * - agent_thought: AI's internal monologue/personality flavor
+ * - agent_action: What they're doing (moving, searching, etc.)
+ * - agent_arrival: Where they arrived
+ * - agent_combat: Fight updates
+ * - agent_status: HP/quest/level updates
+ */
+app.post('/api/spectator/broadcast', (req, res) => {
+  try {
+    // Get API key from header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, error: 'API key required' });
+    }
+    
+    const apiKey = authHeader.split(' ')[1];
+    const user = db.prepare('SELECT id, name FROM users WHERE api_key = ?').get(apiKey);
+    if (!user) {
+      return res.status(401).json({ success: false, error: 'Invalid API key' });
+    }
+    
+    // Get the user's character
+    const character = db.prepare('SELECT id, name FROM clawds WHERE agent_id = ?').get(user.id);
+    if (!character) {
+      return res.status(404).json({ success: false, error: 'No character found' });
+    }
+    
+    const { type, text, data } = req.body;
+    
+    // Validate event type
+    const validTypes = ['agent_thought', 'agent_action', 'agent_arrival', 'agent_combat', 'agent_status'];
+    if (!type || !validTypes.includes(type)) {
+      return res.status(400).json({ 
+        success: false, 
+        error: `Invalid type. Must be one of: ${validTypes.join(', ')}` 
+      });
+    }
+    
+    if (!text && !data) {
+      return res.status(400).json({ success: false, error: 'text or data required' });
+    }
+    
+    // Build the event
+    const event = {
+      type,
+      agentId: character.id,
+      agentName: character.name,
+      text: text || '',
+      timestamp: Date.now(),
+      ...data
+    };
+    
+    // Broadcast to all spectators
+    broadcastToSpectators(event);
+    
+    res.json({ success: true, broadcasted: true, event });
+  } catch (err) {
+    console.error('Broadcast error:', err);
+    res.status(500).json({ success: false, error: 'Failed to broadcast' });
+  }
 });
 
 // === HELPERS ===
@@ -2764,8 +2833,12 @@ app.use('/api/henchmen', createHenchmanRoutes(db, authenticateAgent));
 console.log('📜 Quest system loaded (Quest Engine v2 + legacy v1)');
 
 // Mount Social routes
-app.use('/api/social', createSocialRoutes(db, authenticateAgent));
+app.use('/api/social', createSocialRoutes(db, authenticateAgent, broadcastToSpectators));
 console.log('💬 Social system loaded (chat, emotes, presence)');
+
+// Mount Economy routes
+app.use('/api/economy', createEconomyRoutes(db, authenticateAgent));
+console.log('💰 Economy system loaded (USDC, banking, trading)');
 
 // (Capstone dungeon system removed - MUD direction)
 

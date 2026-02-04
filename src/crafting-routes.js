@@ -5,6 +5,7 @@
  */
 
 const express = require('express');
+const crypto = require('crypto');
 const { CraftingManager, MATERIALS, CRAFTING_STATIONS, RECIPES } = require('./crafting');
 
 function createCraftingRoutes(db, authenticateAgent) {
@@ -20,8 +21,8 @@ function createCraftingRoutes(db, authenticateAgent) {
 
   // Helper to get inventory (materials)
   const getInventory = (characterId) => {
-    // Get character's inventory including materials
-    const char = db.prepare('SELECT * FROM characters WHERE id = ?').get(characterId);
+    // Get character's level from clawds table
+    const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
     const inventoryItems = db.prepare(`
       SELECT * FROM character_inventory WHERE character_id = ?
     `).all(characterId);
@@ -73,11 +74,11 @@ function createCraftingRoutes(db, authenticateAgent) {
         return res.status(404).json({ success: false, error: 'No character found' });
       }
 
-      const stations = crafting.getStationsAtLocation(char.current_location);
+      const stations = crafting.getStationsAtLocation(char.location);
 
       res.json({
         success: true,
-        location: char.current_location,
+        location: char.location,
         stations: stations.map(s => ({
           id: s.id,
           name: s.name,
@@ -316,7 +317,7 @@ function createCraftingRoutes(db, authenticateAgent) {
       }
 
       // Check station is at current location
-      const nearbyStations = crafting.getStationsAtLocation(char.current_location);
+      const nearbyStations = crafting.getStationsAtLocation(char.location);
       if (!nearbyStations.find(s => s.id === station_id)) {
         return res.status(400).json({
           success: false,
@@ -363,9 +364,9 @@ function createCraftingRoutes(db, authenticateAgent) {
         `).run(outputItem.quantity, char.id, outputItem.itemId);
       } else {
         db.prepare(`
-          INSERT INTO character_inventory (character_id, item_id, quantity, item_data)
+          INSERT INTO character_inventory (id, character_id, item_id, quantity)
           VALUES (?, ?, ?, ?)
-        `).run(char.id, outputItem.itemId, outputItem.quantity, JSON.stringify(outputItem.stats));
+        `).run(crypto.randomUUID(), char.id, outputItem.itemId, outputItem.quantity);
       }
 
       res.json({

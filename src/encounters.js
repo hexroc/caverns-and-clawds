@@ -12,6 +12,7 @@ const { QuestManager } = require('./quests');
 const { QuestEngine } = require('./quest-engine');
 const { HenchmanManager } = require('./henchmen');
 const { generateZoneLoot, getZoneTier } = require('./loot-tables');
+const { generateMaterialDrops, addMaterialsToPlayer } = require('./economy/material-drops');
 
 // ============================================================================
 // SPELLS (5e, Sea-themed names)
@@ -1515,9 +1516,9 @@ class EncounterManager {
    * Handle victory
    */
   _handleVictory(char, encounter, monsters, messages = []) {
-    // Calculate total XP and loot
+    // Calculate total XP and material drops
     let totalXP = 0;
-    let totalPearls = 0;
+    const allMaterials = [];
     const allLoot = [];
     
     // Get character's current zone for tier-appropriate loot
@@ -1526,12 +1527,14 @@ class EncounterManager {
     for (const monster of monsters) {
       totalXP += getMonsterXP(monster.monsterId);
       
-      // Use zone-aware loot system for procedural zones
+      // Generate MATERIAL drops (not pearls!)
       const monsterData = MONSTERS[monster.monsterId];
       const cr = monsterData?.cr || '1/4';
-      const loot = generateZoneLoot(monster.monsterId, zoneType, cr);
+      const materialDrops = generateMaterialDrops(monster.monsterId, cr);
+      allMaterials.push(...materialDrops);
       
-      totalPearls += loot.pearls;
+      // Still get rare item drops from loot tables
+      const loot = generateZoneLoot(monster.monsterId, zoneType, cr);
       allLoot.push(...loot.items);
     }
     
@@ -1551,10 +1554,15 @@ class EncounterManager {
       leveledUp = true;
     }
     
-    // Update character
+    // Update character (XP and level only - no more pearl drops!)
     this.db.prepare(`
-      UPDATE clawds SET xp = ?, level = ?, pearls = pearls + ? WHERE id = ?
-    `).run(newXP, newLevel, totalPearls, char.id);
+      UPDATE clawds SET xp = ?, level = ? WHERE id = ?
+    `).run(newXP, newLevel, char.id);
+    
+    // Add MATERIALS to player's material inventory
+    if (allMaterials.length > 0) {
+      addMaterialsToPlayer(this.db, char.id, allMaterials);
+    }
     
     // Add loot to inventory
     for (const loot of allLoot) {
@@ -1594,7 +1602,13 @@ class EncounterManager {
     messages.push('');
     messages.push('🎉 **VICTORY!**');
     messages.push(`⭐ Gained ${totalXP} XP`);
-    messages.push(`🔮 Found ${totalPearls} pearls`);
+    
+    // Show material drops (no more pearls!)
+    if (allMaterials.length > 0) {
+      const matNames = allMaterials.map(m => `${m.name} x${m.quantity}`);
+      messages.push(`🧪 Materials: ${matNames.join(', ')}`);
+      messages.push(`💡 Sell materials to NPCs for USDC!`);
+    }
     
     if (allLoot.length > 0) {
       const lootNames = allLoot.map(l => {
@@ -1622,7 +1636,7 @@ class EncounterManager {
       combatEnded: true,
       result: 'victory',
       xpGained: totalXP,
-      pearlsGained: totalPearls,
+      materials: allMaterials,
       loot: allLoot,
       leveledUp,
       newLevel,

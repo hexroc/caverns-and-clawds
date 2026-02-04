@@ -9,10 +9,17 @@ const express = require('express');
 const { SocialManager } = require('./social');
 const { CharacterManager } = require('./character');
 
-function createSocialRoutes(db, authenticateAgent) {
+function createSocialRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
   const social = new SocialManager(db);
   const characters = new CharacterManager(db);
+
+  // Helper to broadcast spectator events
+  const notifySpectators = (event) => {
+    if (broadcastToSpectators) {
+      broadcastToSpectators(event);
+    }
+  };
 
   // Helper to get character and validate
   const getChar = (req) => {
@@ -74,6 +81,17 @@ function createSocialRoutes(db, authenticateAgent) {
       // Get other players in room who would see this
       const witnesses = social.getPlayersInRoom(roomId, char.id);
 
+      // Notify spectators of chat
+      notifySpectators({
+        type: 'agent_chat',
+        chatType: 'say',
+        agentId: char.id,
+        agentName: char.name,
+        message: message.trim(),
+        location: char.location,
+        timestamp: Date.now()
+      });
+
       res.json({
         success: true,
         chat: result,
@@ -121,6 +139,18 @@ function createSocialRoutes(db, authenticateAgent) {
 
       // Get other players in zone who would hear this
       const witnesses = social.getPlayersInZone(zoneId, char.id);
+
+      // Notify spectators of shout
+      notifySpectators({
+        type: 'agent_chat',
+        chatType: 'shout',
+        agentId: char.id,
+        agentName: char.name,
+        message: message.trim(),
+        location: char.location,
+        zone: zoneId,
+        timestamp: Date.now()
+      });
 
       res.json({
         success: true,
@@ -237,6 +267,17 @@ function createSocialRoutes(db, authenticateAgent) {
 
       // Get other players in room who would see this
       const witnesses = social.getPlayersInRoom(roomId, char.id);
+
+      // Notify spectators of emote (result contains the formatted emote text)
+      notifySpectators({
+        type: 'agent_chat',
+        chatType: 'emote',
+        agentId: char.id,
+        agentName: char.name,
+        message: result.content || custom || emote,
+        location: char.location,
+        timestamp: Date.now()
+      });
 
       res.json({
         success: true,

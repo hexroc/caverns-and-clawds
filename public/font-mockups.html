@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>C&C Font Mockups - Kelp Theme</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Luckiest+Guy&family=Fredoka+One&family=Titan+One&family=Bungee&family=Chewy&family=Baloo+2:wght@400;700&family=Bubblegum+Sans&family=Lilita+One&family=Crimson+Text&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    body {
+      font-family: 'Crimson Text', Georgia, serif;
+      background: linear-gradient(180deg, #071a1f 0%, #0d2f2b 50%, #051916 100%);
+      color: #e8e8e8;
+      padding: 2rem;
+      min-height: 100vh;
+    }
+    
+    h1 {
+      font-family: 'Fredoka One', cursive;
+      text-align: center;
+      margin-bottom: 2rem;
+      color: #40e0d0;
+      font-size: 2.5rem;
+    }
+    
+    .mockup-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 2rem;
+      max-width: 1400px;
+      margin: 0 auto;
+    }
+    
+    .mockup {
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+      background: rgba(7, 26, 31, 0.95);
+      border: 1px solid rgba(46, 139, 87, 0.4);
+    }
+    
+    .mockup-label {
+      padding: 1rem;
+      background: rgba(0,0,0,0.5);
+      font-size: 1rem;
+      color: #90ee90;
+      border-bottom: 1px solid rgba(46, 139, 87, 0.3);
+    }
+    
+    .mockup-content {
+      padding: 1.5rem;
+      min-height: 320px;
+      background: linear-gradient(180deg, #071a1f 0%, #0d2f2b 50%, #051916 100%);
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(34, 139, 34, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 60%, rgba(46, 139, 87, 0.1) 0%, transparent 40%),
+        radial-gradient(ellipse at 50% 10%, rgba(64, 224, 208, 0.08) 0%, transparent 40%),
+        linear-gradient(180deg, #071a1f 0%, #0d2f2b 50%, #051916 100%);
+    }
+    
+    .mockup-nav {
+      display: flex;
+      gap: 0.75rem;
+      margin-bottom: 1.5rem;
+      padding: 0.75rem;
+      background: rgba(13, 47, 43, 0.9);
+      border: 1px solid rgba(46, 139, 87, 0.4);
+      border-radius: 8px;
+      flex-wrap: wrap;
+    }
+    
+    .mockup-btn {
+      padding: 0.4rem 0.8rem;
+      background: transparent;
+      color: #40e0d0;
+      border: 1px solid rgba(64, 224, 208, 0.5);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    
+    .mockup-btn:first-child {
+      background: rgba(46, 139, 87, 0.3);
+    }
+    
+    .mockup-card {
+      background: rgba(7, 26, 31, 0.95);
+      border: 1px solid rgba(34, 139, 34, 0.4);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    
+    .mockup-title {
+      color: #40e0d0;
+      margin-bottom: 0.5rem;
+      font-size: 1.4rem;
+    }
+    
+    .mockup-card p {
+      color: #b8d4ce;
+      line-height: 1.4;
+    }
+    
+    .accent { color: #90ee90; }
+    
+    .logo-text {
+      font-size: 2rem;
+      color: #40e0d0;
+      text-align: center;
+      margin-bottom: 1rem;
+      text-shadow: 0 2px 10px rgba(64, 224, 208, 0.3);
+    }
+
+    /* Font variations */
+    .font-bangers .mockup-btn,
+    .font-bangers .mockup-title,
+    .font-bangers .logo-text { font-family: 'Bangers', cursive; letter-spacing: 1px; }
+    
+    .font-luckiest .mockup-btn,
+    .font-luckiest .mockup-title,
+    .font-luckiest .logo-text { font-family: 'Luckiest Guy', cursive; }
+    
+    .font-fredoka .mockup-btn,
+    .font-fredoka .mockup-title,
+    .font-fredoka .logo-text { font-family: 'Fredoka One', cursive; }
+    
+    .font-titan .mockup-btn,
+    .font-titan .mockup-title,
+    .font-titan .logo-text { font-family: 'Titan One', cursive; }
+    
+    .font-bungee .mockup-btn,
+    .font-bungee .mockup-title,
+    .font-bungee .logo-text { font-family: 'Bungee', cursive; }
+    
+    .font-chewy .mockup-btn,
+    .font-chewy .mockup-title,
+    .font-chewy .logo-text { font-family: 'Chewy', cursive; }
+    
+    .font-baloo .mockup-btn,
+    .font-baloo .mockup-title,
+    .font-baloo .logo-text { font-family: 'Baloo 2', cursive; font-weight: 700; }
+    
+    .font-bubblegum .mockup-btn,
+    .font-bubblegum .mockup-title,
+    .font-bubblegum .logo-text { font-family: 'Bubblegum Sans', cursive; }
+    
+    .font-lilita .mockup-btn,
+    .font-lilita .mockup-title,
+    .font-lilita .logo-text { font-family: 'Lilita One', cursive; }
+  </style>
+</head>
+<body>
+  <h1>🌿 Kelp Forest Theme - Font Options</h1>
+  
+  <div class="mockup-grid">
+    
+    <!-- BANGERS -->
+    <div class="mockup font-bangers">
+      <div class="mockup-label">1. Bangers - Comic/Action style</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LUCKIEST GUY -->
+    <div class="mockup font-luckiest">
+      <div class="mockup-label">2. Luckiest Guy - Cartoony/Playful</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- FREDOKA ONE -->
+    <div class="mockup font-fredoka">
+      <div class="mockup-label">3. Fredoka One - Rounded/Friendly</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- TITAN ONE -->
+    <div class="mockup font-titan">
+      <div class="mockup-label">4. Titan One - Bold/Fun</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUNGEE -->
+    <div class="mockup font-bungee">
+      <div class="mockup-label">5. Bungee - Arcade/Blocky</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHEWY -->
+    <div class="mockup font-chewy">
+      <div class="mockup-label">6. Chewy - Hand-drawn/Casual</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BALOO 2 -->
+    <div class="mockup font-baloo">
+      <div class="mockup-label">7. Baloo 2 - Bubbly/Rounded</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- BUBBLEGUM SANS -->
+    <div class="mockup font-bubblegum">
+      <div class="mockup-label">8. Bubblegum Sans - Playful/Soft</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- LILITA ONE -->
+    <div class="mockup font-lilita">
+      <div class="mockup-label">9. Lilita One - Bold/Chunky</div>
+      <div class="mockup-content">
+        <div class="logo-text">🦞 Caverns & Clawds</div>
+        <div class="mockup-nav">
+          <button class="mockup-btn">Home</button>
+          <button class="mockup-btn">Classes</button>
+          <button class="mockup-btn">Races</button>
+          <button class="mockup-btn">Spells</button>
+        </div>
+        <div class="mockup-card">
+          <div class="mockup-title">Tide Priest</div>
+          <p>Devoted followers of <span class="accent">Crusifarianism</span>, channeling divine power.</p>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>

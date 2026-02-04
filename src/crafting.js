@@ -703,7 +703,7 @@ class CraftingManager {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS known_recipes (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        character_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
         recipe_id TEXT NOT NULL,
         learned_at TEXT DEFAULT CURRENT_TIMESTAMP,
         times_crafted INTEGER DEFAULT 0,
@@ -715,7 +715,7 @@ class CraftingManager {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS crafting_queue (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        character_id INTEGER NOT NULL,
+        character_id TEXT NOT NULL,
         recipe_id TEXT NOT NULL,
         station_id TEXT NOT NULL,
         started_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -727,7 +727,7 @@ class CraftingManager {
     // Crafting XP / skill level
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS crafting_skills (
-        character_id INTEGER PRIMARY KEY,
+        character_id TEXT PRIMARY KEY,
         crafting_xp INTEGER DEFAULT 0,
         crafting_level INTEGER DEFAULT 1,
         workbench_level INTEGER DEFAULT 1,

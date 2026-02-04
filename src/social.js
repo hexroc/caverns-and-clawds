@@ -87,14 +87,14 @@ class SocialManager {
   // ============================================================================
 
   updatePresence(character, roomId, zoneId = null) {
+    // Preserve existing status if already set, only default to 'online' for new entries
     const stmt = this.db.prepare(`
       INSERT INTO player_presence (character_id, agent_id, character_name, room_id, zone_id, last_active, status)
       VALUES (?, ?, ?, ?, ?, datetime('now'), 'online')
       ON CONFLICT(character_id) DO UPDATE SET
         room_id = excluded.room_id,
         zone_id = excluded.zone_id,
-        last_active = datetime('now'),
-        status = 'online'
+        last_active = datetime('now')
     `);
     stmt.run(character.id, character.user_id, character.name, roomId, zoneId);
   }

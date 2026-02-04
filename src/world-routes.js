@@ -174,7 +174,9 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         });
       }
       
-      const result = world.moveCharacter(char.id, direction.toLowerCase(), char.location);
+      // Use current_zone if set (procedural rooms), otherwise fall back to location (static rooms)
+      const currentLocation = char.current_zone || char.location;
+      const result = world.moveCharacter(char.id, direction.toLowerCase(), currentLocation);
       
       if (!result.success) {
         return res.status(400).json(result);
@@ -291,6 +293,20 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
       }
       
       const result = world.talkToNPC(npc, topic);
+      
+      // Notify spectators of NPC dialogue
+      if (result.success) {
+        notifySpectators({
+          type: 'agent_dialogue',
+          agentId: char.id,
+          agentName: char.name,
+          npcName: result.npc?.name || npc,
+          topic: topic || 'greeting',
+          dialogue: result.response || result.dialogue || result.message,
+          timestamp: Date.now()
+        });
+      }
+      
       res.json(result);
     } catch (err) {
       console.error('Talk error:', err);
@@ -877,13 +893,18 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         return res.status(400).json({ success: false, error: 'Unknown zone type' });
       }
       
-      // Check level requirement
+      // Check level recommendation (warn but allow)
       const levelRange = zone.levelRange;
+      let dangerWarning = null;
       if (char.level < levelRange[0]) {
-        return res.status(400).json({
-          success: false,
-          error: `This zone requires level ${levelRange[0]}+. You are level ${char.level}.`,
-        });
+        const levelDiff = levelRange[0] - char.level;
+        if (levelDiff >= 3) {
+          dangerWarning = `⚠️ A weathered sign reads: "EXTREME DANGER - Only seasoned adventurers (level ${levelRange[0]}+) should proceed. Many have entered. Few return."`;
+        } else if (levelDiff >= 2) {
+          dangerWarning = `⚠️ Claw marks on a post warn: "Dangerous waters ahead. Recommended for level ${levelRange[0]}+."`;
+        } else {
+          dangerWarning = `⚠️ A faded marker suggests this area is meant for level ${levelRange[0]}+ adventurers.`;
+        }
       }
       
       // Move character to zone entry
@@ -894,7 +915,7 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
       // Mark as discovered
       zoneManager.discoverRoom(entryRoom.id, char.id);
       
-      res.json({
+      const response = {
         success: true,
         message: `You enter ${zone.name}.`,
         zone: {
@@ -910,7 +931,11 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
           features: entryRoom.features.map(f => ({ id: f.id, name: f.name })),
           ambient: entryRoom.ambient,
         },
-      });
+      };
+      if (dangerWarning) {
+        response.warning = dangerWarning;
+      }
+      res.json(response);
     } catch (err) {
       console.error('Enter zone error:', err);
       res.status(500).json({ success: false, error: 'Failed to enter zone' });

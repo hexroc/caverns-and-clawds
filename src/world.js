@@ -926,14 +926,19 @@ class WorldManager {
       return { success: false, error: 'That path leads nowhere.' };
     }
     
-    // Check level requirements for adventure zones
+    // Check level recommendations for adventure zones (warn but allow entry)
+    let dangerWarning = null;
     if (destLocation.levelRange) {
       const char = this.db.prepare('SELECT level FROM clawds WHERE id = ?').get(characterId);
       if (char && char.level < destLocation.levelRange[0]) {
-        return { 
-          success: false, 
-          error: `This area requires level ${destLocation.levelRange[0]}+. You are level ${char.level}.`
-        };
+        const levelDiff = destLocation.levelRange[0] - char.level;
+        if (levelDiff >= 3) {
+          dangerWarning = `⚠️ A weathered sign reads: "EXTREME DANGER - Only seasoned adventurers (level ${destLocation.levelRange[0]}+) should proceed. Many have entered. Few return."`;
+        } else if (levelDiff >= 2) {
+          dangerWarning = `⚠️ Claw marks on a post warn: "Dangerous waters ahead. Recommended for level ${destLocation.levelRange[0]}+."`;
+        } else {
+          dangerWarning = `⚠️ A faded marker suggests this area is meant for level ${destLocation.levelRange[0]}+ adventurers.`;
+        }
       }
     }
     
@@ -946,12 +951,16 @@ class WorldManager {
       this.zoneManager.discoverRoom(destination, characterId);
     }
     
-    return {
+    const result = {
       success: true,
       from: currentLocation,
       to: destination,
       location: this.getLocation(destination)
     };
+    if (dangerWarning) {
+      result.warning = dangerWarning;
+    }
+    return result;
   }
   
   // Look around (supports both static and procedural)
