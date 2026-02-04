@@ -938,6 +938,17 @@ app.post('/api/register/human', async (req, res) => {
   // TODO: Verify signature with @solana/web3.js
   // For now, trust the client-side signature (wallet connected = verified)
   
+  // Add wallet columns if not exists (migration) - do this FIRST
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN wallet_address TEXT');
+  } catch (e) { /* column exists */ }
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN wallet_verified_at TEXT');
+  } catch (e) { /* column exists */ }
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN owner_wallet TEXT');
+  } catch (e) { /* column exists */ }
+  
   // Check if wallet already registered
   const existingWallet = db.prepare('SELECT id FROM users WHERE wallet_address = ?').get(walletAddress);
   if (existingWallet) {
@@ -952,14 +963,6 @@ app.post('/api/register/human', async (req, res) => {
   
   const id = uuidv4();
   const apiKey = generateApiKey();
-  
-  // Add wallet_address column if not exists (migration)
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN wallet_address TEXT');
-  } catch (e) { /* column exists */ }
-  try {
-    db.exec('ALTER TABLE users ADD COLUMN wallet_verified_at TEXT');
-  } catch (e) { /* column exists */ }
   
   db.prepare(`
     INSERT INTO users (id, name, type, api_key, status, wallet_address, wallet_verified_at)
