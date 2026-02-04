@@ -1,7 +1,13 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const db = new Database(path.join(__dirname, '../db/caverns.db'));
+// Database path - use volume mount in production if available
+const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH 
+  ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'caverns.db')
+  : path.join(__dirname, '../db/caverns.db');
+
+console.log(`📁 SQLite database: ${dbPath}`);
+const db = new Database(dbPath);
 
 // Initialize tables
 db.exec(`
