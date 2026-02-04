@@ -9,16 +9,22 @@ const { EncounterManager, ENCOUNTER_TABLES } = require('./encounters');
 const { MONSTERS } = require('./monsters');
 const { CharacterManager } = require('./character');
 const { LOCATIONS } = require('./world');
-const { TacticalCombat } = require('./tactical-combat');
-const { HexGrid, hex, generateRoom } = require('./hex-grid');
+// (tactical-combat & hex-grid removed - capstone system deprecated)
 
-function createEncounterRoutes(db, authenticateAgent) {
+function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
   const encounters = new EncounterManager(db);
   const characters = new CharacterManager(db);
 
   // Helper to get character
   const getChar = (req) => characters.getCharacterByAgent(req.user.id);
+  
+  // Helper to broadcast spectator events
+  const notifySpectators = (event) => {
+    if (broadcastToSpectators) {
+      broadcastToSpectators(event);
+    }
+  };
 
   // ============================================================================
   // EXPLORATION
@@ -176,6 +182,24 @@ function createEncounterRoutes(db, authenticateAgent) {
         hp: updatedChar.hp.current,
         maxHp: updatedChar.hp.max
       };
+      
+      // Notify spectators of combat events
+      if (result.combatEnded && result.victory) {
+        notifySpectators({
+          type: 'agent_combat',
+          agentId: char.id,
+          agentName: char.name,
+          victory: true,
+          enemy: result.encounter?.monsters?.[0]?.name || 'a monster',
+          xpGained: result.xpGained || 0
+        });
+      } else if (result.combatEnded && !result.victory) {
+        notifySpectators({
+          type: 'agent_death',
+          agentId: char.id,
+          agentName: char.name
+        });
+      }
       
       res.json(result);
     } catch (err) {
@@ -380,236 +404,6 @@ function createEncounterRoutes(db, authenticateAgent) {
   });
 
   // ============================================================================
-  // CAPSTONE TACTICAL COMBAT
-  // ============================================================================
-
-  // Store active tactical combats
-  const tacticalCombats = new Map();
-
-  // King Crab boss configuration
-  const KING_CRAB_CONFIG = {
-    id: 'king_crab',
-    name: 'King Crab the Abyssal',
-    char: '👑',
-    type: 'boss',
-    team: 'enemy',
-    hp: 120,
-    maxHp: 120,
-    ac: 16,
-    speed: 4,
-    attackBonus: 6,
-    damage: '2d8+4',
-  };
-
-  const BOSS_PHASES = [
-    {
-      phase: 2,
-      hpThreshold: 0.66,
-      name: 'Enraged',
-      description: 'King Crab roars! His shell cracks, revealing glowing veins of abyssal energy!',
-      statChanges: { attackBonus: 8, damage: '2d10+4', speed: 5 },
-    },
-    {
-      phase: 3,
-      hpThreshold: 0.33,
-      name: 'Desperate',
-      description: 'King Crab screeches! Minions burst from the sand!',
-      statChanges: { ac: 14, attackBonus: 10, damage: '3d8+4' },
-      summons: [
-        { name: 'Crab Spawn', char: 'c', hp: 8, maxHp: 8, ac: 12, speed: 6, attackBonus: 2, damage: '1d4+1' },
-        { name: 'Crab Spawn', char: 'c', hp: 8, maxHp: 8, ac: 12, speed: 6, attackBonus: 2, damage: '1d4+1' },
-      ],
-      healOnEnter: 0.05,
-    },
-  ];
-
-  /**
-   * POST /api/zone/capstone/start - Start a capstone boss fight
-   */
-  router.post('/capstone/start', authenticateAgent, (req, res) => {
-    try {
-      const char = getChar(req);
-      if (!char) {
-        return res.status(404).json({ success: false, error: 'No character found' });
-      }
-
-      // Create hex grid (boss arena)
-      const grid = generateRoom('boss', 12, `boss_${char.id}`);
-      const combat = new TacticalCombat(grid, { maxDeaths: 3, autoBattle: true });
-
-      // Add player
-      combat.addCombatant({
-        id: 'player',
-        name: char.name,
-        char: '@',
-        type: 'player',
-        team: 'party',
-        hp: char.hp,
-        maxHp: char.max_hp,
-        ac: char.ac,
-        speed: 6,
-        attackBonus: Math.floor((char.str - 10) / 2) + 2,
-        damage: char.weapon_damage || '1d8+2',
-        position: hex(4, 6),
-      });
-
-      // Add any henchmen
-      // TODO: Add henchmen from character's party
-
-      // Add boss
-      combat.addCombatant({
-        ...KING_CRAB_CONFIG,
-        position: hex(10, 6),
-      });
-
-      // Configure phases
-      combat.setBossPhases('king_crab', BOSS_PHASES);
-
-      // Start combat
-      combat.startCombat();
-
-      // Store combat
-      tacticalCombats.set(char.id, combat);
-
-      res.json({
-        success: true,
-        message: 'Capstone boss fight begins!',
-        combatId: combat.id,
-        state: combat.getState('party'),
-        ascii: combat.renderASCII('party'),
-      });
-    } catch (err) {
-      console.error('Capstone start error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  /**
-   * GET /api/zone/capstone/state - Get current tactical combat state
-   */
-  router.get('/capstone/state', authenticateAgent, (req, res) => {
-    try {
-      const char = getChar(req);
-      if (!char) {
-        return res.status(404).json({ success: false, error: 'No character found' });
-      }
-
-      const combat = tacticalCombats.get(char.id);
-      if (!combat) {
-        return res.status(404).json({ success: false, error: 'No active capstone combat' });
-      }
-
-      res.json({
-        success: true,
-        state: combat.getState('party'),
-        phase: combat.getPhaseInfo(),
-        ascii: combat.renderASCII('party'),
-      });
-    } catch (err) {
-      console.error('Capstone state error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  /**
-   * POST /api/zone/capstone/action - Take an action in tactical combat
-   * Body: { action: 'move'|'attack'|'ability'|'end_turn', target?: hex|combatantId, ... }
-   */
-  router.post('/capstone/action', authenticateAgent, (req, res) => {
-    try {
-      const char = getChar(req);
-      if (!char) {
-        return res.status(404).json({ success: false, error: 'No character found' });
-      }
-
-      const combat = tacticalCombats.get(char.id);
-      if (!combat) {
-        return res.status(404).json({ success: false, error: 'No active capstone combat' });
-      }
-
-      const { action, target, path, targetId, abilityId } = req.body;
-
-      let result;
-      switch (action) {
-        case 'move':
-          // Path should be array of {q, r} hexes
-          const movePath = path ? path.map(p => hex(p.q, p.r)) : [hex(target.q, target.r)];
-          result = combat.action('player', 'move', { path: movePath });
-          break;
-        case 'attack':
-          result = combat.action('player', 'attack', { targetId: targetId || target });
-          break;
-        case 'ability':
-          result = combat.action('player', 'ability', { abilityId, targetId });
-          break;
-        case 'dodge':
-          result = combat.action('player', 'dodge');
-          break;
-        case 'end_turn':
-          result = combat.action('player', 'end_turn');
-          break;
-        default:
-          return res.status(400).json({ success: false, error: `Unknown action: ${action}` });
-      }
-
-      // Check for combat end
-      if (combat.status === 'victory' || combat.status === 'defeat') {
-        tacticalCombats.delete(char.id);
-        
-        // Award loot/XP on victory
-        if (combat.status === 'victory') {
-          // TODO: Add loot drops
-        }
-      }
-
-      res.json({
-        success: true,
-        result,
-        state: combat.getState('party'),
-        phase: combat.getPhaseInfo(),
-        ascii: combat.renderASCII('party'),
-        status: combat.status,
-      });
-    } catch (err) {
-      console.error('Capstone action error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  /**
-   * GET /api/zone/capstone/events - Get event log for spectators
-   */
-  router.get('/capstone/events', authenticateAgent, (req, res) => {
-    try {
-      const char = getChar(req);
-      if (!char) {
-        return res.status(404).json({ success: false, error: 'No character found' });
-      }
-
-      const combat = tacticalCombats.get(char.id);
-      if (!combat) {
-        return res.status(404).json({ success: false, error: 'No active capstone combat' });
-      }
-
-      const { since } = req.query;
-      let events = combat.eventLog;
-      
-      if (since) {
-        events = events.filter(e => e.timestamp > parseInt(since));
-      }
-
-      res.json({
-        success: true,
-        events,
-        phase: combat.getPhaseInfo(),
-      });
-    } catch (err) {
-      console.error('Capstone events error:', err);
-      res.status(500).json({ success: false, error: err.message });
-    }
-  });
-
-  // ============================================================================
   // DOCS
   // ============================================================================
 
@@ -629,12 +423,6 @@ function createEncounterRoutes(db, authenticateAgent) {
           'POST /combat/action': 'Take action (body: {action, target?})',
           'POST /combat/attack': 'Attack (body: {target?})',
           'POST /combat/flee': 'Attempt to flee'
-        },
-        capstone: {
-          'POST /capstone/start': 'Start capstone boss fight',
-          'GET /capstone/state': 'Get tactical combat state',
-          'POST /capstone/action': 'Take tactical action (move/attack/ability/end_turn)',
-          'GET /capstone/events': 'Get event log for spectators'
         },
         info: {
           'GET /monsters': 'List monsters in current zone'

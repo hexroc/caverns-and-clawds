@@ -36,14 +36,15 @@ const { createWorldRoutes } = require('./world-routes');
 const { createShopRoutes } = require('./shop-routes');
 const { createPremiumShopRoutes } = require('./premium-shop-routes');
 
+// Import crafting system
+const { createCraftingRoutes } = require('./crafting-routes');
+
 // Import encounter system
 const { createEncounterRoutes } = require('./encounter-routes');
 const { createQuestRoutes } = require('./quest-routes');
 const { createQuestEngineRoutes, getQuestEngine } = require('./quest-engine-routes');
 const { createHenchmanRoutes } = require('./henchman-routes');
-
-// Import capstone dungeon system
-const { createCapstoneRoutes } = require('./capstone-routes');
+const { createSocialRoutes } = require('./social-routes');
 
 // Twitter OAuth 2.0 config (set these in environment)
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID || '';
@@ -61,6 +62,9 @@ const campaignSubscribers = new Map(); // campaignId -> Set<WebSocket>
 
 // Track run spectators (for roguelike mode)
 const runSubscribers = new Map(); // runId -> Set<WebSocket>
+
+// Track global spectator mode subscribers (MUD world view)
+const spectatorSubscribers = new Set(); // Set<WebSocket>
 
 wss.on('connection', (ws) => {
   ws.isAlive = true;
@@ -114,6 +118,18 @@ wss.on('connection', (ws) => {
         broadcastToCampaign(msg.campaignId, { type: 'spectators', count: spectatorCount });
       }
       
+      // Global spectator mode subscription (MUD world view)
+      if (msg.type === 'subscribe_spectator') {
+        ws.isSpectator = true;
+        spectatorSubscribers.add(ws);
+        ws.send(JSON.stringify({ type: 'spectator_subscribed', spectators: spectatorSubscribers.size }));
+      }
+      
+      if (msg.type === 'unsubscribe_spectator') {
+        ws.isSpectator = false;
+        spectatorSubscribers.delete(ws);
+      }
+      
       // Spectator chat
       if (msg.type === 'chat' && msg.campaignId && msg.text && msg.name) {
         // Sanitize and limit
@@ -144,6 +160,11 @@ wss.on('connection', (ws) => {
     for (const runId of ws.subscribedRuns) {
       runSubscribers.get(runId)?.delete(ws);
     }
+    
+    // Remove from spectator subscribers
+    if (ws.isSpectator) {
+      spectatorSubscribers.delete(ws);
+    }
   });
 });
 
@@ -169,13 +190,25 @@ function broadcastToCampaign(campaignId, event) {
   });
 }
 
-// Broadcast to capstone run subscribers (roguelike/spectator mode)
+// Broadcast to run subscribers (spectator mode - for future MUD features)
 function broadcastToRun(runId, event) {
   const subscribers = runSubscribers.get(runId);
   if (!subscribers) return;
   
   const message = JSON.stringify(event);
   subscribers.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
+    }
+  });
+}
+
+// Broadcast to global spectator subscribers (MUD world view)
+function broadcastToSpectators(event) {
+  if (spectatorSubscribers.size === 0) return;
+  
+  const message = JSON.stringify(event);
+  spectatorSubscribers.forEach((ws) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(message);
     }
@@ -218,9 +251,103 @@ app.get('/poker', (req, res) => {
   res.sendFile(path.join(__dirname, 'games/poker/poker.html'));
 });
 
-// Serve capstone dungeon spectator/player page
-app.get('/capstone', (req, res) => {
-  res.sendFile(path.join(__dirname, '../public/capstone.html'));
+// Serve spectator page (MUD world view)
+app.get('/spectator', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/spectator.html'));
+});
+
+// ============================================================================
+// SPECTATOR API - Public endpoints for world viewing
+// ============================================================================
+
+/**
+ * GET /api/spectator/agents - Get all online agents with their locations
+ */
+app.get('/api/spectator/agents', (req, res) => {
+  try {
+    // Get all alive characters with their data
+    const agents = db.prepare(`
+      SELECT 
+        c.id,
+        c.name,
+        c.race,
+        c.class,
+        c.level,
+        c.hp_current,
+        c.hp_max,
+        c.location,
+        c.current_zone,
+        c.status,
+        u.name as agent_name
+      FROM clawds c
+      JOIN users u ON c.agent_id = u.id
+      WHERE c.status = 'alive'
+      ORDER BY c.level DESC, c.name ASC
+    `).all();
+    
+    const formattedAgents = agents.map(a => ({
+      id: a.id,
+      name: a.name,
+      race: a.race,
+      class: a.class,
+      level: a.level,
+      hp_current: a.hp_current,
+      hp_max: a.hp_max,
+      location: a.location || a.current_zone || 'briny_flagon',
+      status: a.status,
+      agent_name: a.agent_name
+    }));
+    
+    res.json({ success: true, agents: formattedAgents, count: formattedAgents.length });
+  } catch (err) {
+    console.error('Spectator agents error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch agents' });
+  }
+});
+
+/**
+ * GET /api/spectator/activity - Get recent world activity
+ */
+app.get('/api/spectator/activity', (req, res) => {
+  try {
+    const limit = Math.min(parseInt(req.query.limit) || 50, 100);
+    
+    // Get recent quest completions
+    const quests = db.prepare(`
+      SELECT 
+        'quest' as type,
+        c.name as agent_name,
+        c.id as agent_id,
+        q.quest_id,
+        q.completed_at as timestamp
+      FROM character_quests q
+      JOIN clawds c ON q.character_id = c.id
+      WHERE q.status = 'completed'
+      ORDER BY q.completed_at DESC
+      LIMIT ?
+    `).all(limit);
+    
+    res.json({ success: true, activity: quests });
+  } catch (err) {
+    console.error('Spectator activity error:', err);
+    res.status(500).json({ success: false, error: 'Failed to fetch activity' });
+  }
+});
+
+/**
+ * GET /api/spectator/zones - Get zone information
+ */
+app.get('/api/spectator/zones', (req, res) => {
+  const zones = [
+    { id: 'shallows', name: 'The Shallows', type: 'hub', levelRange: [1, 99] },
+    { id: 'kelp_forest', name: 'Kelp Forest', type: 'adventure', levelRange: [1, 3] },
+    { id: 'coral_labyrinth', name: 'Coral Labyrinth', type: 'adventure', levelRange: [4, 7] },
+    { id: 'shipwreck_graveyard', name: 'Shipwreck Graveyard', type: 'adventure', levelRange: [3, 5] },
+    { id: 'murk', name: 'The Murk', type: 'adventure', levelRange: [6, 10] },
+    { id: 'abyss', name: 'The Abyss', type: 'adventure', levelRange: [10, 20] }
+  ];
+  
+  res.json({ success: true, zones });
 });
 
 // === HELPERS ===
@@ -2609,7 +2736,7 @@ app.use('/api/character', createCharacterRoutes(db, authenticateAgent));
 console.log('🦞 Character system loaded');
 
 // === WORLD ROUTES ===
-app.use('/api/world', createWorldRoutes(db, authenticateAgent));
+app.use('/api/world', createWorldRoutes(db, authenticateAgent, broadcastToSpectators));
 console.log('🌊 World system loaded');
 
 // === SHOP ROUTES ===
@@ -2620,115 +2747,27 @@ console.log('🛒 Shop system loaded');
 app.use('/api/premium', createPremiumShopRoutes(db, authenticateAgent));
 console.log('💎 Premium shop loaded');
 
+// === CRAFTING ROUTES ===
+app.use('/api/craft', createCraftingRoutes(db, authenticateAgent));
+console.log('🔨 Crafting system loaded');
+
 // === ENCOUNTER/COMBAT ROUTES ===
-app.use('/api/zone', createEncounterRoutes(db, authenticateAgent));
+app.use('/api/zone', createEncounterRoutes(db, authenticateAgent, broadcastToSpectators));
 console.log('⚔️ Encounter system loaded');
 
 // === QUEST ROUTES ===
 // New Quest Engine v2 with templates and dynamic generation (mounted first for priority)
-app.use('/api/quests', createQuestEngineRoutes(db, authenticateAgent));
+app.use('/api/quests', createQuestEngineRoutes(db, authenticateAgent, broadcastToSpectators));
 // Legacy quest routes (for backwards compatibility - some endpoints still used)
 app.use('/api/quests', createQuestRoutes(db, authenticateAgent));
 app.use('/api/henchmen', createHenchmanRoutes(db, authenticateAgent));
 console.log('📜 Quest system loaded (Quest Engine v2 + legacy v1)');
 
-// === CAPSTONE DUNGEON ROUTES ===
-const { router: capstoneRouter, capstoneManager } = createCapstoneRoutes(db, authenticateAgent);
-app.use('/api/capstone', capstoneRouter);
+// Mount Social routes
+app.use('/api/social', createSocialRoutes(db, authenticateAgent));
+console.log('💬 Social system loaded (chat, emotes, presence)');
 
-// Wire up broadcast function for RP events to spectators
-capstoneManager.setBroadcastFunction(broadcastToRun);
-console.log('🐉 Capstone dungeon system loaded');
-
-// === RUNS API (for theater compatibility with demo combats) ===
-app.get('/api/runs/:id', (req, res) => {
-  // Try direct ID first, then prefixed version (capstone combats use combat_ prefix)
-  let combat = capstoneManager.getCombat(req.params.id);
-  if (!combat && !req.params.id.startsWith('combat_')) {
-    combat = capstoneManager.getCombat(`combat_${req.params.id}`);
-  }
-  if (!combat) {
-    return res.status(404).json({ success: false, error: 'Run not found' });
-  }
-  
-  const state = combat.getState();
-  const currentTurn = combat.getCurrentCombatant();
-  
-  // Convert combat state to theater-compatible run format
-  res.json({
-    success: true,
-    run: {
-      id: state.id,
-      status: state.status,
-      character_name: 'Demo Party',
-      agent_name: 'Demo',
-      hp: state.combatants.filter(c => c.team === 'party').reduce((sum, c) => sum + c.hp, 0),
-      max_hp: state.combatants.filter(c => c.team === 'party').reduce((sum, c) => sum + c.maxHp, 0),
-      current_floor: 1,
-      current_room: 1,
-      character_stats: { ac: 14, level: 5 },
-      combat_state: {
-        active: state.status === 'active',
-        round: state.round,
-        current_turn: currentTurn?.name,
-        turn_time_remaining: state.turnTimeRemaining,
-        party_deaths: state.partyDeaths,
-        max_deaths: state.maxDeaths,
-        initiative_order: state.initiativeOrder,
-        grid: {
-          radius: state.grid?.radius || 12,
-          hexes: state.grid?.hexes || [],
-          entities: state.combatants.map(c => ({
-            id: c.id,
-            name: c.name,
-            char: c.char,
-            type: c.type,
-            team: c.team,
-            hp: c.hp,
-            maxHp: c.maxHp,
-            ac: c.ac,
-            position: c.position,
-            isAlive: c.isAlive,
-            conditions: c.conditions
-          }))
-        }
-      },
-      current_encounter: {
-        enemies: state.combatants.filter(c => c.team === 'enemy').map(c => ({
-          id: c.id,
-          name: c.name,
-          char: c.char,
-          hp: c.hp,
-          maxHp: c.maxHp,
-          ac: c.ac,
-          position: c.position
-        }))
-      }
-    }
-  });
-});
-
-app.get('/api/runs/:id/log', (req, res) => {
-  // Try direct ID first, then prefixed version (capstone combats use combat_ prefix)
-  let combat = capstoneManager.getCombat(req.params.id);
-  if (!combat && !req.params.id.startsWith('combat_')) {
-    combat = capstoneManager.getCombat(`combat_${req.params.id}`);
-  }
-  if (!combat) {
-    return res.status(404).json({ success: false, error: 'Run not found' });
-  }
-  
-  // Return combat event log
-  res.json({
-    success: true,
-    logs: combat.eventLog.slice(-50).map(e => ({
-      timestamp: e.timestamp,
-      type: 'combat_event',
-      event_type: e.type,
-      data: e
-    }))
-  });
-});
+// (Capstone dungeon system removed - MUD direction)
 
 // Serve poker static files
 app.use('/games/poker', express.static(path.join(__dirname, 'games/poker')));

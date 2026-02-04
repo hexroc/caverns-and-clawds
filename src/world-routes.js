@@ -10,7 +10,7 @@ const { CharacterManager } = require('./character');
 const { ZoneManager, SeededRandom } = require('./room-generator');
 const { QuestEngine } = require('./quest-engine');
 
-function createWorldRoutes(db, authenticateAgent) {
+function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
   const zoneManager = new ZoneManager(db);
   const world = new WorldManager(db, zoneManager);
@@ -18,6 +18,13 @@ function createWorldRoutes(db, authenticateAgent) {
   
   // Ensure the connection is bidirectional
   world.setZoneManager(zoneManager);
+  
+  // Helper to broadcast spectator events
+  const notifySpectators = (event) => {
+    if (broadcastToSpectators) {
+      broadcastToSpectators(event);
+    }
+  };
 
   // Helper to get character
   const getChar = (req) => characters.getCharacterByAgent(req.user.id);
@@ -185,6 +192,14 @@ function createWorldRoutes(db, authenticateAgent) {
             // Add messages for quest progress
             result.questMessages = exploreUpdates.map(u => {
               if (u.questComplete) {
+                // Notify spectators of quest completion
+                notifySpectators({
+                  type: 'agent_quest',
+                  agentId: char.id,
+                  agentName: char.name,
+                  action: 'complete',
+                  questName: u.questName
+                });
                 return u.message;
               }
               return `📜 ${u.questName}: ${u.objective} (${u.current}/${u.required})`;
@@ -195,6 +210,16 @@ function createWorldRoutes(db, authenticateAgent) {
           // Don't fail the move if quest tracking fails
         }
       }
+      
+      // Notify spectators of movement
+      notifySpectators({
+        type: 'agent_move',
+        agentId: char.id,
+        agentName: char.name,
+        fromLocation: result.from,
+        newLocation: result.to,
+        timestamp: new Date().toISOString()
+      });
       
       res.json(result);
     } catch (err) {

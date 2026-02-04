@@ -8,13 +8,20 @@ const express = require('express');
 const { QuestEngine, QUEST_TEMPLATES } = require('./quest-engine');
 const { CharacterManager } = require('./character');
 
-function createQuestEngineRoutes(db, authenticateAgent) {
+function createQuestEngineRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
   const questEngine = new QuestEngine(db);
   const characters = new CharacterManager(db);
 
   // Helper to get character
   const getChar = (req) => characters.getCharacterByAgent(req.user.id);
+  
+  // Helper to broadcast spectator events
+  const notifySpectators = (event) => {
+    if (broadcastToSpectators) {
+      broadcastToSpectators(event);
+    }
+  };
 
   // ============================================================================
   // QUEST BOARD
@@ -138,6 +145,15 @@ function createQuestEngineRoutes(db, authenticateAgent) {
         return res.status(400).json(result);
       }
 
+      // Notify spectators of quest acceptance
+      notifySpectators({
+        type: 'agent_quest',
+        agentId: char.id,
+        agentName: char.name,
+        action: 'accept',
+        questName: result.quest?.name || 'a quest'
+      });
+
       res.json(result);
     } catch (err) {
       console.error('Accept quest error:', err);
@@ -243,6 +259,15 @@ function createQuestEngineRoutes(db, authenticateAgent) {
       if (!result.success) {
         return res.status(400).json(result);
       }
+
+      // Notify spectators of quest completion
+      notifySpectators({
+        type: 'agent_quest',
+        agentId: char.id,
+        agentName: char.name,
+        action: 'complete',
+        questName: result.quest?.name || 'a quest'
+      });
 
       res.json(result);
     } catch (err) {
