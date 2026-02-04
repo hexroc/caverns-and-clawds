@@ -78,10 +78,10 @@ async function simulateEmission(db, dailyYield) {
   
   const results = [];
   for (const npcId of npcs) {
-    // Update NPC balance in database
+    // Update NPC balance in database (balance_cache column)
     db.prepare(`
       UPDATE system_wallets 
-      SET usdc_balance = usdc_balance + ? 
+      SET balance_cache = balance_cache + ?, last_balance_update = datetime('now')
       WHERE id = ?
     `).run(perNpc, npcId);
     
@@ -115,7 +115,7 @@ async function getEconomyStatus(db) {
   
   // Get NPC balances
   const npcs = db.prepare(`
-    SELECT id, name, usdc_balance FROM system_wallets WHERE id LIKE 'npc_%'
+    SELECT id, name, balance_cache FROM system_wallets WHERE id LIKE 'npc_%'
   `).all();
   
   return {
@@ -128,7 +128,7 @@ async function getEconomyStatus(db) {
       monthlyYield: (dailyYield * 30).toFixed(4) + ' USDC',
       yearlyYield: (dailyYield * 365).toFixed(2) + ' USDC'
     },
-    npcs: npcs.map(n => ({ id: n.id, name: n.name, balance: n.usdc_balance }))
+    npcs: npcs.map(n => ({ id: n.id, name: n.name, balance: n.balance_cache }))
   };
 }
 
