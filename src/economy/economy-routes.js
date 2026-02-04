@@ -176,7 +176,7 @@ function createEconomyRoutes(db, authenticateAgent) {
           id: mat.id,
           name: mat.name,
           basePrice: mat.base_price,
-          currentPrice: Math.round(mat.base_price * modifier * 100) / 100,
+          currentPrice: Math.round(mat.base_price * modifier * 10000) / 10000,
           modifier,
           npcStock: stock,
           rarity: mat.rarity
@@ -245,8 +245,9 @@ function createEconomyRoutes(db, authenticateAgent) {
       else if (stock < 5) modifier = 1.3;
       else if (stock < 10) modifier = 1.1;
       
-      const pricePerUnit = Math.round(material.base_price * modifier * 100) / 100;
-      const totalPrice = pricePerUnit * quantity;
+      // Use 4 decimal places for micro-pricing (0.001 USDC materials)
+      const pricePerUnit = Math.round(material.base_price * modifier * 10000) / 10000;
+      const totalPrice = Math.round(pricePerUnit * quantity * 10000) / 10000;
       
       // Ensure player has a wallet
       if (!char.wallet_public_key) {
