@@ -1262,65 +1262,109 @@ function createEconomyRoutes(db, authenticateAgent) {
    */
   router.get('/dashboard', (req, res) => {
     try {
-      // Total USDC in system (approximation based on transactions)
-      const transactionStats = db.prepare(`
-        SELECT 
-          COUNT(*) as total_transactions,
-          SUM(CASE WHEN type = 'sale' THEN amount ELSE 0 END) as total_sales,
-          SUM(CASE WHEN type = 'job_pay' THEN amount ELSE 0 END) as total_wages,
-          SUM(CASE WHEN type = 'loan' THEN amount ELSE 0 END) as total_loans
-        FROM economy_transactions
-      `).get();
+      // Default values for failed queries
+      const defaults = {
+        transactionStats: { total_transactions: 0, total_sales: 0, total_wages: 0, total_loans: 0 },
+        loanStats: { active_loans: 0, total_debt: 0, overdue_loans: 0 },
+        materialSupply: [],
+        auctionStats: { active_auctions: 0, total_bid_value: 0 },
+        playerStats: { total_players: 0, jailed_players: 0 },
+        recentTx: []
+      };
+
+      // Transaction stats with error handling
+      let transactionStats = defaults.transactionStats;
+      try {
+        const result = db.prepare(`
+          SELECT 
+            COUNT(*) as total_transactions,
+            SUM(CASE WHEN type = 'sale' THEN amount ELSE 0 END) as total_sales,
+            SUM(CASE WHEN type = 'job_pay' THEN amount ELSE 0 END) as total_wages,
+            SUM(CASE WHEN type = 'loan' THEN amount ELSE 0 END) as total_loans
+          FROM economy_transactions
+        `).get();
+        if (result) transactionStats = result;
+      } catch (err) {
+        console.warn('Dashboard transaction stats failed:', err.message);
+      }
       
-      // Active loans
-      const loanStats = db.prepare(`
-        SELECT 
-          COUNT(*) as active_loans,
-          SUM(loan_balance) as total_debt,
-          SUM(CASE WHEN loan_due_date < datetime('now') THEN 1 ELSE 0 END) as overdue_loans
-        FROM bank_accounts
-        WHERE loan_balance > 0
-      `).get();
+      // Loan stats with error handling
+      let loanStats = defaults.loanStats;
+      try {
+        const result = db.prepare(`
+          SELECT 
+            COUNT(*) as active_loans,
+            SUM(loan_balance) as total_debt,
+            SUM(CASE WHEN loan_due_date < datetime('now') THEN 1 ELSE 0 END) as overdue_loans
+          FROM bank_accounts
+          WHERE loan_balance > 0
+        `).get();
+        if (result) loanStats = result;
+      } catch (err) {
+        console.warn('Dashboard loan stats failed:', err.message);
+      }
       
-      // Material supply
-      const materialSupply = db.prepare(`
-        SELECT m.id, m.name, m.base_price, m.rarity,
-          COALESCE(SUM(pm.quantity), 0) as player_supply,
-          COALESCE(nm.npc_supply, 0) as npc_supply
-        FROM materials m
-        LEFT JOIN player_materials pm ON m.id = pm.material_id
-        LEFT JOIN (
-          SELECT material_id, SUM(quantity) as npc_supply 
-          FROM npc_materials GROUP BY material_id
-        ) nm ON m.id = nm.material_id
-        GROUP BY m.id
-        ORDER BY m.base_price DESC
-      `).all();
+      // Material supply with error handling
+      let materialSupply = defaults.materialSupply;
+      try {
+        materialSupply = db.prepare(`
+          SELECT m.id, m.name, m.base_price, m.rarity,
+            COALESCE(SUM(pm.quantity), 0) as player_supply,
+            COALESCE(nm.npc_supply, 0) as npc_supply
+          FROM materials m
+          LEFT JOIN player_materials pm ON m.id = pm.material_id
+          LEFT JOIN (
+            SELECT material_id, SUM(quantity) as npc_supply 
+            FROM npc_materials GROUP BY material_id
+          ) nm ON m.id = nm.material_id
+          GROUP BY m.id
+          ORDER BY m.base_price DESC
+        `).all() || [];
+      } catch (err) {
+        console.warn('Dashboard material supply failed:', err.message);
+      }
       
-      // Active auctions
-      const auctionStats = db.prepare(`
-        SELECT 
-          COUNT(*) as active_auctions,
-          SUM(current_bid) as total_bid_value
-        FROM auctions
-        WHERE status = 'active'
-      `).get();
+      // Auction stats with error handling
+      let auctionStats = defaults.auctionStats;
+      try {
+        const result = db.prepare(`
+          SELECT 
+            COUNT(*) as active_auctions,
+            SUM(current_bid) as total_bid_value
+          FROM auctions
+          WHERE status = 'active'
+        `).get();
+        if (result) auctionStats = result;
+      } catch (err) {
+        console.warn('Dashboard auction stats failed:', err.message);
+      }
       
-      // Player count
-      const playerStats = db.prepare(`
-        SELECT 
-          COUNT(*) as total_players,
-          SUM(CASE WHEN status = 'jailed' THEN 1 ELSE 0 END) as jailed_players
-        FROM clawds
-      `).get();
+      // Player stats with error handling
+      let playerStats = defaults.playerStats;
+      try {
+        const result = db.prepare(`
+          SELECT 
+            COUNT(*) as total_players,
+            SUM(CASE WHEN status = 'jailed' THEN 1 ELSE 0 END) as jailed_players
+          FROM clawds
+        `).get();
+        if (result) playerStats = result;
+      } catch (err) {
+        console.warn('Dashboard player stats failed:', err.message);
+      }
       
-      // Recent transactions
-      const recentTx = db.prepare(`
-        SELECT type, amount, description, created_at
-        FROM economy_transactions
-        ORDER BY created_at DESC
-        LIMIT 10
-      `).all();
+      // Recent transactions with error handling
+      let recentTx = defaults.recentTx;
+      try {
+        recentTx = db.prepare(`
+          SELECT type, amount, description, created_at
+          FROM economy_transactions
+          ORDER BY created_at DESC
+          LIMIT 10
+        `).all() || [];
+      } catch (err) {
+        console.warn('Dashboard recent transactions failed:', err.message);
+      }
       
       res.json({
         success: true,
