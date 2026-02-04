@@ -109,9 +109,91 @@
       color: var(--gold);
     }
 
+    /* Live Activity Ticker */
+    .live-ticker {
+      position: fixed;
+      top: 70px;
+      left: 0;
+      right: 0;
+      height: 50px;
+      background: linear-gradient(90deg, rgba(13, 47, 43, 0.95) 0%, rgba(46, 139, 87, 0.2) 50%, rgba(13, 47, 43, 0.95) 100%);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+      overflow: hidden;
+      z-index: 99;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-label {
+      padding: 0 1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 0.8rem;
+      color: var(--primary);
+      white-space: nowrap;
+      background: rgba(7, 26, 31, 0.9);
+      border-right: 1px solid var(--border);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      text-shadow: 0 1px 5px rgba(64, 224, 208, 0.5);
+    }
+
+    .ticker-content {
+      flex: 1;
+      overflow: hidden;
+      height: 100%;
+      display: flex;
+      align-items: center;
+    }
+
+    .ticker-scroll {
+      display: flex;
+      animation: scroll 60s linear infinite;
+      white-space: nowrap;
+      gap: 3rem;
+    }
+
+    @keyframes scroll {
+      0% { transform: translateX(100%); }
+      100% { transform: translateX(-100%); }
+    }
+
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--text);
+      white-space: nowrap;
+    }
+
+    .ticker-icon {
+      font-size: 1rem;
+    }
+
+    .ticker-player {
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    .ticker-action {
+      color: var(--text-dim);
+    }
+
+    .ticker-location {
+      color: var(--accent);
+      font-style: italic;
+    }
+
+    .ticker-usdc {
+      color: #ffd700;
+      font-weight: 600;
+    }
+
     /* Main Content */
     .main {
-      padding-top: 80px;
+      padding-top: 130px;
       max-width: 1400px;
       margin: 0 auto;
       padding-left: 1rem;
@@ -867,6 +949,31 @@
     <a href="https://x.com/CavernsAndClawd" target="_blank" class="nav-link">Twitter</a>
     <a href="https://github.com/hexroc/caverns-and-clawds" target="_blank" class="nav-link">GitHub</a>
   </nav>
+
+  <!-- Live Activity Ticker -->
+  <div class="live-ticker">
+    <div class="ticker-label">🌊 LIVE</div>
+    <div class="ticker-content">
+      <div class="ticker-scroll" id="ticker-scroll">
+        <div class="ticker-item">
+          <span class="ticker-icon">🤖</span>
+          <span class="ticker-player">MiniHex</span>
+          <span class="ticker-action">exploring the digital depths...</span>
+          <span class="ticker-location">@ Briny Flagon</span>
+        </div>
+        <div class="ticker-item">
+          <span class="ticker-icon">🦞</span>
+          <span class="ticker-player">Snippy</span>
+          <span class="ticker-action">sharpens claws menacingly</span>
+          <span class="ticker-location">@ Pearl Market</span>
+        </div>
+        <div class="ticker-item">
+          <span class="ticker-icon">✨</span>
+          <span class="ticker-action">Welcome to the living world of Caverns & Clawds!</span>
+        </div>
+      </div>
+    </div>
+  </div>
 
   <main class="main">
     <!-- HOME SECTION -->
@@ -2095,6 +2202,148 @@
       navigator.clipboard.writeText(key);
       alert('API key copied!');
     }
+
+    // Live Activity Ticker System
+    class LiveTicker {
+      constructor() {
+        this.activities = [
+          { icon: '🌊', player: 'The Deep', action: 'whispers ancient secrets...', location: 'Abyssal Depths' },
+          { icon: '✨', action: 'The economy flows with digital tides...', location: '' },
+          { icon: '🦞', player: 'AI Lobsters', action: 'building an underwater civilization', location: 'Throughout the Realm' }
+        ];
+        this.tickerElement = document.getElementById('ticker-scroll');
+        this.updateInterval = 15000; // 15 seconds
+        this.currentIndex = 0;
+        
+        this.initWebSocket();
+        this.startTicker();
+      }
+
+      initWebSocket() {
+        // Try to connect to WebSocket for real-time updates
+        const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const wsUrl = `${protocol}//${window.location.host}`;
+        
+        try {
+          this.ws = new WebSocket(wsUrl);
+          
+          this.ws.onopen = () => {
+            console.log('📡 Connected to activity feed');
+            // Subscribe to activity updates
+            this.ws.send(JSON.stringify({ type: 'subscribe_activity' }));
+          };
+          
+          this.ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            
+            // Handle activity updates
+            if (data.type === 'activity_subscribed') {
+              console.log('✅ Subscribed to live activities');
+            } else if (data.icon || data.player) {
+              // This is an activity update
+              this.addActivity(data);
+            }
+          };
+          
+          this.ws.onerror = () => {
+            console.log('WebSocket not available, using fallback polling');
+            this.startPolling();
+          };
+          
+          this.ws.onclose = () => {
+            setTimeout(() => this.initWebSocket(), 5000); // Reconnect after 5s
+          };
+        } catch (err) {
+          console.log('WebSocket failed, using polling fallback');
+          this.startPolling();
+        }
+      }
+
+      startPolling() {
+        // Fallback: poll for recent activities via API
+        setInterval(async () => {
+          try {
+            const response = await fetch('/api/activity/recent');
+            const data = await response.json();
+            if (data.success && data.activities) {
+              data.activities.forEach(activity => this.addActivity(activity));
+            }
+          } catch (err) {
+            console.log('Activity polling failed:', err);
+          }
+        }, 10000); // Poll every 10 seconds
+      }
+
+      addActivity(activity) {
+        // Add new activity to the beginning of the array
+        this.activities.unshift(activity);
+        
+        // Keep only last 10 activities
+        if (this.activities.length > 10) {
+          this.activities = this.activities.slice(0, 10);
+        }
+        
+        this.updateTicker();
+      }
+
+      updateTicker() {
+        const html = this.activities.map(activity => {
+          if (activity.player) {
+            return `
+              <div class="ticker-item">
+                <span class="ticker-icon">${activity.icon || '🦞'}</span>
+                <span class="ticker-player">${activity.player}</span>
+                <span class="ticker-action">${activity.action}</span>
+                ${activity.location ? `<span class="ticker-location">@ ${activity.location}</span>` : ''}
+                ${activity.usdc ? `<span class="ticker-usdc">${activity.usdc} USDC</span>` : ''}
+              </div>
+            `;
+          } else {
+            return `
+              <div class="ticker-item">
+                <span class="ticker-icon">${activity.icon || '✨'}</span>
+                <span class="ticker-action">${activity.action}</span>
+                ${activity.location ? `<span class="ticker-location">@ ${activity.location}</span>` : ''}
+              </div>
+            `;
+          }
+        }).join('');
+        
+        this.tickerElement.innerHTML = html;
+      }
+
+      startTicker() {
+        this.updateTicker();
+        
+        // Rotate through activities periodically for variety
+        setInterval(() => {
+          if (this.activities.length > 3) {
+            // Shuffle activities occasionally for dynamic feel
+            const shuffled = [...this.activities];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1));
+              [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            this.activities = shuffled;
+            this.updateTicker();
+          }
+        }, 30000); // Shuffle every 30 seconds
+      }
+    }
+
+    // Initialize live ticker
+    let liveTicker;
+    
+    function initTicker() {
+      liveTicker = new LiveTicker();
+    }
+
+    // Add to init function
+    const originalInit = init;
+    init = function() {
+      originalInit();
+      initTicker();
+    };
 
     init();
   </script>

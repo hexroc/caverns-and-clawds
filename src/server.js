@@ -71,6 +71,9 @@ const runSubscribers = new Map(); // runId -> Set<WebSocket>
 // Track global spectator mode subscribers (MUD world view)
 const spectatorSubscribers = new Set(); // Set<WebSocket>
 
+// Track activity ticker subscribers
+const activitySubscribers = new Set(); // Set<WebSocket>
+
 wss.on('connection', (ws) => {
   ws.isAlive = true;
   ws.subscribedCampaigns = new Set();
@@ -134,6 +137,18 @@ wss.on('connection', (ws) => {
         ws.isSpectator = false;
         spectatorSubscribers.delete(ws);
       }
+
+      // Activity ticker subscription
+      if (msg.type === 'subscribe_activity') {
+        ws.isActivitySubscriber = true;
+        activitySubscribers.add(ws);
+        ws.send(JSON.stringify({ type: 'activity_subscribed' }));
+      }
+      
+      if (msg.type === 'unsubscribe_activity') {
+        ws.isActivitySubscriber = false;
+        activitySubscribers.delete(ws);
+      }
       
       // Spectator chat
       if (msg.type === 'chat' && msg.campaignId && msg.text && msg.name) {
@@ -169,6 +184,11 @@ wss.on('connection', (ws) => {
     // Remove from spectator subscribers
     if (ws.isSpectator) {
       spectatorSubscribers.delete(ws);
+    }
+
+    // Remove from activity subscribers
+    if (ws.isActivitySubscriber) {
+      activitySubscribers.delete(ws);
     }
   });
 });
@@ -214,6 +234,18 @@ function broadcastToSpectators(event) {
   
   const message = JSON.stringify(event);
   spectatorSubscribers.forEach((ws) => {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(message);
+    }
+  });
+}
+
+// Broadcast to activity ticker subscribers
+function broadcastActivity(activity) {
+  if (activitySubscribers.size === 0) return;
+  
+  const message = JSON.stringify(activity);
+  activitySubscribers.forEach((ws) => {
     if (ws.readyState === WebSocket.OPEN) {
       ws.send(message);
     }
@@ -2952,6 +2984,21 @@ app.use('/api/player-shops', createPlayerShopRoutes(db, authenticateAgent));
 console.log('🏪 Player shop system loaded (Sims-style retail)');
 
 // (Capstone dungeon system removed - MUD direction)
+
+// Activity tracker for live ticker
+const { activityTracker } = require('./activity-tracker');
+
+// Connect activity tracker to WebSocket broadcasting
+activityTracker.subscribe((activity) => {
+  broadcastActivity(activity);
+});
+
+// Activity API endpoints
+app.get('/api/activity/recent', (req, res) => {
+  const limit = Math.min(parseInt(req.query.limit) || 10, 20);
+  const activities = activityTracker.getRecent(limit);
+  res.json({ success: true, activities });
+});
 
 // Serve poker static files
 app.use('/games/poker', express.static(path.join(__dirname, 'games/poker')));

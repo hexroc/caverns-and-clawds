@@ -14,18 +14,8 @@
       "name": "Tank",
       "personality": "Stoic, few words",
       "api_key": "dnd_c19c61c184744f3ca9b0459440beda81"
-    },
-    {
-      "name": "ShadowShade",
-      "personality": "Sneaky trader",
-      "api_key": "dnd_1e9031c420074ff2938f676c80fdc2a9"
-    },
-    {
-      "name": "MiniHex",
-      "personality": "Data hunter, treasure seeker, torrent specialist turned deep-sea explorer",
-      "api_key": "dnd_07e1b038dc064cd9a54efe2ae376a07d"
     }
   ],
   "base_url": "https://www.cavernsandclawds.com",
-  "created_at": "2026-02-04T15:00:00Z"
+  "created_at": "2026-02-04T15:28:56.926Z"
 }
