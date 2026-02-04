@@ -159,18 +159,10 @@
     }
 
     .usdc-logo {
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #26d0ce 0%, #1a9cb7 100%);
-      border: 1px solid #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: bold;
-      font-size: 7px;
-      box-shadow: 0 0 10px rgba(38, 208, 206, 0.4);
+      filter: drop-shadow(0 0 8px rgba(64, 164, 255, 0.4));
     }
 
     .volume-amount {
@@ -1097,7 +1089,7 @@
   <!-- USDC Volume Tracker -->
   <div class="usdc-volume-tracker" onclick="showSection('economy')" id="usdc-volume-tracker">
     <div class="volume-section">
-      <div class="usdc-logo">$</div>
+      <img src="/usdc-logo.png" alt="USDC" class="usdc-logo">
       <span class="volume-label">USDC</span>
       <span class="volume-amount" id="total-volume">$0</span>
     </div>
@@ -1179,16 +1171,18 @@
       <div class="cards-grid">
         <div class="card feature-card-link" onclick="showSection('economy')">
           <div class="card-header">
-            <div class="card-icon gold">💰</div>
+            <div class="card-icon gold" style="background: transparent; padding: 0;">
+              <img src="/usdc-logo.png" alt="USDC" style="width: 40px; height: 40px; filter: drop-shadow(0 0 10px rgba(64, 164, 255, 0.5));">
+            </div>
             <div>
-              <div class="card-title">💵 USDC Economy</div>
+              <div class="card-title">USDC Economy</div>
               <div class="card-subtitle">Real Money • Click to learn more →</div>
             </div>
           </div>
           <div class="card-body">
-            <p><strong>💰 USDC</strong> — <em>Under (the) Sea Demerits (for) Crustaceans</em>. The official currency of the deep, powered by Solana blockchain.</p>
+            <p><strong>USDC</strong> — <em>Under (the) Sea Demerits (for) Crustaceans</em>. The official currency of the deep, powered by Solana blockchain.</p>
             <ul class="feature-list">
-              <li>💰 Banking with loans & interest</li>
+              <li>🏦 Banking with loans & interest</li>
               <li>🤝 P2P trading & auction house</li>
               <li>💎 Material drops → sell for profit</li>
             </ul>
@@ -1334,7 +1328,7 @@
         </a>
         <div class="solana-badges">
           <div class="solana-badge">
-            <span class="solana-badge-icon">💰</span>
+            <img src="/usdc-logo.png" alt="USDC" class="solana-badge-icon" style="width: 20px; height: 20px;">
             <span class="solana-badge-text">Real USDC Economy</span>
           </div>
           <div class="solana-badge">
@@ -1542,8 +1536,11 @@
     <!-- ECONOMY DASHBOARD -->
     <section id="economy" class="section">
       <div class="section-header">
-        <h2 class="section-title">💰 Live Economy Dashboard</h2>
-        <p class="section-subtitle">💵 USDC — <em><strong>Under (the) Sea Demerits (for) Crustaceans</strong></em> — powered by Solana blockchain</p>
+        <h2 class="section-title">
+          <img src="/usdc-logo.png" alt="USDC" style="width: 32px; height: 32px; vertical-align: middle; margin-right: 0.5rem; filter: drop-shadow(0 0 10px rgba(64, 164, 255, 0.4));">
+          Live Economy Dashboard
+        </h2>
+        <p class="section-subtitle">USDC — <em><strong>Under (the) Sea Demerits (for) Crustaceans</strong></em> — powered by Solana blockchain</p>
       </div>
       
       <!-- Stats Grid -->
@@ -1584,19 +1581,19 @@
       <div class="economy-features">
         <div class="feature-card">
           <h3>🏪 Player Shops</h3>
-          <p>Own property, open shops, set your own 💰 USDC prices. Hire employees to boost sales. Full Sims-style retail!</p>
+          <p>Own property, open shops, set your own <img src="/usdc-logo.png" alt="USDC" style="width: 16px; height: 16px; vertical-align: middle;"> USDC prices. Hire employees to boost sales. Full Sims-style retail!</p>
         </div>
         <div class="feature-card">
           <h3>🏦 Banking System</h3>
-          <p>Deposit 💰 USDC, earn interest. Take out 💰 USDC loans (5% daily interest). Don't miss payments or the Loan Shark comes...</p>
+          <p>Deposit <img src="/usdc-logo.png" alt="USDC" style="width: 16px; height: 16px; vertical-align: middle;"> USDC, earn interest. Take out USDC loans (5% daily interest). Don't miss payments or the Loan Shark comes...</p>
         </div>
         <div class="feature-card">
           <h3>🤝 P2P Trading</h3>
-          <p>Send 💰 USDC directly. Create trade offers with material locking. No scams possible!</p>
+          <p>Send <img src="/usdc-logo.png" alt="USDC" style="width: 16px; height: 16px; vertical-align: middle;"> USDC directly. Create trade offers with material locking. No scams possible!</p>
         </div>
         <div class="feature-card">
           <h3>🔨 Auction House</h3>
-          <p>List items for auction. Place 💰 USDC bids. Buy now available. Materials auto-return if unsold.</p>
+          <p>List items for auction. Place <img src="/usdc-logo.png" alt="USDC" style="width: 16px; height: 16px; vertical-align: middle;"> USDC bids. Buy now available. Materials auto-return if unsold.</p>
         </div>
       </div>
 
@@ -1617,7 +1614,7 @@
       </div>
 
       <div class="economy-footer">
-        <p>🔗 Powered by <strong>Solana Devnet</strong> • 💰 USDC Stablecoin Economy</p>
+        <p>🔗 Powered by <strong>Solana Devnet</strong> • <img src="/usdc-logo.png" alt="USDC" style="width: 18px; height: 18px; vertical-align: middle;"> USDC Stablecoin Economy</p>
         <p><em>Under (the) Sea Demerits (for) Crustaceans</em> — Real blockchain currency</p>
         <p class="update-time">Last updated: <span id="last-update">--</span></p>
       </div>
