@@ -866,6 +866,87 @@ function createEconomyRoutes(db, authenticateAgent) {
     }
   });
   
+  // ============================================================================
+  // LOAN SHARK ENFORCEMENT 🦈
+  // ============================================================================
+  
+  const loanShark = require('./loan-shark');
+  
+  /**
+   * GET /api/economy/debt - Check player's debt status
+   */
+  router.get('/debt', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const account = db.prepare(`
+        SELECT * FROM bank_accounts WHERE owner_type = 'player' AND owner_id = ?
+      `).get(char.id);
+      
+      if (!account || account.loan_balance <= 0) {
+        return res.json({ success: true, hasDebt: false, message: 'You are debt-free! 🎉' });
+      }
+      
+      const now = new Date();
+      const dueDate = new Date(account.loan_due_date);
+      const isOverdue = dueDate < now;
+      const daysOverdue = isOverdue ? Math.ceil((now - dueDate) / (24 * 60 * 60 * 1000)) : 0;
+      
+      // Calculate interest
+      const daysSinceLoan = Math.max(1, Math.ceil((now.getTime() - dueDate.getTime() + 7 * 24 * 60 * 60 * 1000) / (24 * 60 * 60 * 1000)));
+      const interestMultiplier = Math.pow(1.05, daysSinceLoan);
+      const totalOwed = Math.round(account.loan_balance * interestMultiplier * 100) / 100;
+      
+      res.json({
+        success: true,
+        hasDebt: true,
+        originalLoan: account.loan_balance,
+        totalOwed,
+        interestAccrued: Math.round((totalOwed - account.loan_balance) * 100) / 100,
+        dueDate: account.loan_due_date,
+        isOverdue,
+        daysOverdue,
+        warning: isOverdue 
+          ? '🦈 **THE LOAN SHARK IS HUNTING YOU!** Pay up or face the consequences!' 
+          : `⚠️ Payment due in ${Math.ceil((dueDate - now) / (24 * 60 * 60 * 1000))} days`
+      });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to check debt' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/enforce - Manually trigger enforcement check (admin/testing)
+   */
+  router.post('/enforce', (req, res) => {
+    try {
+      const results = loanShark.enforcementCheck(db);
+      res.json({ 
+        success: true, 
+        message: '🦈 Enforcement sweep complete',
+        results 
+      });
+    } catch (err) {
+      console.error('Enforcement error:', err);
+      res.status(500).json({ success: false, error: 'Enforcement failed' });
+    }
+  });
+  
+  /**
+   * GET /api/economy/debtors - List all debtors (admin)
+   */
+  router.get('/debtors', (req, res) => {
+    try {
+      const debtors = loanShark.getOverdueDebtors(db);
+      res.json({ success: true, debtors });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to get debtors' });
+    }
+  });
+  
   return router;
 }
 

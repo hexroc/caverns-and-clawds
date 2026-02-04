@@ -676,6 +676,18 @@ class EncounterManager {
     const { monsters, henchman } = this._parseCombatData(encounter.monsters);
     const turnOrder = JSON.parse(encounter.turn_order);
     
+    // Parse special rules (for Loan Shark encounters, etc.)
+    let specialRules = {};
+    if (encounter.special_rules) {
+      try {
+        specialRules = typeof encounter.special_rules === 'string' 
+          ? JSON.parse(encounter.special_rules) 
+          : encounter.special_rules;
+      } catch (e) {
+        specialRules = {};
+      }
+    }
+    
     return {
       id: encounter.id,
       characterId: encounter.character_id,
@@ -685,7 +697,8 @@ class EncounterManager {
       henchman,
       turnOrder,
       currentTurn: turnOrder[encounter.current_turn],
-      status: encounter.status
+      status: encounter.status,
+      specialRules
     };
   }
   
@@ -839,6 +852,34 @@ class EncounterManager {
    * Handle flee attempt
    */
   _handleFlee(char, encounter) {
+    // Check for special "no flee" rule (Loan Shark encounters)
+    const specialRules = encounter.specialRules || {};
+    if (specialRules.noFlee) {
+      return {
+        success: true,
+        action: 'flee',
+        fled: false,
+        combatEnded: false,
+        messages: [
+          '🦈 **You cannot flee from the Loan Shark!**',
+          '*"You owe me money, little lobster. There\'s no running from this."*'
+        ]
+      };
+    }
+    
+    // Check if any monster has noFlee ability (encounter.monsters is already parsed)
+    const monsters = encounter.monsters || [];
+    const hasNoFleeMonster = monsters.some(m => m.canFlee === false);
+    if (hasNoFleeMonster) {
+      return {
+        success: true,
+        action: 'flee',
+        fled: false,
+        combatEnded: false,
+        messages: ['🦈 **This enemy will not let you escape!** Stand and fight!']
+      };
+    }
+    
     const table = ENCOUNTER_TABLES[encounter.zone];
     const fleeChance = table?.fleeChance || 0.5;
     

@@ -940,6 +940,61 @@ const MONSTERS = {
     ],
     
     pearls: [8, 20]
+  },
+  
+  // === SPECIAL: LOAN SHARK (Debt Collector) ===
+  
+  loan_shark: {
+    id: 'loan_shark',
+    name: 'The Loan Shark',
+    description: 'A massive, scarred shark with cold, calculating eyes. He always collects.',
+    cr: 3,  // Base CR, scales with debt
+    type: 'beast',
+    size: 'large',
+    
+    stats: {
+      hp: 45,
+      ac: 14,
+      speed: 40,  // Fast swimmer
+      str: 18, dex: 13, con: 15, int: 12, wis: 14, cha: 8
+    },
+    
+    attacks: [
+      { 
+        name: 'Crushing Bite', 
+        type: 'melee',
+        hit: 6, 
+        damage: '2d10+4', 
+        damageType: 'piercing',
+        description: 'Massive jaws clamp down with bone-crushing force'
+      },
+      {
+        name: 'Tail Slap',
+        type: 'melee',
+        hit: 5,
+        damage: '1d8+4',
+        damageType: 'bludgeoning',
+        description: 'A powerful tail sweep'
+      }
+    ],
+    
+    abilities: ['debt_sense', 'no_escape', 'interest_accumulator'],
+    immunities: ['frightened', 'charmed'],
+    
+    behavior: 'relentless',
+    special: {
+      noFlee: true,  // Players cannot flee
+      debtCollector: true,
+      dialogue: {
+        spawn: "💀 The water grows cold... A massive shadow approaches.",
+        taunt: "*\"Interest is compounding, friend.\"*",
+        victory: "🦈 *\"Pleasure doing business.\"*",
+        defeat: "*\"I'll be back for the rest...\"*"
+      }
+    },
+    
+    loot: [],  // No loot - he takes, not gives
+    pearls: [0, 0]
   }
 };
 
