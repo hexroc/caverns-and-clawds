@@ -319,19 +319,384 @@ function createWorldRoutes(db, authenticateAgent) {
   });
 
   // ============================================================================
+  // PROCEDURAL ZONE ENDPOINTS
+  // ============================================================================
+
+  /**
+   * GET /api/world/zone/:type - Get zone info and entry point
+   */
+  router.get('/zone/:type', authenticateAgent, (req, res) => {
+    try {
+      const { type } = req.params;
+      const seed = req.query.seed || 'default';
+      
+      const zone = zoneManager.getOrCreateZone(type, seed);
+      if (!zone) {
+        return res.status(404).json({ success: false, error: 'Unknown zone type' });
+      }
+      
+      const entryRoom = zone.rooms[zone.entryRoomId];
+      
+      res.json({
+        success: true,
+        zone: {
+          id: zone.id,
+          type: zone.type,
+          name: zone.name,
+          levelRange: zone.levelRange,
+          roomCount: zone.roomCount,
+        },
+        entryRoom: {
+          id: entryRoom.id,
+          name: entryRoom.name,
+          description: entryRoom.shortDesc,
+        },
+      });
+    } catch (err) {
+      console.error('Get zone error:', err);
+      res.status(500).json({ success: false, error: 'Failed to get zone' });
+    }
+  });
+
+  /**
+   * GET /api/world/room/:id - Get procedural room details
+   */
+  router.get('/room/:id', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const room = zoneManager.getRoom(req.params.id);
+      if (!room) {
+        return res.status(404).json({ success: false, error: 'Room not found' });
+      }
+      
+      // Mark as discovered
+      zoneManager.discoverRoom(room.id, char.id);
+      
+      res.json({
+        success: true,
+        room: {
+          id: room.id,
+          name: room.name,
+          description: room.description,
+          zone: room.zoneName,
+          level: room.level,
+          exits: Object.keys(room.exits),
+          features: room.features.map(f => ({
+            id: f.id,
+            name: f.name,
+            searched: f.searched,
+          })),
+          hazards: room.hazards.filter(h => h.revealed).map(h => ({
+            name: h.name,
+            description: h.description,
+          })),
+          npcs: room.npcs || [],
+          ambient: room.ambient,
+          encounter: room.encounter ? { warning: 'Something lurks here...' } : null,
+        },
+      });
+    } catch (err) {
+      console.error('Get room error:', err);
+      res.status(500).json({ success: false, error: 'Failed to get room' });
+    }
+  });
+
+  /**
+   * GET /api/world/search - Search current room for hidden things
+   */
+  router.get('/search', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      // Check if in procedural zone (room ID format: zonetype_seed_index)
+      const location = char.location;
+      const isProcedural = location.includes('_') && !LOCATIONS[location];
+      
+      if (!isProcedural) {
+        // Static location - check features
+        const staticLoc = LOCATIONS[location];
+        if (!staticLoc) {
+          return res.status(400).json({ success: false, error: 'Unknown location' });
+        }
+        
+        const features = staticLoc.features || [];
+        return res.json({
+          success: true,
+          location: staticLoc.name,
+          message: features.length > 0 
+            ? `You can see: ${features.join(', ')}`
+            : 'You search but find nothing of particular interest.',
+          searchableFeatures: features,
+        });
+      }
+      
+      // Procedural room
+      const room = zoneManager.getRoom(location);
+      if (!room) {
+        return res.status(404).json({ success: false, error: 'Room not found' });
+      }
+      
+      // List searchable features
+      const searchable = room.features.filter(f => !f.searched);
+      const searched = room.features.filter(f => f.searched);
+      
+      res.json({
+        success: true,
+        location: room.name,
+        zone: room.zoneName,
+        message: searchable.length > 0
+          ? `You spot the following that might be worth investigating: ${searchable.map(f => f.name).join(', ')}`
+          : 'You have already searched everything in this room.',
+        searchableFeatures: searchable.map(f => ({ id: f.id, name: f.name })),
+        alreadySearched: searched.map(f => ({ id: f.id, name: f.name })),
+        hiddenHazards: room.hazards.filter(h => !h.revealed).length > 0,
+      });
+    } catch (err) {
+      console.error('Search error:', err);
+      res.status(500).json({ success: false, error: 'Failed to search' });
+    }
+  });
+
+  /**
+   * POST /api/world/search - Search a specific feature
+   */
+  router.post('/search', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const { featureId } = req.body;
+      if (!featureId) {
+        return res.status(400).json({ success: false, error: 'featureId required' });
+      }
+      
+      const location = char.location;
+      const room = zoneManager.getRoom(location);
+      if (!room) {
+        return res.status(400).json({ success: false, error: 'Not in a searchable location' });
+      }
+      
+      // Create RNG for search results
+      const rng = new SeededRandom(`${room.id}_${featureId}_${Date.now()}`);
+      
+      // Perform search
+      const feature = room.features.find(f => f.id === featureId);
+      if (!feature) {
+        return res.status(400).json({ success: false, error: 'Feature not found in this room' });
+      }
+      
+      if (feature.searched) {
+        return res.json({
+          success: true,
+          alreadySearched: true,
+          message: `You have already searched the ${feature.name}.`,
+        });
+      }
+      
+      // Mark as searched
+      feature.searched = true;
+      zoneManager.updateRoomState(room.id, { features: room.features });
+      
+      // Determine if search found something
+      const foundSomething = rng.chance(feature.searchChance);
+      
+      if (!foundSomething) {
+        return res.json({
+          success: true,
+          found: false,
+          message: `You search the ${feature.name} carefully but find nothing of value.`,
+        });
+      }
+      
+      // Pick loot
+      const lootId = rng.pick(feature.possibleLoot);
+      
+      // Handle special results
+      if (lootId === 'empty' || lootId === 'nothing' || lootId === 'junk') {
+        return res.json({
+          success: true,
+          found: false,
+          message: `You search the ${feature.name} thoroughly but only find worthless debris.`,
+        });
+      }
+      
+      if (lootId === 'trap' || lootId === 'mimic') {
+        // Reveal a hazard or trigger encounter
+        return res.json({
+          success: true,
+          found: true,
+          trap: true,
+          trapType: lootId,
+          message: `As you reach into the ${feature.name}, something attacks!`,
+          // Combat system would handle this
+        });
+      }
+      
+      res.json({
+        success: true,
+        found: true,
+        lootId,
+        message: `You search the ${feature.name} and discover: ${lootId.replace(/_/g, ' ')}!`,
+        // Item system would add to inventory
+      });
+    } catch (err) {
+      console.error('Search feature error:', err);
+      res.status(500).json({ success: false, error: 'Failed to search feature' });
+    }
+  });
+
+  /**
+   * GET /api/world/map - Return discovered rooms in current zone
+   */
+  router.get('/map', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const location = char.location;
+      
+      // Determine zone type from location
+      let zoneType;
+      if (LOCATIONS[location]) {
+        // Static location - show static map
+        return res.json({
+          success: true,
+          mapType: 'static',
+          currentLocation: location,
+          locations: Object.values(LOCATIONS).map(loc => ({
+            id: loc.id,
+            name: loc.name,
+            type: loc.type,
+            exits: Object.keys(loc.exits || {}),
+            current: loc.id === location,
+          })),
+        });
+      }
+      
+      // Procedural location - extract zone type
+      const parts = location.split('_');
+      if (parts.length >= 2) {
+        zoneType = parts[0];
+      }
+      
+      if (!zoneType) {
+        return res.status(400).json({ success: false, error: 'Cannot determine zone type' });
+      }
+      
+      const mapResult = zoneManager.generateMap(char.id, zoneType);
+      
+      if (!mapResult.success) {
+        return res.status(400).json(mapResult);
+      }
+      
+      // Find current room in map
+      const currentRoom = mapResult.map.find(r => r.id === location);
+      
+      res.json({
+        success: true,
+        mapType: 'procedural',
+        zone: zoneType,
+        currentLocation: location,
+        currentRoom: currentRoom ? {
+          id: currentRoom.id,
+          name: currentRoom.name,
+          isSpecial: currentRoom.isSpecial,
+        } : null,
+        discoveredRooms: mapResult.discoveredCount,
+        map: mapResult.map,
+      });
+    } catch (err) {
+      console.error('Map error:', err);
+      res.status(500).json({ success: false, error: 'Failed to generate map' });
+    }
+  });
+
+  /**
+   * POST /api/world/enter-zone - Enter a procedural zone
+   */
+  router.post('/enter-zone', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const { zoneType, seed } = req.body;
+      if (!zoneType) {
+        return res.status(400).json({ success: false, error: 'zoneType required' });
+      }
+      
+      // Check if zone exists
+      const zone = zoneManager.getOrCreateZone(zoneType, seed || 'default');
+      if (!zone) {
+        return res.status(400).json({ success: false, error: 'Unknown zone type' });
+      }
+      
+      // Check level requirement
+      const levelRange = zone.levelRange;
+      if (char.level < levelRange[0]) {
+        return res.status(400).json({
+          success: false,
+          error: `This zone requires level ${levelRange[0]}+. You are level ${char.level}.`,
+        });
+      }
+      
+      // Move character to zone entry
+      const entryRoom = zone.rooms[zone.entryRoomId];
+      db.prepare('UPDATE clawds SET current_zone = ? WHERE id = ?')
+        .run(entryRoom.id, char.id);
+      
+      // Mark as discovered
+      zoneManager.discoverRoom(entryRoom.id, char.id);
+      
+      res.json({
+        success: true,
+        message: `You enter ${zone.name}.`,
+        zone: {
+          id: zone.id,
+          name: zone.name,
+          levelRange: zone.levelRange,
+        },
+        room: {
+          id: entryRoom.id,
+          name: entryRoom.name,
+          description: entryRoom.description,
+          exits: Object.keys(entryRoom.exits),
+          features: entryRoom.features.map(f => ({ id: f.id, name: f.name })),
+          ambient: entryRoom.ambient,
+        },
+      });
+    } catch (err) {
+      console.error('Enter zone error:', err);
+      res.status(500).json({ success: false, error: 'Failed to enter zone' });
+    }
+  });
+
+  // ============================================================================
   // DOCS
   // ============================================================================
 
   router.get('/docs', (req, res) => {
     res.json({
       name: 'Clawds & Caverns World API',
-      version: '1.0.0',
-      description: 'Explore the world, talk to NPCs, accept quests',
+      version: '2.0.0',
+      description: 'Explore the world, talk to NPCs, accept quests, navigate procedural zones',
       endpoints: {
         locations: {
           'GET /look': 'Look around current location',
           'GET /location/:id': 'Get specific location info',
-          'GET /locations': 'List all locations',
+          'GET /locations': 'List all static locations',
           'POST /move': 'Move to adjacent location (body: {direction})'
         },
         npcs: {
@@ -345,9 +710,20 @@ function createWorldRoutes(db, authenticateAgent) {
         },
         players: {
           'GET /players': 'See other players at your location'
+        },
+        exploration: {
+          'GET /search': 'List searchable features in current room',
+          'POST /search': 'Search a specific feature (body: {featureId})',
+          'GET /map': 'Get map of discovered rooms in current zone'
+        },
+        zones: {
+          'GET /zone/:type': 'Get zone info (query: seed)',
+          'GET /room/:id': 'Get procedural room details',
+          'POST /enter-zone': 'Enter a procedural zone (body: {zoneType, seed?})'
         }
       },
-      locations: Object.keys(LOCATIONS),
+      staticLocations: Object.keys(LOCATIONS),
+      proceduralZones: ['kelp_forest', 'coral_labyrinth', 'murk', 'abyss', 'ruins', 'shallows'],
       npcs: Object.keys(NPCS)
     });
   });
