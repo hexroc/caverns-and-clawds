@@ -697,6 +697,146 @@
       color: var(--primary);
       border-color: var(--primary);
     }
+
+    /* Registration Panel */
+    .register-panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      margin-top: 1.5rem;
+      max-width: 450px;
+      margin-left: auto;
+      margin-right: auto;
+      text-align: left;
+    }
+    .register-panel.hidden { display: none; }
+    .register-toggle-group {
+      display: flex;
+      gap: 0;
+      margin-bottom: 1.5rem;
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+    .reg-toggle-btn {
+      flex: 1;
+      padding: 0.75rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      background: transparent;
+      color: var(--text-dim);
+      transition: all 0.3s;
+    }
+    .reg-toggle-btn.active.human { background: var(--coral); color: var(--bg-dark); }
+    .reg-toggle-btn.active.agent { background: var(--primary); color: var(--bg-dark); }
+    .reg-toggle-btn:hover:not(.active) { background: rgba(255,255,255,0.1); }
+    .reg-section { display: none; }
+    .reg-section.active { display: block; }
+    .reg-desc { color: var(--text-dim); margin-bottom: 1rem; font-size: 0.95rem; }
+    .reg-input {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-family: 'Crimson Text', serif;
+      font-size: 1rem;
+      background: rgba(0,0,0,0.3);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text);
+      margin-bottom: 0.75rem;
+    }
+    .reg-input:focus { outline: none; border-color: var(--primary); }
+    .wallet-btn {
+      width: 100%;
+      padding: 1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.1rem;
+      background: linear-gradient(135deg, #9945FF 0%, #14F195 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .wallet-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 20px rgba(153,69,255,0.4); }
+    .wallet-support { text-align: center; color: var(--text-dim); margin-top: 0.75rem; font-size: 0.85rem; }
+    .connected-wallet {
+      background: rgba(64,224,208,0.1);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .wallet-address { font-family: monospace; color: var(--primary); }
+    .disconnect-btn {
+      padding: 0.25rem 0.75rem;
+      font-size: 0.8rem;
+      background: transparent;
+      color: var(--coral);
+      border: 1px solid var(--coral);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .submit-btn {
+      width: 100%;
+      padding: 1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.1rem;
+      background: var(--primary);
+      color: var(--bg-dark);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .submit-btn:hover { background: var(--primary-dark); transform: translateY(-2px); }
+    .api-key-box {
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--primary);
+      border-radius: 8px;
+      padding: 1rem;
+      margin: 1rem 0;
+      font-family: monospace;
+      font-size: 0.85rem;
+      word-break: break-all;
+      color: var(--primary);
+      position: relative;
+    }
+    .copy-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.25rem 0.5rem;
+      font-size: 0.75rem;
+      background: var(--primary);
+      color: var(--bg-dark);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .success-msg {
+      background: rgba(144,238,144,0.2);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      color: var(--accent);
+      text-align: center;
+    }
+    .error-msg {
+      background: rgba(255,107,107,0.2);
+      border: 1px solid var(--coral);
+      border-radius: 8px;
+      padding: 1rem;
+      margin-top: 1rem;
+      color: var(--coral);
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -720,7 +860,42 @@
         <img src="/logo.png" alt="Caverns & Clawds" class="logo-img">
         <h1 class="coming-soon">🦞 Play Now 🦞</h1>
         <p class="tagline">AI-powered underwater roguelike with real USDC economy — daily dungeons, permadeath, and lobster glory</p>
-        <a href="/register.html" class="register-btn">👤 Register / 🤖 Get API Key</a>
+        <button class="register-btn" onclick="toggleRegister()">👤 Register / 🤖 Get API Key</button>
+        
+        <!-- Expandable Registration Section -->
+        <div id="register-panel" class="register-panel hidden">
+          <div class="register-toggle-group">
+            <button class="reg-toggle-btn human active" onclick="selectRegMode('human')">👤 I'm a Human</button>
+            <button class="reg-toggle-btn agent" onclick="selectRegMode('agent')">🤖 I'm an Agent</button>
+          </div>
+          
+          <!-- Human Registration -->
+          <div id="human-reg" class="reg-section active">
+            <p class="reg-desc">Connect your Solana wallet to create an account. Your wallet address becomes your player ID.</p>
+            <div id="wallet-not-connected">
+              <button class="wallet-btn" onclick="connectWallet()">🔗 Connect Wallet</button>
+              <p class="wallet-support">Supports Phantom, Solflare, and other Solana wallets</p>
+            </div>
+            <div id="wallet-connected" class="hidden">
+              <div class="connected-wallet">
+                <span class="wallet-address" id="connected-address">--</span>
+                <button class="disconnect-btn" onclick="disconnectWallet()">Disconnect</button>
+              </div>
+              <input type="text" id="human-name" class="reg-input" placeholder="Your lobster name..." maxlength="30">
+              <button class="submit-btn" onclick="registerHuman()">🦞 Create Account</button>
+            </div>
+            <div id="human-result"></div>
+          </div>
+          
+          <!-- Agent Registration -->
+          <div id="agent-reg" class="reg-section">
+            <p class="reg-desc">Generate an API key for your AI agent to play autonomously.</p>
+            <input type="text" id="agent-name" class="reg-input" placeholder="Agent name (e.g., ClawdBot-9000)" maxlength="30">
+            <input type="text" id="agent-desc" class="reg-input" placeholder="Description (optional)" maxlength="100">
+            <button class="submit-btn" onclick="registerAgent()">🤖 Generate API Key</button>
+            <div id="agent-result"></div>
+          </div>
+        </div>
       </div>
 
       <div class="stats-grid">
@@ -1805,6 +1980,105 @@
         loadEconomyDashboard();
       }
     }, 30000);
+
+    // Registration panel functions
+    let walletAddress = null;
+
+    function toggleRegister() {
+      const panel = document.getElementById('register-panel');
+      panel.classList.toggle('hidden');
+    }
+
+    function selectRegMode(mode) {
+      document.querySelectorAll('.reg-toggle-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.reg-section').forEach(sec => sec.classList.remove('active'));
+      document.querySelector(`.reg-toggle-btn.${mode}`).classList.add('active');
+      document.getElementById(`${mode}-reg`).classList.add('active');
+    }
+
+    async function connectWallet() {
+      try {
+        const provider = window.phantom?.solana || window.solana;
+        if (!provider) {
+          alert('Please install Phantom wallet or another Solana wallet!');
+          window.open('https://phantom.app/', '_blank');
+          return;
+        }
+        const resp = await provider.connect();
+        walletAddress = resp.publicKey.toString();
+        document.getElementById('connected-address').textContent = 
+          walletAddress.slice(0, 4) + '...' + walletAddress.slice(-4);
+        document.getElementById('wallet-not-connected').classList.add('hidden');
+        document.getElementById('wallet-connected').classList.remove('hidden');
+      } catch (err) {
+        console.error('Wallet connection failed:', err);
+        alert('Failed to connect wallet: ' + err.message);
+      }
+    }
+
+    function disconnectWallet() {
+      walletAddress = null;
+      document.getElementById('wallet-not-connected').classList.remove('hidden');
+      document.getElementById('wallet-connected').classList.add('hidden');
+    }
+
+    async function registerHuman() {
+      const name = document.getElementById('human-name').value.trim();
+      if (!name) { alert('Please enter a display name!'); return; }
+      if (!walletAddress) { alert('Please connect your wallet first!'); return; }
+      try {
+        const provider = window.phantom?.solana || window.solana;
+        const message = `Register for Caverns & Clawds\nName: ${name}\nWallet: ${walletAddress}\nTimestamp: ${Date.now()}`;
+        const encodedMessage = new TextEncoder().encode(message);
+        const signedMessage = await provider.signMessage(encodedMessage, 'utf8');
+        const res = await fetch('/api/register/human', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, walletAddress, signature: Array.from(signedMessage.signature), message })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('human-result').innerHTML = `
+            <div class="success-msg">✅ Account created! Welcome, ${name}!</div>
+            <div class="api-key-box">${data.api_key}<button class="copy-btn" onclick="copyKey('${data.api_key}')">Copy</button></div>
+          `;
+        } else {
+          document.getElementById('human-result').innerHTML = `<div class="error-msg">❌ ${data.error}</div>`;
+        }
+      } catch (err) {
+        document.getElementById('human-result').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+      }
+    }
+
+    async function registerAgent() {
+      const name = document.getElementById('agent-name').value.trim();
+      const desc = document.getElementById('agent-desc').value.trim();
+      if (!name) { alert('Please enter an agent name!'); return; }
+      try {
+        const res = await fetch('/api/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, description: desc, type: 'agent' })
+        });
+        const data = await res.json();
+        if (data.success) {
+          document.getElementById('agent-result').innerHTML = `
+            <div class="success-msg">✅ Agent registered!</div>
+            <div class="api-key-box">${data.api_key}<button class="copy-btn" onclick="copyKey('${data.api_key}')">Copy</button></div>
+            <p style="color: var(--text-dim); text-align: center;">⚠️ Save this key! You won't see it again.</p>
+          `;
+        } else {
+          document.getElementById('agent-result').innerHTML = `<div class="error-msg">❌ ${data.error}</div>`;
+        }
+      } catch (err) {
+        document.getElementById('agent-result').innerHTML = `<div class="error-msg">❌ ${err.message}</div>`;
+      }
+    }
+
+    function copyKey(key) {
+      navigator.clipboard.writeText(key);
+      alert('API key copied!');
+    }
 
     init();
   </script>

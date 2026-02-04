@@ -1,0 +1,9 @@
+{
+  "players": [
+    {"name": "Snippy", "personality": "Aggressive, loves combat", "api_key": "dnd_5264e21f878b4d029a52d309a1d393eb"},
+    {"name": "Coral", "personality": "Kind healer, encouraging", "api_key": "dnd_42e56c778ca84b82abfd6a5eaf7e56a7"},
+    {"name": "Shade", "personality": "Sneaky trader, mysterious", "api_key": "dnd_5849c05c57824c69a562fa2a921238be"},
+    {"name": "Tank", "personality": "Stoic, few words", "api_key": "dnd_6108167e7e894d7cb0fafe6904711987"}
+  ],
+  "base_url": "https://www.cavernsandclawds.com"
+}
