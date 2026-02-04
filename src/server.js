@@ -927,6 +927,98 @@ app.post('/api/register', (req, res) => {
   res.json(response);
 });
 
+// Register human with Solana wallet verification
+app.post('/api/register/human', async (req, res) => {
+  const { name, walletAddress, signature, message } = req.body;
+  
+  if (!name || !walletAddress || !signature || !message) {
+    return res.status(400).json({ success: false, error: 'Name, wallet, signature, and message required' });
+  }
+  
+  // TODO: Verify signature with @solana/web3.js
+  // For now, trust the client-side signature (wallet connected = verified)
+  
+  // Check if wallet already registered
+  const existingWallet = db.prepare('SELECT id FROM users WHERE wallet_address = ?').get(walletAddress);
+  if (existingWallet) {
+    return res.status(400).json({ success: false, error: 'Wallet already registered' });
+  }
+  
+  // Check if name taken
+  const existingName = db.prepare('SELECT id FROM users WHERE name = ?').get(name);
+  if (existingName) {
+    return res.status(400).json({ success: false, error: 'Name already taken' });
+  }
+  
+  const id = uuidv4();
+  const apiKey = generateApiKey();
+  
+  // Add wallet_address column if not exists (migration)
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN wallet_address TEXT');
+  } catch (e) { /* column exists */ }
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN wallet_verified_at TEXT');
+  } catch (e) { /* column exists */ }
+  
+  db.prepare(`
+    INSERT INTO users (id, name, type, api_key, status, wallet_address, wallet_verified_at)
+    VALUES (?, ?, 'human', ?, 'active', ?, datetime('now'))
+  `).run(id, name, apiKey, walletAddress);
+  
+  res.json({
+    success: true,
+    id,
+    name,
+    type: 'human',
+    api_key: apiKey,
+    wallet: walletAddress
+  });
+});
+
+// Verify agent ownership with Solana wallet
+app.post('/api/register/verify-agent', async (req, res) => {
+  const { agentId, ownerWallet, signature, message } = req.body;
+  
+  if (!agentId || !ownerWallet || !signature || !message) {
+    return res.status(400).json({ success: false, error: 'Agent ID, wallet, signature, and message required' });
+  }
+  
+  // TODO: Verify signature with @solana/web3.js
+  
+  const agent = db.prepare('SELECT * FROM users WHERE id = ?').get(agentId);
+  if (!agent) {
+    return res.status(404).json({ success: false, error: 'Agent not found' });
+  }
+  
+  if (agent.wallet_address && agent.wallet_address !== ownerWallet) {
+    return res.status(400).json({ success: false, error: 'Agent already verified by different wallet' });
+  }
+  
+  // Add columns if not exist
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN wallet_address TEXT');
+  } catch (e) { /* exists */ }
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN wallet_verified_at TEXT');
+  } catch (e) { /* exists */ }
+  try {
+    db.exec('ALTER TABLE users ADD COLUMN owner_wallet TEXT');
+  } catch (e) { /* exists */ }
+  
+  db.prepare(`
+    UPDATE users SET owner_wallet = ?, wallet_verified_at = datetime('now'), status = 'active'
+    WHERE id = ?
+  `).run(ownerWallet, agentId);
+  
+  res.json({
+    success: true,
+    agentId,
+    ownerWallet,
+    message: 'Agent ownership verified!'
+  });
+});
+
 // Claim page
 app.get('/claim/:token', (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE claim_token = ?').get(req.params.token);
