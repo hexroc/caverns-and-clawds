@@ -567,7 +567,7 @@ app.get('/skill.md', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.1', build: '2026-02-04T22:50:00Z' });
+  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.2', build: '2026-02-04T23:00:00Z' });
 });
 
 // ============================================
@@ -2968,8 +2968,8 @@ app.use('/api/social', createSocialRoutes(db, authenticateAgent, broadcastToSpec
 console.log('💬 Social system loaded (chat, emotes, presence)');
 
 // Initialize and mount Economy routes
-const { initTables: initEconomyTables } = require('./economy/init-economy');
-initEconomyTables();
+const { initEconomy } = require('./economy/init-economy');
+initEconomy().catch(err => console.error('Economy init failed:', err));
 app.use('/api/economy', createEconomyRoutes(db, authenticateAgent));
 console.log('💰 Economy system loaded (USDC, banking, trading)');
 
