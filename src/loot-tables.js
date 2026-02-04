@@ -25,7 +25,7 @@ const LOOT_TIERS = {
     materials: ['kelp_fiber', 'small_shell', 'fish_scales'],
     junk: ['seaweed', 'broken_shell', 'driftwood'],
     maxRarity: 'common',
-    pearlMultiplier: 1.0,
+    usdcMultiplier: 0.1,
   },
   
   // TIER 2: Basic adventuring gear (Kelp Forest, levels 2-5)
@@ -36,7 +36,7 @@ const LOOT_TIERS = {
     materials: ['kelp_fiber', 'crab_chitin', 'luminescent_algae', 'fish_scales'],
     junk: ['seaweed', 'broken_shell', 'waterlogged_coin'],
     maxRarity: 'common',
-    pearlMultiplier: 1.0,
+    usdcMultiplier: 0.1,
   },
   
   // TIER 3: Better gear, uncommon possible (Coral Labyrinth, levels 4-7)
@@ -47,7 +47,7 @@ const LOOT_TIERS = {
     materials: ['crab_chitin', 'coral_fragment', 'shark_tooth', 'eel_skin'],
     junk: ['waterlogged_coin', 'rusty_trinket', 'old_compass'],
     maxRarity: 'uncommon',
-    pearlMultiplier: 1.5,
+    usdcMultiplier: 0.15,
   },
   
   // TIER 4: Good gear, rare possible (The Murk, levels 6-10)
@@ -58,7 +58,7 @@ const LOOT_TIERS = {
     materials: ['dark_pearl', 'shadow_essence', 'murk_slime', 'anglerfish_lure'],
     junk: ['old_compass', 'waterlogged_journal', 'tarnished_medal'],
     maxRarity: 'rare',
-    pearlMultiplier: 2.0,
+    usdcMultiplier: 0.2,
   },
   
   // TIER 5: Great gear, epic possible (Abyss, levels 8-15)
@@ -69,7 +69,7 @@ const LOOT_TIERS = {
     materials: ['abyssal_pearl', 'pressure_crystal', 'trench_coral', 'bioluminescent_gland'],
     junk: ['ancient_coin', 'strange_idol', 'preserved_scroll'],
     maxRarity: 'epic',
-    pearlMultiplier: 3.0,
+    usdcMultiplier: 0.3,
   },
   
   // TIER 6: Best gear, legendary possible (Ruins, levels 10-20)
@@ -80,7 +80,7 @@ const LOOT_TIERS = {
     materials: ['ancient_relic_shard', 'primordial_pearl', 'sunken_gold', 'enchanted_coral'],
     junk: ['ancient_coin', 'mysterious_artifact', 'royal_seal'],
     maxRarity: 'legendary',
-    pearlMultiplier: 5.0,
+    usdcMultiplier: 0.5,
   },
 };
 
@@ -129,7 +129,7 @@ const DROP_CHANCES = {
     consumable: 15,
     material: 40,
     junk: 35,
-    pearl_bonus: 2,  // Extra pearl drop
+    usdc_bonus: 2,  // Extra USDC drop
   },
 };
 
@@ -199,12 +199,12 @@ function generateZoneLoot(monsterId, zoneType, monsterCR = 0.25) {
   const tierData = LOOT_TIERS[tier] || LOOT_TIERS.tier2;
   
   const items = [];
-  let pearls = 0;
+  let usdc = 0;
   
   // Base pearl drop based on CR and tier
   const crValue = typeof monsterCR === 'string' ? eval(monsterCR) : monsterCR;
-  const basePearls = Math.max(1, Math.floor(crValue * 5));
-  pearls = Math.floor(basePearls * tierData.pearlMultiplier * (0.5 + Math.random()));
+  const baseUsdc = Math.max(1, Math.floor(crValue * 5));
+  usdc = Math.floor(baseUsdc * tierData.usdcMultiplier * (0.5 + Math.random()));
   
   // Roll for loot drop
   if (Math.random() < DROP_CHANCES.baseDropChance) {
@@ -228,9 +228,9 @@ function generateZoneLoot(monsterId, zoneType, monsterCR = 0.25) {
       case 'junk':
         itemPool = tierData.junk;
         break;
-      case 'pearl_bonus':
+      case 'usdc_bonus':
         // Extra pearls instead of item
-        pearls += Math.floor(basePearls * 0.5);
+        usdc += Math.floor(baseUsdc * 0.5);
         break;
     }
     
@@ -254,7 +254,7 @@ function generateZoneLoot(monsterId, zoneType, monsterCR = 0.25) {
     }
   }
   
-  return { items, pearls };
+  return { items, usdc };
 }
 
 /**
@@ -280,7 +280,7 @@ function isItemAppropriate(itemId, zoneType) {
  */
 function getZonePearlMultiplier(zoneType) {
   const tier = getZoneTier(zoneType);
-  return LOOT_TIERS[tier]?.pearlMultiplier || 1.0;
+  return LOOT_TIERS[tier]?.usdcMultiplier || 1.0;
 }
 
 // ============================================================================

@@ -25,7 +25,7 @@ echo "🦞 $NAME @ $LOCATION"
 # Character phrases
 SNIPPY_SAY=("*flexes claws*" "Time to fight!" "BATTLE!" "*sharpens claw*" "Bring it on!")
 CORAL_SAY=("May the tides bless you!" "Anyone need healing?" "Stay safe!" "*prays*" "Together!")
-SHADE_SAY=("*emerges from shadows*" "Got materials to sell..." "*counts pearls*" "Looking for deals." "Trust no one.")
+SHADE_SAY=("*emerges from shadows*" "Got materials to sell..." "*counts USDC*" "Looking for deals." "Trust no one.")
 TANK_SAY=("Hmm." "*nods*" "..." "I protect." "*stands guard*")
 SHOPPING_SAY=("What's for sale?" "Interesting..." "How much?" "*browses*" "Any deals?")
 SELL_SAY=("I have materials to sell!" "Top quality goods!" "Fair price?" "Fresh from the hunt!")

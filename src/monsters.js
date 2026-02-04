@@ -1067,14 +1067,8 @@ function rollLoot(monsterId) {
     }
   }
   
-  // Roll pearls
-  let pearls = 0;
-  if (monster.pearls) {
-    const [min, max] = monster.pearls;
-    pearls = Math.floor(Math.random() * (max - min + 1)) + min;
-  }
-  
-  return { items, pearls };
+  // Currency drops removed - monsters drop materials now, which are sold for USDC
+  return { items, usdc: 0 };
 }
 
 /**
