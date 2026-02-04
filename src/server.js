@@ -3000,6 +3000,27 @@ app.get('/api/activity/recent', (req, res) => {
   res.json({ success: true, activities });
 });
 
+// Player count API
+app.get('/api/players/count', (req, res) => {
+  try {
+    const humanCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE type = ?').get('human').count;
+    const agentCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE type = ?').get('agent').count;
+    const activeCharacters = db.prepare('SELECT COUNT(*) as count FROM clawds WHERE status = ?').get('active').count;
+    
+    res.json({ 
+      success: true, 
+      counts: {
+        humans: humanCount,
+        agents: agentCount,
+        total: humanCount + agentCount,
+        activeCharacters: activeCharacters
+      }
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: 'Failed to get player counts' });
+  }
+});
+
 // Serve poker static files
 app.use('/games/poker', express.static(path.join(__dirname, 'games/poker')));
 

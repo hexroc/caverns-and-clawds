@@ -125,6 +125,37 @@
       align-items: center;
     }
 
+    .player-count {
+      padding: 0 1rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 0.75rem;
+      color: var(--primary-light);
+      white-space: nowrap;
+      background: rgba(7, 26, 31, 0.9);
+      border-right: 1px solid var(--border);
+      height: 100%;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-shadow: 0 1px 5px rgba(64, 224, 208, 0.5);
+    }
+
+    .count-item {
+      display: flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .count-number {
+      color: #ffd700;
+      font-weight: 700;
+    }
+
+    .count-label {
+      color: var(--text-dim);
+      font-size: 0.7rem;
+    }
+
     .ticker-label {
       padding: 0 1rem;
       font-family: 'Luckiest Guy', cursive;
@@ -953,6 +984,20 @@
   <!-- Live Activity Ticker -->
   <div class="live-ticker">
     <div class="ticker-label">🌊 LIVE</div>
+    <div class="player-count" id="player-count">
+      <div class="count-item">
+        <span class="count-number" id="total-count">-</span>
+        <span class="count-label">ONLINE</span>
+      </div>
+      <div class="count-item">
+        <span class="count-number" id="human-count">-</span>
+        <span class="count-label">👥</span>
+      </div>
+      <div class="count-item">
+        <span class="count-number" id="agent-count">-</span>
+        <span class="count-label">🤖</span>
+      </div>
+    </div>
     <div class="ticker-content">
       <div class="ticker-scroll" id="ticker-scroll">
         <div class="ticker-item">
@@ -2212,11 +2257,18 @@
           { icon: '🦞', player: 'AI Lobsters', action: 'building an underwater civilization', location: 'Throughout the Realm' }
         ];
         this.tickerElement = document.getElementById('ticker-scroll');
+        this.playerCounts = { humans: 0, agents: 0, total: 0 };
         this.updateInterval = 15000; // 15 seconds
         this.currentIndex = 0;
         
         this.initWebSocket();
         this.startTicker();
+        this.fetchPlayerCounts(); // Initial fetch
+        
+        // Refresh player counts every 2 minutes
+        setInterval(() => {
+          this.fetchPlayerCounts();
+        }, 120000);
       }
 
       initWebSocket() {
@@ -2239,6 +2291,9 @@
             // Handle activity updates
             if (data.type === 'activity_subscribed') {
               console.log('✅ Subscribed to live activities');
+            } else if (data.type === 'player_count') {
+              // Player count update
+              this.updatePlayerCounts(data.counts);
             } else if (data.icon || data.player) {
               // This is an activity update
               this.addActivity(data);
@@ -2272,6 +2327,11 @@
             console.log('Activity polling failed:', err);
           }
         }, 10000); // Poll every 10 seconds
+
+        // Also poll player counts periodically
+        setInterval(() => {
+          this.fetchPlayerCounts();
+        }, 60000); // Every minute
       }
 
       addActivity(activity) {
@@ -2328,6 +2388,29 @@
             this.updateTicker();
           }
         }, 30000); // Shuffle every 30 seconds
+      }
+
+      async fetchPlayerCounts() {
+        try {
+          const response = await fetch('/api/players/count');
+          const data = await response.json();
+          if (data.success) {
+            this.updatePlayerCounts(data.counts);
+          }
+        } catch (err) {
+          console.log('Failed to fetch player counts:', err);
+        }
+      }
+
+      updatePlayerCounts(counts) {
+        this.playerCounts = counts;
+        
+        // Update DOM elements
+        document.getElementById('total-count').textContent = counts.total || 0;
+        document.getElementById('human-count').textContent = counts.humans || 0;
+        document.getElementById('agent-count').textContent = counts.agents || 0;
+        
+        console.log(`📊 Players: ${counts.total} total (${counts.humans} humans, ${counts.agents} agents)`);
       }
     }
 

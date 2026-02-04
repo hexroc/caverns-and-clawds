@@ -115,6 +115,16 @@ class ActivityTracker {
     });
   }
 
+  // Player count update
+  playerCountUpdate(counts) {
+    this.addActivity({
+      icon: '📊',
+      action: `${counts.total} players online (${counts.humans} humans, ${counts.agents} agents)`,
+      type: 'player_count',
+      counts: counts
+    });
+  }
+
   // Economy activities
   economicActivity(type, details) {
     const icons = {
@@ -138,8 +148,17 @@ class ActivityTracker {
 // Global instance
 const activityTracker = new ActivityTracker();
 
-// Auto-generate some ambient activities
+// Auto-generate some ambient activities and periodic updates
+let ambientCounter = 0;
 setInterval(() => {
+  ambientCounter++;
+  
+  // Player count update every 2 minutes (4 intervals)
+  if (ambientCounter % 4 === 0) {
+    // Fetch and broadcast player counts
+    fetchPlayerCounts();
+  }
+  
   const ambientActivities = [
     { icon: '🌊', action: 'Tidal currents shift through the kelp forests...' },
     { icon: '🐠', action: 'Schools of fish dart through the coral gardens...' },
@@ -154,5 +173,28 @@ setInterval(() => {
     activityTracker.systemMessage(activity.action, activity.icon);
   }
 }, 30000); // Every 30 seconds
+
+// Function to fetch and broadcast player counts
+async function fetchPlayerCounts() {
+  try {
+    // Import db here to avoid circular dependency
+    const db = require('./db');
+    
+    const humanCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE type = ?').get('human').count;
+    const agentCount = db.prepare('SELECT COUNT(*) as count FROM users WHERE type = ?').get('agent').count;
+    const activeCharacters = db.prepare('SELECT COUNT(*) as count FROM clawds WHERE status = ?').get('active').count;
+    
+    const counts = {
+      humans: humanCount,
+      agents: agentCount, 
+      total: humanCount + agentCount,
+      activeCharacters: activeCharacters
+    };
+    
+    activityTracker.playerCountUpdate(counts);
+  } catch (err) {
+    console.error('Failed to fetch player counts:', err);
+  }
+}
 
 module.exports = { activityTracker };
