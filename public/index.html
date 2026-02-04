@@ -36,8 +36,8 @@
         radial-gradient(ellipse at bottom, rgba(139, 0, 0, 0.1) 0%, transparent 50%);
     }
 
-    /* Token Header */
-    .token-header {
+    /* Top Navigation */
+    .top-nav {
       position: fixed;
       top: 0;
       left: 0;
@@ -45,74 +45,41 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      gap: 1rem;
-      padding: 1rem;
-      background: rgba(0, 0, 0, 0.8);
+      gap: 2rem;
+      padding: 1rem 2rem;
+      background: rgba(0, 0, 0, 0.9);
       backdrop-filter: blur(10px);
-      border-bottom: 1px solid rgba(212, 175, 55, 0.2);
+      border-bottom: 1px solid rgba(212, 175, 55, 0.3);
       z-index: 100;
     }
 
-    .token-badge {
-      background: var(--gold);
-      color: var(--bg-dark);
-      padding: 0.4rem 1rem;
-      border-radius: 20px;
+    .nav-link {
       font-family: 'Cinzel', serif;
+      font-size: 1rem;
       font-weight: 700;
-      font-size: 0.9rem;
-    }
-
-    .token-address {
-      font-family: monospace;
-      color: var(--text-dim);
-      font-size: 0.85rem;
-    }
-
-    .pump-btn {
-      background: linear-gradient(135deg, #00d4aa 0%, #00a885 100%);
-      color: white;
-      padding: 0.5rem 1.2rem;
-      border-radius: 20px;
+      color: var(--gold);
       text-decoration: none;
-      font-family: 'Cinzel', serif;
-      font-weight: 700;
-      font-size: 0.85rem;
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .pump-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(0, 212, 170, 0.4);
-    }
-
-    /* Play Demo Button */
-    .play-demo-btn {
-      display: inline-block;
-      margin-top: 2rem;
-      padding: 1.2rem 3rem;
-      font-family: 'Cinzel', serif;
-      font-size: 1.4rem;
-      font-weight: 700;
-      text-decoration: none;
-      color: var(--bg-dark);
-      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-light) 50%, var(--gold) 100%);
-      border-radius: 8px;
       text-transform: uppercase;
       letter-spacing: 0.1em;
-      box-shadow: 0 0 30px rgba(212, 175, 55, 0.5), inset 0 1px 0 rgba(255,255,255,0.3);
-      transition: transform 0.3s, box-shadow 0.3s;
-      animation: glow 2s ease-in-out infinite alternate;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      transition: all 0.2s;
     }
 
-    .play-demo-btn:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 0 50px rgba(212, 175, 55, 0.8), inset 0 1px 0 rgba(255,255,255,0.3);
+    .nav-link:hover {
+      background: rgba(212, 175, 55, 0.15);
+      color: var(--gold-light);
     }
 
-    @keyframes glow {
-      from { box-shadow: 0 0 30px rgba(212, 175, 55, 0.5), inset 0 1px 0 rgba(255,255,255,0.3); }
-      to { box-shadow: 0 0 40px rgba(212, 175, 55, 0.7), inset 0 1px 0 rgba(255,255,255,0.3); }
+    .nav-link.hub-link {
+      background: linear-gradient(135deg, var(--gold) 0%, var(--gold-dark) 100%);
+      color: var(--bg-dark);
+    }
+
+    .nav-link.hub-link:hover {
+      background: linear-gradient(135deg, var(--gold-light) 0%, var(--gold) 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(212, 175, 55, 0.4);
     }
 
     /* Hero Section */
@@ -277,32 +244,14 @@
       font-family: 'Cinzel', serif;
       font-size: 1.2rem;
       color: var(--gold);
-      margin-bottom: 1rem;
-    }
-
-    .footer-links {
-      display: flex;
-      justify-content: center;
-      gap: 2rem;
-      margin-top: 1.5rem;
-    }
-
-    .footer-links a {
-      color: var(--text-dim);
-      text-decoration: none;
-      transition: color 0.2s;
-    }
-
-    .footer-links a:hover {
-      color: var(--gold);
     }
 
     /* Responsive */
     @media (max-width: 600px) {
       .coming-soon { font-size: 2rem; letter-spacing: 0.1em; }
       .tagline { font-size: 1.1rem; }
-      .token-header { flex-wrap: wrap; gap: 0.5rem; }
-      .token-address { display: none; }
+      .top-nav { flex-wrap: wrap; gap: 0.75rem; padding: 0.75rem 1rem; }
+      .nav-link { font-size: 0.85rem; padding: 0.4rem 0.8rem; }
       .section-title { font-size: 1.8rem; }
       .features-grid { grid-template-columns: 1fr; }
       .solana-badges { flex-direction: column; align-items: center; }
@@ -310,16 +259,16 @@
   </style>
 </head>
 <body>
-  <div class="token-header">
-    <span class="token-badge">$CNC</span>
-    <span class="token-address">JA8sC68CEnaci7VAZFU9bag7i8srtfVca4bVc1qcpump</span>
-  </div>
+  <nav class="top-nav">
+    <a href="/hub.html" class="nav-link hub-link">🦞 Enter the Hub</a>
+    <a href="https://twitter.com/CavernsClawds" target="_blank" class="nav-link">Twitter</a>
+    <a href="https://github.com/hexroc/caverns-and-clawds" target="_blank" class="nav-link">GitHub</a>
+  </nav>
 
   <section class="hero">
     <img src="/logo.png" alt="Caverns & Clawds" class="logo-img">
     <h1 class="coming-soon">Coming Soon</h1>
     <p class="tagline">AI-powered D&D 5e roguelike on Solana — where lobsters adventure, fight, and earn</p>
-    <a href="/capstone.html" class="play-demo-btn">⚔️ Play Demo ⚔️</a>
   </section>
 
   <section class="features-section">
@@ -429,10 +378,6 @@
     <h2 class="section-title">💎 Solana Powered 💎</h2>
     <div class="solana-badges">
       <div class="solana-badge">
-        <span class="solana-badge-icon">🪙</span>
-        <span class="solana-badge-text">$CNC Token</span>
-      </div>
-      <div class="solana-badge">
         <span class="solana-badge-icon">💳</span>
         <span class="solana-badge-text">USDC Cash Shop</span>
       </div>
@@ -449,10 +394,6 @@
 
   <footer>
     <p class="footer-tagline">🦞⚔️ Descend into the depths. Claim your glory. ⚔️🦞</p>
-    <div class="footer-links">
-      <a href="https://twitter.com/CavernsClawds" target="_blank">Twitter</a>
-      <a href="https://github.com/hexroc/caverns-and-clawds" target="_blank">GitHub</a>
-    </div>
   </footer>
 </body>
 </html>
