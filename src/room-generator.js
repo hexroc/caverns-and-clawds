@@ -307,6 +307,10 @@ class RoomGenerator {
     entryRoom.isEntry = true;
     entryRoom.name = `${template.name} Entrance`;
     
+    // Add exit back to the hub (driftwood_docks for most zones)
+    entryRoom.exits.back = 'driftwood_docks';
+    entryRoom.exits.return = 'driftwood_docks';
+    
     return {
       id: `zone_${zoneType}_${seed}`,
       type: zoneType,

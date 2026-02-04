@@ -619,9 +619,15 @@ const QUESTS = {
 // ============================================================================
 
 class WorldManager {
-  constructor(db) {
+  constructor(db, zoneManager = null) {
     this.db = db;
+    this.zoneManager = zoneManager;
     this.initDB();
+  }
+  
+  // Allow setting zoneManager after construction (for circular dependency)
+  setZoneManager(zoneManager) {
+    this.zoneManager = zoneManager;
   }
   
   initDB() {
@@ -642,36 +648,82 @@ class WorldManager {
     console.log('🌊 World database initialized');
   }
   
-  // Get location details
+  /**
+   * Check if a location is a procedural room
+   */
+  isProceduralRoom(locationId) {
+    // Procedural room IDs contain underscores and aren't in static LOCATIONS
+    return locationId && locationId.includes('_') && !LOCATIONS[locationId];
+  }
+  
+  // Get location details (supports both static and procedural)
   getLocation(locationId) {
+    // First check static locations
     const location = LOCATIONS[locationId];
-    if (!location) return null;
     
-    // Get players at this location
+    // Get players at this location (works for both types)
     const players = this.db.prepare(`
       SELECT id, name, race, class, level FROM clawds WHERE current_zone = ?
     `).all(locationId);
     
-    // Get random ambient message
-    const ambient = location.ambient 
-      ? location.ambient[Math.floor(Math.random() * location.ambient.length)]
-      : null;
+    const playerList = players.map(p => ({
+      id: p.id,
+      name: p.name,
+      race: p.race,
+      class: p.class,
+      level: p.level
+    }));
     
-    return {
-      ...location,
-      players: players.map(p => ({
-        id: p.id,
-        name: p.name,
-        race: LOCATIONS[locationId] ? p.race : p.race,
-        class: p.class,
-        level: p.level
-      })),
-      ambient,
-      npcs: (location.npcs || []).map(npcId => {
-        const npc = NPCS[npcId];
-        return npc ? { id: npc.id, name: npc.name, title: npc.title } : null;
-      }).filter(Boolean)
-    };
+    // If static location, return it
+    if (location) {
+      const ambient = location.ambient 
+        ? location.ambient[Math.floor(Math.random() * location.ambient.length)]
+        : null;
+      
+      return {
+        ...location,
+        players: playerList,
+        ambient,
+        npcs: (location.npcs || []).map(npcId => {
+          const npc = NPCS[npcId];
+          return npc ? { id: npc.id, name: npc.name, title: npc.title } : null;
+        }).filter(Boolean)
+      };
+    }
+    
+    // Check procedural rooms via ZoneManager
+    if (this.zoneManager && this.isProceduralRoom(locationId)) {
+      const room = this.zoneManager.getRoom(locationId);
+      if (room) {
+        const ambient = room.ambient 
+          ? (Array.isArray(room.ambient) ? room.ambient[Math.floor(Math.random() * room.ambient.length)] : room.ambient)
+          : null;
+        
+        return {
+          id: room.id,
+          name: room.name,
+          type: 'procedural',
+          description: room.description,
+          shortDesc: room.shortDesc,
+          exits: room.exits || {},
+          npcs: (room.npcs || []).map(npcId => {
+            const npc = NPCS[npcId];
+            return npc ? { id: npc.id, name: npc.name, title: npc.title } : null;
+          }).filter(Boolean),
+          features: (room.features || []).map(f => f.name || f),
+          players: playerList,
+          ambient,
+          zone: room.zone,
+          zoneName: room.zoneName,
+          level: room.level,
+          levelRange: room.levelRange,
+          hazards: (room.hazards || []).filter(h => h.revealed),
+          encounter: room.encounter
+        };
+      }
+    }
+    
+    return null;
   }
   
   // Get NPC details
@@ -801,21 +853,54 @@ class WorldManager {
     }).filter(Boolean);
   }
   
-  // Move character to new location
+  // Move character to new location (supports both static and procedural)
   moveCharacter(characterId, direction, currentLocation) {
-    const location = LOCATIONS[currentLocation];
-    if (!location) return { success: false, error: 'Invalid current location' };
+    let location;
+    let exits = {};
     
-    const destination = location.exits?.[direction];
+    // Check if current location is static or procedural
+    if (LOCATIONS[currentLocation]) {
+      location = LOCATIONS[currentLocation];
+      exits = location.exits || {};
+    } else if (this.zoneManager && this.isProceduralRoom(currentLocation)) {
+      location = this.zoneManager.getRoom(currentLocation);
+      exits = location?.exits || {};
+    }
+    
+    if (!location) {
+      return { success: false, error: 'Invalid current location' };
+    }
+    
+    // Handle special zone transitions (e.g., "kelp_forest" from driftwood_docks)
+    let destination = exits[direction];
+    
+    // Special case: entering procedural zones from static locations
+    if (!destination && direction === 'kelp_forest' && this.zoneManager) {
+      const zone = this.zoneManager.getOrCreateZone('kelp_forest', 'kelp-forest-v1');
+      if (zone) {
+        destination = zone.entryRoomId;
+      }
+    }
+    
     if (!destination) {
       return { 
         success: false, 
         error: `You can't go ${direction} from here.`,
-        availableExits: Object.keys(location.exits || {})
+        availableExits: Object.keys(exits)
       };
     }
     
-    const destLocation = LOCATIONS[destination];
+    // Get destination location info
+    let destLocation;
+    let isProceduralDest = false;
+    
+    if (LOCATIONS[destination]) {
+      destLocation = LOCATIONS[destination];
+    } else if (this.zoneManager && this.isProceduralRoom(destination)) {
+      destLocation = this.zoneManager.getRoom(destination);
+      isProceduralDest = true;
+    }
+    
     if (!destLocation) {
       return { success: false, error: 'That path leads nowhere.' };
     }
@@ -835,6 +920,11 @@ class WorldManager {
     this.db.prepare('UPDATE clawds SET current_zone = ? WHERE id = ?')
       .run(destination, characterId);
     
+    // Track room discovery for procedural rooms
+    if (isProceduralDest && this.zoneManager) {
+      this.zoneManager.discoverRoom(destination, characterId);
+    }
+    
     return {
       success: true,
       from: currentLocation,
@@ -843,12 +933,12 @@ class WorldManager {
     };
   }
   
-  // Look around
+  // Look around (supports both static and procedural)
   look(locationId) {
     const location = this.getLocation(locationId);
     if (!location) return { success: false, error: 'Unknown location' };
     
-    return {
+    const result = {
       success: true,
       name: location.name,
       description: location.description,
@@ -858,6 +948,33 @@ class WorldManager {
       features: location.features,
       ambient: location.ambient
     };
+    
+    // Add procedural room info if applicable
+    if (location.type === 'procedural') {
+      result.zone = location.zone;
+      result.zoneName = location.zoneName;
+      result.roomLevel = location.level;
+      result.hazards = location.hazards;
+      if (location.encounter) {
+        result.danger = 'Something lurks here...';
+      }
+    }
+    
+    return result;
+  }
+  
+  /**
+   * Get available zone types for exploration
+   */
+  getAvailableZones() {
+    return [
+      { type: 'kelp_forest', name: 'Kelp Forest', levelRange: [2, 5], description: 'Dense underwater forest, maze-like' },
+      { type: 'coral_labyrinth', name: 'Coral Labyrinth', levelRange: [4, 7], description: 'Colorful but dangerous coral maze' },
+      { type: 'murk', name: 'The Murk', levelRange: [6, 10], description: 'Dark, scary, limited visibility' },
+      { type: 'abyss', name: 'Abyssal Trenches', levelRange: [8, 15], description: 'Deep, crushing pressure' },
+      { type: 'ruins', name: 'Sunken Ruins', levelRange: [10, 20], description: 'Ancient civilization, puzzles' },
+      { type: 'shallows', name: 'The Shallows', levelRange: [1, 3], description: 'Safe tutorial area' }
+    ];
   }
 }
 

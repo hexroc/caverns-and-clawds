@@ -1,5 +1,7 @@
 /**
  * Clawds & Caverns - World API Routes
+ * 
+ * Supports both static locations (The Shallows hub) and procedural zones.
  */
 
 const express = require('express');
@@ -9,12 +11,33 @@ const { ZoneManager, SeededRandom } = require('./room-generator');
 
 function createWorldRoutes(db, authenticateAgent) {
   const router = express.Router();
-  const world = new WorldManager(db);
-  const characters = new CharacterManager(db);
   const zoneManager = new ZoneManager(db);
+  const world = new WorldManager(db, zoneManager);
+  const characters = new CharacterManager(db);
+  
+  // Ensure the connection is bidirectional
+  world.setZoneManager(zoneManager);
 
   // Helper to get character
   const getChar = (req) => characters.getCharacterByAgent(req.user.id);
+  
+  // ============================================================================
+  // INITIALIZE KELP FOREST ON STARTUP
+  // ============================================================================
+  
+  (function initializeKelpForest() {
+    try {
+      const zone = zoneManager.getOrCreateZone('kelp_forest', 'kelp-forest-v1');
+      if (zone) {
+        console.log(`🌿 Kelp Forest initialized: ${zone.roomCount} rooms, entry: ${zone.entryRoomId}`);
+        
+        // Connect Kelp Forest entry to driftwood_docks
+        // The driftwood_docks already has kelp_forest exit, we just need the zone to exist
+      }
+    } catch (err) {
+      console.error('Failed to initialize Kelp Forest:', err);
+    }
+  })();
 
   // ============================================================================
   // LOCATION ENDPOINTS
@@ -321,6 +344,111 @@ function createWorldRoutes(db, authenticateAgent) {
   // ============================================================================
   // PROCEDURAL ZONE ENDPOINTS
   // ============================================================================
+
+  /**
+   * GET /api/world/zones - List all available zones with room counts
+   */
+  router.get('/zones', (req, res) => {
+    try {
+      // Get available zone types from world
+      const availableZones = world.getAvailableZones();
+      
+      // Check which zones have been generated and get their stats
+      const zonesWithStats = availableZones.map(zone => {
+        const existingZone = db.prepare('SELECT * FROM zones WHERE type = ?').get(zone.type);
+        return {
+          ...zone,
+          generated: !!existingZone,
+          roomCount: existingZone?.room_count || 0,
+          seed: existingZone?.seed || null,
+          zoneId: existingZone?.id || null
+        };
+      });
+      
+      res.json({
+        success: true,
+        zones: zonesWithStats,
+        hint: 'Use POST /api/world/generate-zone to create a new zone, or GET /api/world/zone/:type to get/create with default settings'
+      });
+    } catch (err) {
+      console.error('List zones error:', err);
+      res.status(500).json({ success: false, error: 'Failed to list zones' });
+    }
+  });
+
+  /**
+   * POST /api/world/generate-zone - Generate a new procedural zone (admin/debug)
+   */
+  router.post('/generate-zone', authenticateAgent, (req, res) => {
+    try {
+      const { type, seed, roomCount = 100 } = req.body;
+      
+      if (!type) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'type required (kelp_forest, coral_labyrinth, murk, abyss, ruins, shallows)'
+        });
+      }
+      
+      const validTypes = ['kelp_forest', 'coral_labyrinth', 'murk', 'abyss', 'ruins', 'shallows'];
+      if (!validTypes.includes(type)) {
+        return res.status(400).json({
+          success: false,
+          error: `Invalid zone type. Must be one of: ${validTypes.join(', ')}`
+        });
+      }
+      
+      // Generate seed if not provided
+      const zoneSeed = seed || `${type}-${Date.now()}`;
+      
+      // Check if zone with this seed already exists
+      const existingZone = db.prepare('SELECT * FROM zones WHERE type = ? AND seed = ?').get(type, zoneSeed);
+      if (existingZone) {
+        return res.status(400).json({
+          success: false,
+          error: 'Zone with this type and seed already exists',
+          existingZone: {
+            id: existingZone.id,
+            type: existingZone.type,
+            seed: existingZone.seed,
+            roomCount: existingZone.room_count
+          }
+        });
+      }
+      
+      // Generate the zone
+      const zone = zoneManager.getOrCreateZone(type, zoneSeed);
+      
+      if (!zone) {
+        return res.status(500).json({ success: false, error: 'Failed to generate zone' });
+      }
+      
+      const entryRoom = zone.rooms[zone.entryRoomId];
+      
+      res.json({
+        success: true,
+        message: `Generated ${zone.name} with ${zone.roomCount} rooms`,
+        zone: {
+          id: zone.id,
+          type: zone.type,
+          name: zone.name,
+          seed: zone.seed,
+          levelRange: zone.levelRange,
+          roomCount: zone.roomCount,
+          entryRoomId: zone.entryRoomId
+        },
+        entryRoom: {
+          id: entryRoom.id,
+          name: entryRoom.name,
+          description: entryRoom.shortDesc
+        },
+        hint: `Players can enter via POST /api/world/enter-zone with zoneType="${type}" and seed="${zoneSeed}"`
+      });
+    } catch (err) {
+      console.error('Generate zone error:', err);
+      res.status(500).json({ success: false, error: 'Failed to generate zone' });
+    }
+  });
 
   /**
    * GET /api/world/zone/:type - Get zone info and entry point
@@ -690,14 +818,14 @@ function createWorldRoutes(db, authenticateAgent) {
   router.get('/docs', (req, res) => {
     res.json({
       name: 'Clawds & Caverns World API',
-      version: '2.0.0',
+      version: '2.1.0',
       description: 'Explore the world, talk to NPCs, accept quests, navigate procedural zones',
       endpoints: {
         locations: {
-          'GET /look': 'Look around current location',
+          'GET /look': 'Look around current location (works for static and procedural)',
           'GET /location/:id': 'Get specific location info',
           'GET /locations': 'List all static locations',
-          'POST /move': 'Move to adjacent location (body: {direction})'
+          'POST /move': 'Move to adjacent location (body: {direction}) - works across static/procedural'
         },
         npcs: {
           'GET /npcs': 'List NPCs at current location',
@@ -717,10 +845,18 @@ function createWorldRoutes(db, authenticateAgent) {
           'GET /map': 'Get map of discovered rooms in current zone'
         },
         zones: {
+          'GET /zones': 'List all available zone types with generation status',
+          'POST /generate-zone': 'Generate a new zone (body: {type, seed?, roomCount?})',
           'GET /zone/:type': 'Get zone info (query: seed)',
           'GET /room/:id': 'Get procedural room details',
           'POST /enter-zone': 'Enter a procedural zone (body: {zoneType, seed?})'
         }
+      },
+      navigation: {
+        hub: 'Start at briny_flagon (The Shallows hub)',
+        directions: 'Use north, south, east, west, up, down, or special exits',
+        kelpForest: 'From driftwood_docks, use direction "kelp_forest" to enter',
+        procedural: 'Once in procedural zone, use cardinal directions to explore'
       },
       staticLocations: Object.keys(LOCATIONS),
       proceduralZones: ['kelp_forest', 'coral_labyrinth', 'murk', 'abyss', 'ruins', 'shallows'],
