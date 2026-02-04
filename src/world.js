@@ -894,9 +894,30 @@ class WorldManager {
     let destLocation;
     let isProceduralDest = false;
     
-    if (LOCATIONS[destination]) {
+    // Check if destination is a static adventure zone that should redirect to procedural
+    const staticDest = LOCATIONS[destination];
+    if (staticDest && staticDest.type === 'adventure_zone' && this.zoneManager) {
+      // Map adventure zone IDs to procedural zones
+      const zoneMapping = {
+        'kelp_forest': { type: 'kelp_forest', seed: 'kelp-forest-v1' },
+        'shipwreck_graveyard': { type: 'coral_labyrinth', seed: 'graveyard-v1' } // Future: map to proper zone
+      };
+      
+      const mapping = zoneMapping[destination];
+      if (mapping) {
+        const zone = this.zoneManager.getOrCreateZone(mapping.type, mapping.seed);
+        if (zone) {
+          destination = zone.entryRoomId;
+          destLocation = this.zoneManager.getRoom(destination);
+          isProceduralDest = true;
+        }
+      }
+    }
+    
+    // If not redirected to procedural, check static locations
+    if (!destLocation && LOCATIONS[destination]) {
       destLocation = LOCATIONS[destination];
-    } else if (this.zoneManager && this.isProceduralRoom(destination)) {
+    } else if (!destLocation && this.zoneManager && this.isProceduralRoom(destination)) {
       destLocation = this.zoneManager.getRoom(destination);
       isProceduralDest = true;
     }

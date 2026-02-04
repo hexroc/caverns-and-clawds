@@ -659,14 +659,35 @@ class ZoneManager {
    */
   getRoom(roomId) {
     // Parse zone info from room ID
-    const parts = roomId.split('_');
-    if (parts.length < 3) return null;
+    // Room ID format: {zoneType}_{seed}_{index} or {zoneType}_{seed}_special_{specialId}
+    // Zone types may contain underscores (e.g., kelp_forest)
     
-    const zoneType = parts[0];
-    const seed = parts[1];
+    // Try to find it in cached zones first
+    for (const zone of this.zones.values()) {
+      if (zone.rooms[roomId]) {
+        return zone.rooms[roomId];
+      }
+    }
     
-    const zone = this.getOrCreateZone(zoneType, seed);
-    return zone?.rooms[roomId] || null;
+    // If not in cache, try to parse the room ID and load the zone
+    // Known zone types: kelp_forest, coral_labyrinth, murk, abyss, ruins, shallows
+    const knownZoneTypes = ['kelp_forest', 'coral_labyrinth', 'murk', 'abyss', 'ruins', 'shallows'];
+    
+    for (const zoneType of knownZoneTypes) {
+      if (roomId.startsWith(zoneType + '_')) {
+        const remainder = roomId.slice(zoneType.length + 1);
+        const parts = remainder.split('_');
+        if (parts.length >= 2) {
+          const seed = parts[0];
+          const zone = this.getOrCreateZone(zoneType, seed);
+          if (zone?.rooms[roomId]) {
+            return zone.rooms[roomId];
+          }
+        }
+      }
+    }
+    
+    return null;
   }
   
   /**
