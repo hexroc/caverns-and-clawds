@@ -17,13 +17,14 @@ const crypto = require('crypto');
 // PROPERTY TYPES
 // ============================================================================
 
+// MICRO-PRICES: Divided by 1000x for yield-backed economy
 const PROPERTY_TYPES = {
   shack: {
     id: 'shack',
     name: 'Beach Shack',
     description: 'A humble dwelling on the shore. Not much, but it\'s yours.',
-    basePrice: 50,
-    rentRange: [2, 5],
+    basePrice: 0.050,
+    rentRange: [0.002, 0.005],
     storage: 10,
     tier: 1
   },
@@ -31,8 +32,8 @@ const PROPERTY_TYPES = {
     id: 'cottage',
     name: 'Coral Cottage',
     description: 'A cozy cottage built into a coral formation.',
-    basePrice: 150,
-    rentRange: [5, 15],
+    basePrice: 0.150,
+    rentRange: [0.005, 0.015],
     storage: 25,
     tier: 2
   },
@@ -40,8 +41,8 @@ const PROPERTY_TYPES = {
     id: 'house',
     name: 'Tide Pool House',
     description: 'A proper house with a view of the tide pools.',
-    basePrice: 400,
-    rentRange: [15, 40],
+    basePrice: 0.400,
+    rentRange: [0.015, 0.040],
     storage: 50,
     tier: 3
   },
@@ -49,8 +50,8 @@ const PROPERTY_TYPES = {
     id: 'manor',
     name: 'Kelp Manor',
     description: 'A sprawling estate in the prestigious Kelp Heights.',
-    basePrice: 1000,
-    rentRange: [40, 100],
+    basePrice: 1.000,
+    rentRange: [0.040, 0.100],
     storage: 100,
     tier: 4
   },
@@ -58,8 +59,8 @@ const PROPERTY_TYPES = {
     id: 'shop',
     name: 'Market Stall',
     description: 'A small shop space in the marketplace.',
-    basePrice: 200,
-    rentRange: [10, 25],
+    basePrice: 0.200,
+    rentRange: [0.010, 0.025],
     storage: 30,
     canRunBusiness: true,
     tier: 2
@@ -68,8 +69,8 @@ const PROPERTY_TYPES = {
     id: 'warehouse',
     name: 'Dockside Warehouse',
     description: 'A large storage facility near the docks.',
-    basePrice: 500,
-    rentRange: [20, 50],
+    basePrice: 0.500,
+    rentRange: [0.020, 0.050],
     storage: 200,
     tier: 3
   },
@@ -77,8 +78,8 @@ const PROPERTY_TYPES = {
     id: 'tavern',
     name: 'Tavern License',
     description: 'Rights to operate a tavern. Very lucrative.',
-    basePrice: 2000,
-    rentRange: [80, 200],
+    basePrice: 2.000,
+    rentRange: [0.080, 0.200],
     storage: 75,
     canRunBusiness: true,
     tier: 5

@@ -4,7 +4,7 @@
  * Focuses on economic activities: buying low, selling high, auction house trading
  */
 
-const SCALESWORTH_API_KEY = 'dnd_a67dd733eede48bf87dcd58314e78265';
+const SCALESWORTH_API_KEY = 'dnd_ca5414f2d5b44880bd8fa5513d72d8c0';
 const BASE_URL = process.env.BASE_URL || 'https://www.cavernsandclawds.com';
 
 // Scalesworth's trading behaviors

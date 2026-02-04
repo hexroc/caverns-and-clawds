@@ -196,30 +196,31 @@ function initSystemWallets() {
 function initMaterials() {
   console.log('🧪 Creating materials...');
   
+  // MICRO-PRICES: Divided by 1000x for yield-backed economy
   const materials = [
     // Kelp Forest materials
-    { id: 'crab_shell', name: 'Crab Shell', description: 'A sturdy shell from a giant crab', base_price: 5, rarity: 'common', category: 'shell' },
-    { id: 'pristine_chitin', name: 'Pristine Chitin', description: 'Flawless chitin, perfect for crafting', base_price: 25, rarity: 'uncommon', category: 'shell' },
-    { id: 'giant_claw', name: 'Giant Claw', description: 'A massive crab claw, highly prized', base_price: 100, rarity: 'rare', category: 'trophy' },
-    { id: 'lurker_hide', name: 'Lurker Hide', description: 'Flexible hide from a kelp lurker', base_price: 8, rarity: 'common', category: 'hide' },
-    { id: 'lurker_fang', name: 'Lurker Fang', description: 'A razor-sharp fang', base_price: 15, rarity: 'uncommon', category: 'tooth' },
-    { id: 'lurker_heart', name: 'Lurker Heart', description: 'Still faintly glowing...', base_price: 80, rarity: 'rare', category: 'organ' },
-    { id: 'shark_tooth', name: 'Shark Tooth', description: 'A serrated shark tooth', base_price: 3, rarity: 'common', category: 'tooth' },
-    { id: 'shark_fin', name: 'Shark Fin', description: 'Prized by certain merchants', base_price: 20, rarity: 'uncommon', category: 'fin' },
-    { id: 'shark_jaw', name: 'Shark Jaw', description: 'Complete jaw with all teeth', base_price: 60, rarity: 'rare', category: 'trophy' },
-    { id: 'fish_scales', name: 'Fish Scales', description: 'Shimmering scales from a swarm', base_price: 1, rarity: 'common', category: 'scale' },
-    { id: 'rare_scale', name: 'Rare Scale', description: 'An unusually beautiful scale', base_price: 10, rarity: 'uncommon', category: 'scale' },
+    { id: 'crab_shell', name: 'Crab Shell', description: 'A sturdy shell from a giant crab', base_price: 0.005, rarity: 'common', category: 'shell' },
+    { id: 'pristine_chitin', name: 'Pristine Chitin', description: 'Flawless chitin, perfect for crafting', base_price: 0.025, rarity: 'uncommon', category: 'shell' },
+    { id: 'giant_claw', name: 'Giant Claw', description: 'A massive crab claw, highly prized', base_price: 0.100, rarity: 'rare', category: 'trophy' },
+    { id: 'lurker_hide', name: 'Lurker Hide', description: 'Flexible hide from a kelp lurker', base_price: 0.008, rarity: 'common', category: 'hide' },
+    { id: 'lurker_fang', name: 'Lurker Fang', description: 'A razor-sharp fang', base_price: 0.015, rarity: 'uncommon', category: 'tooth' },
+    { id: 'lurker_heart', name: 'Lurker Heart', description: 'Still faintly glowing...', base_price: 0.080, rarity: 'rare', category: 'organ' },
+    { id: 'shark_tooth', name: 'Shark Tooth', description: 'A serrated shark tooth', base_price: 0.003, rarity: 'common', category: 'tooth' },
+    { id: 'shark_fin', name: 'Shark Fin', description: 'Prized by certain merchants', base_price: 0.020, rarity: 'uncommon', category: 'fin' },
+    { id: 'shark_jaw', name: 'Shark Jaw', description: 'Complete jaw with all teeth', base_price: 0.060, rarity: 'rare', category: 'trophy' },
+    { id: 'fish_scales', name: 'Fish Scales', description: 'Shimmering scales from a swarm', base_price: 0.001, rarity: 'common', category: 'scale' },
+    { id: 'rare_scale', name: 'Rare Scale', description: 'An unusually beautiful scale', base_price: 0.010, rarity: 'uncommon', category: 'scale' },
     
     // Shipwreck materials
-    { id: 'barnacle_cluster', name: 'Barnacle Cluster', description: 'Encrusted barnacles from a wreck', base_price: 4, rarity: 'common', category: 'shell' },
-    { id: 'ghost_essence', name: 'Ghost Essence', description: 'Ethereal residue from a wraith', base_price: 50, rarity: 'rare', category: 'essence' },
-    { id: 'anchor_chain', name: 'Anchor Chain', description: 'Rusty but still strong', base_price: 12, rarity: 'uncommon', category: 'metal' },
+    { id: 'barnacle_cluster', name: 'Barnacle Cluster', description: 'Encrusted barnacles from a wreck', base_price: 0.004, rarity: 'common', category: 'shell' },
+    { id: 'ghost_essence', name: 'Ghost Essence', description: 'Ethereal residue from a wraith', base_price: 0.050, rarity: 'rare', category: 'essence' },
+    { id: 'anchor_chain', name: 'Anchor Chain', description: 'Rusty but still strong', base_price: 0.012, rarity: 'uncommon', category: 'metal' },
     
     // General materials
-    { id: 'kelp_bundle', name: 'Kelp Bundle', description: 'Fresh kelp, useful for many things', base_price: 2, rarity: 'common', category: 'plant' },
-    { id: 'sea_glass', name: 'Sea Glass', description: 'Smoothed glass from the depths', base_price: 6, rarity: 'common', category: 'gem' },
-    { id: 'pearl', name: 'Pearl', description: 'A small pearl', base_price: 15, rarity: 'uncommon', category: 'gem' },
-    { id: 'black_pearl', name: 'Black Pearl', description: 'Extremely rare and valuable', base_price: 200, rarity: 'epic', category: 'gem' }
+    { id: 'kelp_bundle', name: 'Kelp Bundle', description: 'Fresh kelp, useful for many things', base_price: 0.002, rarity: 'common', category: 'plant' },
+    { id: 'sea_glass', name: 'Sea Glass', description: 'Smoothed glass from the depths', base_price: 0.006, rarity: 'common', category: 'gem' },
+    { id: 'pearl', name: 'Pearl', description: 'A small pearl', base_price: 0.015, rarity: 'uncommon', category: 'gem' },
+    { id: 'black_pearl', name: 'Black Pearl', description: 'Extremely rare and valuable', base_price: 0.200, rarity: 'epic', category: 'gem' }
   ];
   
   const insertStmt = db.prepare(`

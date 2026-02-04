@@ -629,8 +629,8 @@ class EncounterManager {
       Math.floor(Math.random() * table.discoveryMessages.length)
     ];
     
-    // Random small USDC reward (0.50 - 1.50)
-    const usdc = (Math.random() * 1.0 + 0.5).toFixed(2);
+    // Random micro USDC reward (0.001 - 0.005) - yield-backed economy
+    const usdc = (Math.random() * 0.004 + 0.001).toFixed(4);
     
     // Add USDC to character
     this.db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')

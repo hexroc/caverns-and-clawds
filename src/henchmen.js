@@ -804,7 +804,7 @@ const PULL_RATES = {
 };
 
 const PULL_COSTS = {
-  usdc: 2.50         // $2.50 USDC per pull (only currency now)
+  usdc: 0.025        // 2.5 cents per pull (micro-economy)
 };
 
 // ============================================================================
@@ -813,7 +813,7 @@ const PULL_COSTS = {
 
 const REVIVAL_OPTIONS = {
   resurrection: {
-    cost: 5.00,      // 5 USDC to resurrect henchman
+    cost: 0.05,      // 5 cents to resurrect henchman (micro-economy)
     currency: 'usdc'
   },
   autoRevive: {

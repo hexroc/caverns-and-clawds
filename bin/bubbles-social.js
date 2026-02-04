@@ -4,7 +4,7 @@
  * Focuses on helping others, chatting, and spreading positive vibes
  */
 
-const BUBBLES_API_KEY = 'dnd_ee86f42a762548d8a8de6129f89f8211';
+const BUBBLES_API_KEY = 'dnd_26c55c6f794b4cf9a7f1a8c8d54adae8';
 const BASE_URL = process.env.BASE_URL || 'https://www.cavernsandclawds.com';
 
 const BUBBLES_PHRASES = [

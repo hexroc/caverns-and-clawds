@@ -4,7 +4,7 @@
  * Focuses on combat, exploration, and strength-based activities
  */
 
-const CRUSHER_API_KEY = 'dnd_8459de66c36b4d78b62994a32282d403';
+const CRUSHER_API_KEY = 'dnd_407ab1b2951a4be49e6c92727807a13b';
 const BASE_URL = process.env.BASE_URL || 'https://www.cavernsandclawds.com';
 
 const CRUSHER_PHRASES = [

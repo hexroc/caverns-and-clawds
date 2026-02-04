@@ -26,7 +26,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 50,
-      usdc: 2.5,
+      usdc: 0.0025,
       items: []
     },
     levelReq: 1,
@@ -48,7 +48,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 75,
-      usdc: 3.0,
+      usdc: 0.003,
       items: []
     },
     levelReq: 1,
@@ -70,7 +70,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 150,
-      usdc: 7.5,
+      usdc: 0.0075,
       items: ['potion_healing', 'potion_healing']
     },
     levelReq: 2,
@@ -91,7 +91,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 100,
-      usdc: 5.0,
+      usdc: 0.005,
       items: []
     },
     levelReq: 2,
@@ -113,7 +113,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 125,
-      usdc: 6.0,
+      usdc: 0.006,
       items: ['antitoxin']
     },
     levelReq: 2,
@@ -137,7 +137,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 150,
-      usdc: 7.5,
+      usdc: 0.0075,
       items: ['potion_healing', 'potion_healing']
     },
     levelReq: 3,
@@ -159,7 +159,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 200,
-      usdc: 10.0,
+      usdc: 0.01,
       items: []
     },
     levelReq: 3,
@@ -181,7 +181,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 250,
-      usdc: 12.5,
+      usdc: 0.0125,
       items: ['antitoxin']
     },
     levelReq: 4,
@@ -203,7 +203,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 200,
-      usdc: 9.0,
+      usdc: 0.009,
       items: ['rations', 'rations', 'rations']
     },
     levelReq: 3,
@@ -225,7 +225,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 300,
-      usdc: 15.0,
+      usdc: 0.015,
       items: ['potion_greater_healing']
     },
     levelReq: 4,
@@ -247,7 +247,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 350,
-      usdc: 175,
+      usdc: 0.175,
       items: ['potion_greater_healing']
     },
     levelReq: 4,
@@ -268,7 +268,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 700,
-      usdc: 350,
+      usdc: 0.35,
       items: ['potion_greater_healing', 'potion_greater_healing', 'scroll_depth_charge']
     },
     levelReq: 5,
@@ -293,7 +293,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 2000,
-      usdc: 10.00,
+      usdc: 0.010,
       items: ['legendary_claw_trident', 'potion_superior_healing', 'potion_superior_healing'],
       unlocks: ['henchman_hiring']  // Unlocks henchman system
     },
@@ -347,7 +347,7 @@ const QUESTS = {
     ],
     rewards: {
       xp: 25,
-      usdc: 15,
+      usdc: 0.015,
       items: ['potion_healing']
     },
     levelReq: 1,
