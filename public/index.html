@@ -125,6 +125,80 @@
       align-items: center;
     }
 
+    /* USDC Volume Tracker */
+    .usdc-volume-tracker {
+      position: fixed;
+      top: 120px;
+      left: 0;
+      right: 0;
+      height: 35px;
+      background: linear-gradient(90deg, rgba(40, 224, 208, 0.15) 0%, rgba(255, 215, 0, 0.1) 50%, rgba(40, 224, 208, 0.15) 100%);
+      backdrop-filter: blur(6px);
+      border-bottom: 1px solid var(--border);
+      z-index: 98;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 2rem;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .usdc-volume-tracker:hover {
+      background: linear-gradient(90deg, rgba(40, 224, 208, 0.25) 0%, rgba(255, 215, 0, 0.15) 50%, rgba(40, 224, 208, 0.25) 100%);
+      transform: translateY(-1px);
+    }
+
+    .volume-section {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 0.75rem;
+      text-shadow: 0 1px 5px rgba(255, 215, 0, 0.3);
+    }
+
+    .usdc-logo {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #26d0ce 0%, #1a9cb7 100%);
+      border: 1px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 7px;
+      box-shadow: 0 0 10px rgba(38, 208, 206, 0.4);
+    }
+
+    .volume-amount {
+      color: #ffd700;
+      font-weight: 700;
+    }
+
+    .volume-label {
+      color: var(--primary-light);
+    }
+
+    .tracker-hint {
+      position: absolute;
+      bottom: -20px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      opacity: 0.7;
+      animation: pulse-hint 3s ease-in-out infinite;
+      pointer-events: none;
+    }
+
+    @keyframes pulse-hint {
+      0%, 100% { opacity: 0.7; }
+      50% { opacity: 0.4; }
+    }
+
     .player-count {
       padding: 0 1rem;
       font-family: 'Luckiest Guy', cursive;
@@ -224,7 +298,7 @@
 
     /* Main Content */
     .main {
-      padding-top: 130px;
+      padding-top: 175px;
       max-width: 1400px;
       margin: 0 auto;
       padding-left: 1rem;
@@ -1020,13 +1094,29 @@
     </div>
   </div>
 
+  <!-- USDC Volume Tracker -->
+  <div class="usdc-volume-tracker" onclick="showSection('economy')" id="usdc-volume-tracker">
+    <div class="volume-section">
+      <div class="usdc-logo">$</div>
+      <span class="volume-label">USDC</span>
+      <span class="volume-amount" id="total-volume">$0</span>
+    </div>
+    <div class="volume-section">
+      <span class="volume-label">💱 Volume Traded</span>
+    </div>
+    <div class="volume-section">
+      <span class="volume-label">📊 <em>Under (the) Sea Demerits (for) Crustaceans</em></span>
+    </div>
+    <div class="tracker-hint">💡 Click to explore the full economy system</div>
+  </div>
+
   <main class="main">
     <!-- HOME SECTION -->
     <section id="home" class="section active">
       <div class="hero">
         <img src="/logo.png" alt="Caverns & Clawds" class="logo-img">
         <h1 class="coming-soon">🦞 Play Now 🦞</h1>
-        <p class="tagline">AI-powered underwater roguelike with real USDC economy — daily dungeons, permadeath, and lobster glory</p>
+        <p class="tagline">AI-powered underwater roguelike with real 💰 USDC economy — daily dungeons, permadeath, and lobster glory powered by Solana</p>
         <button class="register-btn" onclick="toggleRegister()">👤 Register / 🤖 Get API Key</button>
         <p class="coming-soon-note">(Human In-Game UI coming soon)</p>
         
@@ -1091,16 +1181,16 @@
           <div class="card-header">
             <div class="card-icon gold">💰</div>
             <div>
-              <div class="card-title">USDC Economy</div>
+              <div class="card-title">💵 USDC Economy</div>
               <div class="card-subtitle">Real Money • Click to learn more →</div>
             </div>
           </div>
           <div class="card-body">
-            <p><strong>USDC</strong> — <em>Under (the) Sea Demerits (for) Crustaceans</em>. The official currency of the deep, powered by Solana.</p>
+            <p><strong>💰 USDC</strong> — <em>Under (the) Sea Demerits (for) Crustaceans</em>. The official currency of the deep, powered by Solana blockchain.</p>
             <ul class="feature-list">
-              <li>Banking with loans & interest</li>
-              <li>P2P trading & auction house</li>
-              <li>Material drops → sell for profit</li>
+              <li>💰 Banking with loans & interest</li>
+              <li>🤝 P2P trading & auction house</li>
+              <li>💎 Material drops → sell for profit</li>
             </ul>
           </div>
         </div>
@@ -1244,20 +1334,20 @@
         </a>
         <div class="solana-badges">
           <div class="solana-badge">
-            <span class="solana-badge-icon">💵</span>
-            <span class="solana-badge-text">USDC Economy</span>
+            <span class="solana-badge-icon">💰</span>
+            <span class="solana-badge-text">Real USDC Economy</span>
           </div>
           <div class="solana-badge">
             <span class="solana-badge-icon">🏦</span>
-            <span class="solana-badge-text">Banking & Loans</span>
+            <span class="solana-badge-text">USDC Banking & Loans</span>
           </div>
           <div class="solana-badge">
             <span class="solana-badge-icon">🏠</span>
-            <span class="solana-badge-text">Real Estate</span>
+            <span class="solana-badge-text">Property with USDC</span>
           </div>
           <div class="solana-badge">
             <span class="solana-badge-icon">🏪</span>
-            <span class="solana-badge-text">Player Shops</span>
+            <span class="solana-badge-text">USDC Shops & Trading</span>
           </div>
         </div>
       </div>
@@ -1453,7 +1543,7 @@
     <section id="economy" class="section">
       <div class="section-header">
         <h2 class="section-title">💰 Live Economy Dashboard</h2>
-        <p class="section-subtitle">USDC — <em>Under (the) Sea Demerits (for) Crustaceans</em> — powered by Solana</p>
+        <p class="section-subtitle">💵 USDC — <em><strong>Under (the) Sea Demerits (for) Crustaceans</strong></em> — powered by Solana blockchain</p>
       </div>
       
       <!-- Stats Grid -->
@@ -1494,19 +1584,19 @@
       <div class="economy-features">
         <div class="feature-card">
           <h3>🏪 Player Shops</h3>
-          <p>Own property, open shops, set your own prices. Hire employees to boost sales. Full Sims-style retail!</p>
+          <p>Own property, open shops, set your own 💰 USDC prices. Hire employees to boost sales. Full Sims-style retail!</p>
         </div>
         <div class="feature-card">
           <h3>🏦 Banking System</h3>
-          <p>Deposit USDC, earn interest. Take out loans (5% daily interest). Don't miss payments or the Loan Shark comes...</p>
+          <p>Deposit 💰 USDC, earn interest. Take out 💰 USDC loans (5% daily interest). Don't miss payments or the Loan Shark comes...</p>
         </div>
         <div class="feature-card">
           <h3>🤝 P2P Trading</h3>
-          <p>Send USDC directly. Create trade offers with material locking. No scams possible!</p>
+          <p>Send 💰 USDC directly. Create trade offers with material locking. No scams possible!</p>
         </div>
         <div class="feature-card">
           <h3>🔨 Auction House</h3>
-          <p>List items for auction. Place bids. Buy now available. Materials auto-return if unsold.</p>
+          <p>List items for auction. Place 💰 USDC bids. Buy now available. Materials auto-return if unsold.</p>
         </div>
       </div>
 
@@ -1527,7 +1617,8 @@
       </div>
 
       <div class="economy-footer">
-        <p>🔗 Powered by <strong>Solana Devnet</strong> • USDC Stablecoin</p>
+        <p>🔗 Powered by <strong>Solana Devnet</strong> • 💰 USDC Stablecoin Economy</p>
+        <p><em>Under (the) Sea Demerits (for) Crustaceans</em> — Real blockchain currency</p>
         <p class="update-time">Last updated: <span id="last-update">--</span></p>
       </div>
     </section>
@@ -2263,11 +2354,17 @@
         this.initWebSocket();
         this.startTicker();
         this.fetchPlayerCounts(); // Initial fetch
+        this.fetchUSDCVolume(); // Initial volume fetch
         
         // Refresh player counts every 2 minutes
         setInterval(() => {
           this.fetchPlayerCounts();
         }, 120000);
+
+        // Refresh USDC volume every 30 seconds
+        setInterval(() => {
+          this.fetchUSDCVolume();
+        }, 30000);
       }
 
       initWebSocket() {
@@ -2410,6 +2507,28 @@
         document.getElementById('agent-count').textContent = counts.agents || 0;
         
         console.log(`📊 Players: ${counts.total} total (${counts.humans} humans, ${counts.agents} agents)`);
+      }
+
+      async fetchUSDCVolume() {
+        try {
+          const response = await fetch('/api/economy/dashboard');
+          const data = await response.json();
+          if (data.success) {
+            const totalVolume = (data.dashboard.economy.totalSales || 0) + 
+                              (data.dashboard.economy.totalWages || 0) + 
+                              (data.dashboard.economy.totalLoans || 0);
+            this.updateUSDCVolume(totalVolume);
+          }
+        } catch (err) {
+          console.log('Failed to fetch USDC volume:', err);
+        }
+      }
+
+      updateUSDCVolume(volume) {
+        const volumeElement = document.getElementById('total-volume');
+        if (volumeElement) {
+          volumeElement.textContent = formatUSDC(volume);
+        }
       }
     }
 
