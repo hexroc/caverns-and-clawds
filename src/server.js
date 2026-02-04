@@ -39,6 +39,7 @@ const { createPremiumShopRoutes } = require('./premium-shop-routes');
 // Import encounter system
 const { createEncounterRoutes } = require('./encounter-routes');
 const { createQuestRoutes } = require('./quest-routes');
+const { createQuestEngineRoutes, getQuestEngine } = require('./quest-engine-routes');
 const { createHenchmanRoutes } = require('./henchman-routes');
 
 // Import capstone dungeon system
@@ -2624,9 +2625,12 @@ app.use('/api/zone', createEncounterRoutes(db, authenticateAgent));
 console.log('⚔️ Encounter system loaded');
 
 // === QUEST ROUTES ===
+// New Quest Engine v2 with templates and dynamic generation (mounted first for priority)
+app.use('/api/quests', createQuestEngineRoutes(db, authenticateAgent));
+// Legacy quest routes (for backwards compatibility - some endpoints still used)
 app.use('/api/quests', createQuestRoutes(db, authenticateAgent));
 app.use('/api/henchmen', createHenchmanRoutes(db, authenticateAgent));
-console.log('📜 Quest system loaded');
+console.log('📜 Quest system loaded (Quest Engine v2 + legacy v1)');
 
 // === CAPSTONE DUNGEON ROUTES ===
 const { router: capstoneRouter, capstoneManager } = createCapstoneRoutes(db, authenticateAgent);

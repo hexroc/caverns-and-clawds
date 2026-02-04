@@ -9,6 +9,7 @@ const crypto = require('crypto');
 const { MONSTERS, getMonsterXP, rollLoot, spawnMonster, rollMonsterInitiative } = require('./monsters');
 const { ITEMS, CLASSES } = require('./character');
 const { QuestManager } = require('./quests');
+const { QuestEngine } = require('./quest-engine');
 const { HenchmanManager } = require('./henchmen');
 
 // ============================================================================
@@ -1567,12 +1568,17 @@ class EncounterManager {
     this.db.prepare('UPDATE active_encounters SET status = ? WHERE id = ?')
       .run('victory', encounter.id);
     
-    // Track kills for quests
+    // Track kills for quests (both old and new quest systems)
     const questManager = new QuestManager(this.db);
+    const questEngine = new QuestEngine(this.db);
     const questUpdates = [];
     for (const monster of monsters) {
-      const updates = questManager.trackKill(char.id, monster.monsterId, encounter.zone);
-      questUpdates.push(...updates);
+      // Track in old quest system
+      const oldUpdates = questManager.trackKill(char.id, monster.monsterId, encounter.zone);
+      questUpdates.push(...oldUpdates);
+      // Track in new quest engine
+      const newUpdates = questEngine.recordKill(char.id, monster.monsterId, encounter.zone);
+      questUpdates.push(...newUpdates);
     }
     
     // Build victory message

@@ -8,6 +8,7 @@ const express = require('express');
 const { WorldManager, LOCATIONS, NPCS } = require('./world');
 const { CharacterManager } = require('./character');
 const { ZoneManager, SeededRandom } = require('./room-generator');
+const { QuestEngine } = require('./quest-engine');
 
 function createWorldRoutes(db, authenticateAgent) {
   const router = express.Router();
@@ -113,6 +114,29 @@ function createWorldRoutes(db, authenticateAgent) {
       
       if (!result.success) {
         return res.status(400).json(result);
+      }
+      
+      // Track room discovery for explore quests (Quest Engine v2)
+      if (result.to && result.location) {
+        try {
+          const questEngine = new QuestEngine(db);
+          const zone = result.location.zone || result.location.id?.split('_')[0] || 'unknown';
+          const exploreUpdates = questEngine.recordDiscovery(char.id, result.to, zone);
+          
+          if (exploreUpdates && exploreUpdates.length > 0) {
+            result.questUpdates = exploreUpdates;
+            // Add messages for quest progress
+            result.questMessages = exploreUpdates.map(u => {
+              if (u.questComplete) {
+                return u.message;
+              }
+              return `📜 ${u.questName}: ${u.objective} (${u.current}/${u.required})`;
+            });
+          }
+        } catch (questErr) {
+          console.error('Quest tracking error:', questErr);
+          // Don't fail the move if quest tracking fails
+        }
       }
       
       res.json(result);
