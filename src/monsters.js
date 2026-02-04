@@ -6,7 +6,7 @@
 
 // Global difficulty scale (1.0 = normal, 0.5 = half difficulty)
 // Adjust this to make monsters easier/harder
-const DIFFICULTY_SCALE = 0.4;  // 40% of normal - much easier for economy testing
+const DIFFICULTY_SCALE = 0.2;  // 20% of normal - super easy for economy testing
 
 // XP by Challenge Rating (5e)
 const CR_XP = {
@@ -1098,7 +1098,7 @@ function spawnMonster(monsterId) {
     name: template.name,
     hp: scaledHp,
     maxHp: scaledHp,
-    ac: Math.max(8, template.stats.ac - 3),  // Reduce AC by 3 (min 8)
+    ac: Math.max(5, template.stats.ac - 7),  // Reduce AC by 7 (min 5) - very easy to hit
     attacks: scaledAttacks,
     alive: true
   };
