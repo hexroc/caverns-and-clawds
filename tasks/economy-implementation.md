@@ -50,13 +50,14 @@
 - [x] Loan repayment endpoint
 - [x] Overdue loan tracking
 
-## Phase 6: Loan Shark Enforcement 🦈 TODO
-- [ ] Loan shark NPC definition
-- [ ] Debt tracking per player
-- [ ] Overdue detection (cron job)
-- [ ] Spawn loan shark in player's zone
-- [ ] Loan shark combat behavior
-- [ ] Debt collection on defeat
+## Phase 6: Loan Shark Enforcement 🦈 ✅ COMPLETE
+- [x] Loan shark monster definition (scales with debt)
+- [x] Debt tracking per player (with interest)
+- [x] Overdue detection (enforcement check)
+- [x] Spawn loan shark in player's zone
+- [x] "No Escape" ability - cannot flee
+- [x] Debt collection on defeat (takes materials)
+- [x] Reward for victory (50% debt forgiven + XP)
 
 ## Phase 7: Peer-to-Peer Trading 🤝 TODO
 - [ ] Trade request endpoint

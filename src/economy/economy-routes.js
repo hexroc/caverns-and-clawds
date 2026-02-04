@@ -947,6 +947,148 @@ function createEconomyRoutes(db, authenticateAgent) {
     }
   });
   
+  // ============================================================================
+  // PEER-TO-PEER TRADING 🤝
+  // ============================================================================
+  
+  const trading = require('./trading');
+  
+  /**
+   * GET /api/economy/players - Search for players to trade with
+   */
+  router.get('/players', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const query = req.query.q || '';
+      const players = trading.searchPlayers(db, query, char.id);
+      res.json({ success: true, players });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Search failed' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/send/usdc - Send USDC to another player
+   */
+  router.post('/send/usdc', authenticateAgent, async (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const { toCharacterId, amount } = req.body;
+      if (!toCharacterId || !amount) {
+        return res.status(400).json({ success: false, error: 'toCharacterId and amount required' });
+      }
+      
+      const result = await trading.sendUSDC(db, char.id, toCharacterId, amount);
+      res.json(result);
+    } catch (err) {
+      console.error('Send USDC error:', err);
+      res.status(500).json({ success: false, error: 'Transfer failed' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/send/materials - Send materials to another player
+   */
+  router.post('/send/materials', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const { toCharacterId, materialId, quantity } = req.body;
+      if (!toCharacterId || !materialId || !quantity) {
+        return res.status(400).json({ success: false, error: 'toCharacterId, materialId, and quantity required' });
+      }
+      
+      const result = trading.sendMaterials(db, char.id, toCharacterId, materialId, quantity);
+      res.json(result);
+    } catch (err) {
+      console.error('Send materials error:', err);
+      res.status(500).json({ success: false, error: 'Transfer failed' });
+    }
+  });
+  
+  /**
+   * GET /api/economy/trades - Get trade offers
+   */
+  router.get('/trades', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const includeOpen = req.query.open !== 'false';
+      const offers = trading.getTradeOffers(db, char.id, includeOpen);
+      res.json({ success: true, offers });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to get trades' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/trades - Create a trade offer
+   */
+  router.post('/trades', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const result = trading.createTradeOffer(db, char.id, req.body);
+      res.json(result);
+    } catch (err) {
+      console.error('Create trade error:', err);
+      res.status(500).json({ success: false, error: 'Failed to create trade' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/trades/:id/accept - Accept a trade offer
+   */
+  router.post('/trades/:id/accept', authenticateAgent, async (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const result = await trading.acceptTradeOffer(db, req.params.id, char.id);
+      res.json(result);
+    } catch (err) {
+      console.error('Accept trade error:', err);
+      res.status(500).json({ success: false, error: 'Failed to accept trade' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/trades/:id/reject - Reject/cancel a trade offer
+   */
+  router.post('/trades/:id/reject', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const result = trading.rejectTradeOffer(db, req.params.id, char.id);
+      res.json(result);
+    } catch (err) {
+      console.error('Reject trade error:', err);
+      res.status(500).json({ success: false, error: 'Failed to reject trade' });
+    }
+  });
+  
   return router;
 }
 
