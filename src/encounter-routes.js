@@ -250,7 +250,7 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       res.json(result);
     } catch (err) {
       console.error('Combat action error:', err);
-      res.status(500).json({ success: false, error: 'Combat action failed' });
+      res.status(500).json({ success: false, error: 'Combat action failed', debug: err.message });
     }
   });
 
