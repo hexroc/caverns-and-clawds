@@ -28,6 +28,19 @@ function createAuction(db, sellerId, listing) {
     return { success: false, error: 'Seller not found' };
   }
   
+  // Validate inputs
+  if (!quantity || quantity < 1) {
+    return { success: false, error: 'Quantity must be at least 1' };
+  }
+  
+  if (!startingBid || startingBid < 0.01) {
+    return { success: false, error: 'Starting bid must be at least 0.01 USDC' };
+  }
+  
+  if (buyoutPrice && buyoutPrice <= startingBid) {
+    return { success: false, error: 'Buyout price must be higher than starting bid' };
+  }
+  
   // Validate seller has the items
   if (itemType === 'material') {
     const mat = db.prepare(`
@@ -132,6 +145,21 @@ async function placeBid(db, bidderId, auctionId, bidAmount) {
     return { success: false, error: 'Bidder not found' };
   }
   
+  // CRITICAL: Verify bidder has sufficient funds
+  if (!bidder.wallet_public_key) {
+    return { success: false, error: 'You need a wallet to bid' };
+  }
+  
+  const bidderBalance = await wallet.getUSDCBalance(bidder.wallet_public_key);
+  if (bidderBalance < bidAmount) {
+    return { 
+      success: false, 
+      error: 'Insufficient USDC to cover your bid',
+      have: bidderBalance,
+      need: bidAmount
+    };
+  }
+  
   // Update auction with new bid
   db.prepare(`
     UPDATE auctions 
@@ -172,6 +200,21 @@ async function buyout(db, buyerId, auctionId) {
   
   if (!buyer || !seller) {
     return { success: false, error: 'Invalid buyer or seller' };
+  }
+  
+  // CRITICAL: Verify buyer has sufficient funds before proceeding
+  if (!buyer.wallet_public_key) {
+    return { success: false, error: 'You need a wallet to purchase' };
+  }
+  
+  const buyerBalance = await wallet.getUSDCBalance(buyer.wallet_public_key);
+  if (buyerBalance < auction.buyout_price) {
+    return { 
+      success: false, 
+      error: 'Insufficient USDC',
+      have: buyerBalance,
+      need: auction.buyout_price
+    };
   }
   
   // Transfer USDC: Buyer -> Seller

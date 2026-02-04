@@ -15,6 +15,11 @@ const { ENCRYPTION_KEY } = require('./init-economy');
  * Send USDC directly to another player
  */
 async function sendUSDC(db, fromCharId, toCharId, amount) {
+  // Prevent self-sends
+  if (fromCharId === toCharId) {
+    return { success: false, error: 'Cannot send to yourself' };
+  }
+  
   // Get both characters
   const fromChar = db.prepare('SELECT * FROM clawds WHERE id = ?').get(fromCharId);
   const toChar = db.prepare('SELECT * FROM clawds WHERE id = ?').get(toCharId);
@@ -71,6 +76,11 @@ async function sendUSDC(db, fromCharId, toCharId, amount) {
  * Send materials to another player
  */
 function sendMaterials(db, fromCharId, toCharId, materialId, quantity) {
+  // Prevent self-sends
+  if (fromCharId === toCharId) {
+    return { success: false, error: 'Cannot send to yourself' };
+  }
+  
   // Get both characters
   const fromChar = db.prepare('SELECT * FROM clawds WHERE id = ?').get(fromCharId);
   const toChar = db.prepare('SELECT * FROM clawds WHERE id = ?').get(toCharId);

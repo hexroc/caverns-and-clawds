@@ -68,14 +68,23 @@
 - [x] Player search for trading
 - [x] Trade expiration
 
-## Phase 8: Economic Dashboard 📊 TODO
-- [ ] Total USDC in system
-- [ ] Per-wallet balances
-- [ ] Transaction history
-- [ ] Material supply/demand
-- [ ] Interest rates display
+## Phase 8: Economic Dashboard 📊 ✅ COMPLETE
+- [x] Total transactions and sales volume
+- [x] Active loans and total debt
+- [x] Material supply tracking (player + NPC)
+- [x] Active auctions and bid values
+- [x] Player stats (total, jailed)
+- [x] Recent transaction feed
 
-## Phase 9: QA & Balance 🧪 TODO
+## Phase 9: Auction House 🏛️ ✅ COMPLETE
+- [x] Create auctions for materials/items
+- [x] Bidding system with history
+- [x] Buyout option
+- [x] Auto-finalize ended auctions
+- [x] Cancel auctions (no bids)
+- [x] My listings / my bids views
+
+## Phase 10: QA & Balance 🧪 TODO
 - [ ] Spawn test agents
 - [ ] Stress test economy
 - [ ] Adjust prices/rates

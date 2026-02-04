@@ -582,7 +582,8 @@ function createEconomyRoutes(db, authenticateAgent) {
       const totalOwed = Math.round(account.loan_balance * interestMultiplier * 100) / 100;
       
       const { amount } = req.body;
-      const payAmount = amount || totalOwed; // Default to full repayment
+      // Cap payment at total owed - can't overpay
+      const payAmount = Math.min(amount || totalOwed, totalOwed);
       
       if (!char.wallet_public_key || !char.wallet_encrypted_secret) {
         return res.status(400).json({ success: false, error: 'No wallet found' });
