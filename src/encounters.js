@@ -237,10 +237,10 @@ const ENCOUNTER_TABLES = {
       'You find claw marks on a nearby rock.'
     ],
     discoveryMessages: [
-      'You find a small USDC credit chip hidden in the kelp!',
+      'Something glints in the kelp fronds...',
       'An old adventurer\'s pack lies abandoned here.',
-      'You discover a healing spring bubbling from the rocks.',
-      'A friendly hermit crab points you toward treasure.'
+      'You spot something wedged between the rocks!',
+      'A friendly hermit crab points you toward a hidden cache.'
     ]
   },
   
@@ -269,9 +269,9 @@ const ENCOUNTER_TABLES = {
     ],
     discoveryMessages: [
       'You pry open a barnacle-encrusted chest!',
-      'A skeleton clutches a coin purse.',
+      'A skeleton clutches something valuable.',
       'You find the captain\'s log — and a hidden compartment.',
-      'An old ship\'s cat (somehow still alive) leads you to loot.'
+      'An old ship\'s cat (somehow still alive) leads you to salvage.'
     ]
   },
   
@@ -296,9 +296,9 @@ const ENCOUNTER_TABLES = {
     ],
     discoveryMessages: [
       'You find rare minerals crystallized on the rocks!',
-      'A heat-resistant chest contains treasure.',
-      'Volcanic glass — valuable to the right buyer.',
-      'You discover a hot spring with restorative properties.'
+      'A heat-resistant container holds salvage.',
+      'Something valuable formed in the volcanic heat...',
+      'You discover materials near a hot spring.'
     ]
   }
 };
@@ -622,28 +622,88 @@ class EncounterManager {
   }
   
   /**
-   * Handle a discovery (small reward)
+   * Handle a discovery (material reward - NO USDC drops!)
    */
   _handleDiscovery(characterId, table) {
-    const message = table.discoveryMessages[
-      Math.floor(Math.random() * table.discoveryMessages.length)
+    // Zone-specific discovery materials
+    const DISCOVERY_DROPS = {
+      'Kelp Forest': [
+        { id: 'sea_glass', name: 'Sea Glass', weight: 40 },
+        { id: 'kelp_bundle', name: 'Kelp Bundle', weight: 30 },
+        { id: 'fish_scales', name: 'Fish Scales', weight: 20 },
+        { id: 'pearl', name: 'Pearl', weight: 8 },
+        { id: 'moonstone_shard', name: 'Moonstone Shard', weight: 2 }
+      ],
+      'Shipwreck Graveyard': [
+        { id: 'barnacle_cluster', name: 'Barnacle Cluster', weight: 35 },
+        { id: 'anchor_chain', name: 'Anchor Chain', weight: 25 },
+        { id: 'driftwood', name: 'Driftwood', weight: 20 },
+        { id: 'ghost_essence', name: 'Ghost Essence', weight: 15 },
+        { id: 'black_pearl', name: 'Black Pearl', weight: 5 }
+      ],
+      'Thermal Vents': [
+        { id: 'volcanic_glass', name: 'Volcanic Glass', weight: 30 },
+        { id: 'luminescent_algae', name: 'Luminescent Algae', weight: 25 },
+        { id: 'rare_scale', name: 'Rare Scale', weight: 20 },
+        { id: 'abyssal_ink', name: 'Abyssal Ink', weight: 15 },
+        { id: 'prismatic_scale', name: 'Prismatic Scale', weight: 10 }
+      ]
+    };
+    
+    // Get drops for this zone (or default to kelp)
+    const zoneName = table.name || 'Kelp Forest';
+    const drops = DISCOVERY_DROPS[zoneName] || DISCOVERY_DROPS['Kelp Forest'];
+    
+    // Weighted random selection
+    const totalWeight = drops.reduce((sum, d) => sum + d.weight, 0);
+    let roll = Math.random() * totalWeight;
+    let selectedMaterial = drops[0];
+    
+    for (const drop of drops) {
+      roll -= drop.weight;
+      if (roll <= 0) {
+        selectedMaterial = drop;
+        break;
+      }
+    }
+    
+    // Quantity: usually 1, small chance of 2
+    const quantity = Math.random() < 0.2 ? 2 : 1;
+    
+    // Add material to player's inventory
+    this.db.prepare(`
+      INSERT INTO player_materials (id, character_id, material_id, quantity)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(character_id, material_id) DO UPDATE SET quantity = quantity + ?
+    `).run(
+      require('crypto').randomUUID(),
+      characterId,
+      selectedMaterial.id,
+      quantity,
+      quantity
+    );
+    
+    // Discovery message describing the find
+    const discoveryMessages = [
+      `You discover ${quantity}x ${selectedMaterial.name} hidden among the debris!`,
+      `A glint catches your eye - ${quantity}x ${selectedMaterial.name}!`,
+      `You find ${quantity}x ${selectedMaterial.name} tucked in a crevice.`,
+      `Lucky find! ${quantity}x ${selectedMaterial.name} goes into your pack.`
     ];
-    
-    // Random micro USDC reward (0.001 - 0.005) - yield-backed economy
-    const usdc = (Math.random() * 0.004 + 0.001).toFixed(4);
-    
-    // Add USDC to character
-    this.db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
-      .run(parseFloat(usdc), characterId);
+    const message = discoveryMessages[Math.floor(Math.random() * discoveryMessages.length)];
     
     return {
       success: true,
       encounter: false,
       discovery: true,
-      zone: table.name,
+      zone: zoneName,
       message,
-      reward: { usdc: parseFloat(usdc) },
-      hint: 'Continue exploring or return to safety.'
+      reward: { 
+        material: selectedMaterial.name,
+        materialId: selectedMaterial.id,
+        quantity 
+      },
+      hint: 'Sell to NPCs for USDC or save for crafting!'
     };
   }
   
