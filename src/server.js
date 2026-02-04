@@ -567,7 +567,7 @@ app.get('/skill.md', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.2', build: '2026-02-04T23:00:00Z' });
+  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.3', build: '2026-02-04T23:05:00Z' });
 });
 
 // ============================================
@@ -2972,6 +2972,11 @@ const { initEconomy } = require('./economy/init-economy');
 initEconomy().catch(err => console.error('Economy init failed:', err));
 app.use('/api/economy', createEconomyRoutes(db, authenticateAgent));
 console.log('💰 Economy system loaded (USDC, banking, trading)');
+
+// Initialize and mount DeFi routes (Kamino vault integration)
+const { init: initDefiRoutes } = require('./economy/defi-routes');
+app.use('/api/defi', initDefiRoutes(db));
+console.log('💎 DeFi system loaded (Kamino vault, yield emissions)');
 
 // Initialize and mount Real Estate routes
 initRealEstateDB(db);
