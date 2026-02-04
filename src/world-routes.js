@@ -93,6 +93,64 @@ function createWorldRoutes(db, authenticateAgent) {
   });
 
   /**
+   * POST /api/world/recall - Teleport back to hub (The Briny Flagon)
+   * 10 minute cooldown between recalls
+   */
+  router.post('/recall', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      // Check cooldown (stored in character's last_recall field)
+      const now = Date.now();
+      const cooldownMs = 10 * 60 * 1000; // 10 minutes
+      
+      // Get or create recall tracking
+      const recallData = db.prepare(
+        'SELECT last_recall FROM clawds WHERE id = ?'
+      ).get(char.id);
+      
+      const lastRecall = recallData?.last_recall || 0;
+      const timeSince = now - lastRecall;
+      
+      if (timeSince < cooldownMs) {
+        const remaining = Math.ceil((cooldownMs - timeSince) / 1000 / 60);
+        return res.json({
+          success: false,
+          error: `Recall on cooldown. ${remaining} minutes remaining.`,
+          cooldownRemaining: cooldownMs - timeSince
+        });
+      }
+      
+      // Already at hub?
+      if (char.location === 'briny_flagon') {
+        return res.json({
+          success: true,
+          message: 'You are already at The Briny Flagon.',
+          location: char.location
+        });
+      }
+      
+      // Teleport to hub
+      db.prepare('UPDATE clawds SET location = ?, last_recall = ? WHERE id = ?')
+        .run('briny_flagon', now, char.id);
+      
+      res.json({
+        success: true,
+        message: '✨ A shimmer of magic surrounds you, and you find yourself back at The Briny Flagon.',
+        from: char.location,
+        to: 'briny_flagon',
+        cooldown: '10 minutes until next recall'
+      });
+    } catch (err) {
+      console.error('Recall error:', err);
+      res.status(500).json({ success: false, error: 'Recall failed' });
+    }
+  });
+
+  /**
    * POST /api/world/move - Move to adjacent location
    */
   router.post('/move', authenticateAgent, (req, res) => {
@@ -106,7 +164,7 @@ function createWorldRoutes(db, authenticateAgent) {
       if (!direction) {
         return res.status(400).json({ 
           success: false, 
-          error: 'direction required (north, south, east, west, or location name)'
+          error: 'direction required (north, south, east, west, or location name). Use POST /recall to return to hub.'
         });
       }
       

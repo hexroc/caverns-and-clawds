@@ -11,6 +11,7 @@ const { ITEMS, CLASSES } = require('./character');
 const { QuestManager } = require('./quests');
 const { QuestEngine } = require('./quest-engine');
 const { HenchmanManager } = require('./henchmen');
+const { generateZoneLoot, getZoneTier } = require('./loot-tables');
 
 // ============================================================================
 // SPELLS (5e, Sea-themed names)
@@ -1519,9 +1520,17 @@ class EncounterManager {
     let totalPearls = 0;
     const allLoot = [];
     
+    // Get character's current zone for tier-appropriate loot
+    const zoneType = char.location || 'kelp_forest';
+    
     for (const monster of monsters) {
       totalXP += getMonsterXP(monster.monsterId);
-      const loot = rollLoot(monster.monsterId);
+      
+      // Use zone-aware loot system for procedural zones
+      const monsterData = MONSTERS[monster.monsterId];
+      const cr = monsterData?.cr || '1/4';
+      const loot = generateZoneLoot(monster.monsterId, zoneType, cr);
+      
       totalPearls += loot.pearls;
       allLoot.push(...loot.items);
     }

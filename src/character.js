@@ -791,6 +791,13 @@ function initCharacterDB(db) {
     // Column already exists, ignore
   }
   
+  // Add last_recall for hub teleport cooldown
+  try {
+    db.exec(`ALTER TABLE clawds ADD COLUMN last_recall INTEGER DEFAULT 0`);
+  } catch (e) {
+    // Column already exists, ignore
+  }
+  
   // Add speaking_style column for AI dialogue generation
   try {
     db.exec(`ALTER TABLE clawds ADD COLUMN speaking_style TEXT DEFAULT ''`);
