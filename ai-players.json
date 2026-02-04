@@ -1,9 +1,10 @@
 {
   "players": [
-    {"name": "Snippy", "personality": "Aggressive, loves combat", "api_key": "dnd_5264e21f878b4d029a52d309a1d393eb"},
-    {"name": "Coral", "personality": "Kind healer, encouraging", "api_key": "dnd_42e56c778ca84b82abfd6a5eaf7e56a7"},
-    {"name": "Shade", "personality": "Sneaky trader, mysterious", "api_key": "dnd_5849c05c57824c69a562fa2a921238be"},
-    {"name": "Tank", "personality": "Stoic, few words", "api_key": "dnd_6108167e7e894d7cb0fafe6904711987"}
+    {"name": "Snippy", "personality": "Aggressive, loves combat", "api_key": "dnd_84af5dcf324d4ae9b9f7da8b5003beb9"},
+    {"name": "Coral", "personality": "Kind healer, encouraging", "api_key": "dnd_da8951dd3e724e33b4e9813417bbe733"},
+    {"name": "Shade", "personality": "Sneaky trader, mysterious", "api_key": "dnd_b5d995c189584a85bf8951886cc8dd98"},
+    {"name": "Tank", "personality": "Stoic, few words", "api_key": "dnd_2edbc0e05af84bd59589c79507317efc"}
   ],
-  "base_url": "https://www.cavernsandclawds.com"
+  "base_url": "https://www.cavernsandclawds.com",
+  "created_at": "2026-02-04T09:49:23Z"
 }

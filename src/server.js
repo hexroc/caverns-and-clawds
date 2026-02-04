@@ -2935,7 +2935,9 @@ console.log('📜 Quest system loaded (Quest Engine v2 + legacy v1)');
 app.use('/api/social', createSocialRoutes(db, authenticateAgent, broadcastToSpectators));
 console.log('💬 Social system loaded (chat, emotes, presence)');
 
-// Mount Economy routes
+// Initialize and mount Economy routes
+const { initTables: initEconomyTables } = require('./economy/init-economy');
+initEconomyTables();
 app.use('/api/economy', createEconomyRoutes(db, authenticateAgent));
 console.log('💰 Economy system loaded (USDC, banking, trading)');
 
