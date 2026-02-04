@@ -9,6 +9,7 @@ const { EncounterManager, ENCOUNTER_TABLES } = require('./encounters');
 const { MONSTERS } = require('./monsters');
 const { CharacterManager } = require('./character');
 const { LOCATIONS } = require('./world');
+const { activityTracker } = require('./activity-tracker');
 // (tactical-combat & hex-grid removed - capstone system deprecated)
 
 function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = null) {
@@ -65,6 +66,22 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       }
       
       const result = encounters.explore(char.id, zone);
+      
+      // Track activity for live ticker
+      if (result.encounter) {
+        activityTracker.playerCombat(char.name, result.monster?.name || 'monster', 'engaged', zone);
+      } else if (result.discovery) {
+        activityTracker.addActivity({
+          icon: '🔍',
+          player: char.name,
+          action: `found ${result.reward?.material || 'something'}!`,
+          location: zone,
+          type: 'discovery'
+        });
+      } else {
+        activityTracker.playerExplore(char.name, zone, 'searching...');
+      }
+      
       res.json(result);
     } catch (err) {
       console.error('Explore error:', err);
@@ -199,20 +216,35 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       
       // Notify spectators of combat events
       if (result.combatEnded && result.victory) {
+        const enemy = result.encounter?.monsters?.[0]?.name || 'a monster';
         notifySpectators({
           type: 'agent_combat',
           agentId: char.id,
           agentName: char.name,
           victory: true,
-          enemy: result.encounter?.monsters?.[0]?.name || 'a monster',
+          enemy,
           xpGained: result.xpGained || 0
         });
+        // Track victory in activity ticker
+        activityTracker.playerCombat(char.name, enemy, 'victory', char.location);
+        if (result.drops?.materials?.length) {
+          const loot = result.drops.materials.map(m => m.name).join(', ');
+          activityTracker.addActivity({
+            icon: '💎',
+            player: char.name,
+            action: `looted ${loot}`,
+            location: char.location,
+            type: 'loot'
+          });
+        }
       } else if (result.combatEnded && !result.victory) {
         notifySpectators({
           type: 'agent_death',
           agentId: char.id,
           agentName: char.name
         });
+        // Track defeat
+        activityTracker.playerCombat(char.name, 'monster', 'defeat', char.location);
       }
       
       res.json(result);

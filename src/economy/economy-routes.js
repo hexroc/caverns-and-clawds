@@ -14,6 +14,7 @@ const crypto = require('crypto');
 const wallet = require('./wallet');
 const { ENCRYPTION_KEY } = require('./init-economy');
 const { recordBalance } = require('./realestate');
+const { activityTracker } = require('../activity-tracker');
 
 function createEconomyRoutes(db, authenticateAgent) {
   const router = express.Router();
@@ -284,6 +285,9 @@ function createEconomyRoutes(db, authenticateAgent) {
       // Log transaction
       logTransaction('sale', npc.public_key, char.wallet_public_key, totalPrice, 
         transfer.signature || 'simulated', `Sold ${quantity}x ${material.name}`);
+      
+      // Track in activity ticker
+      activityTracker.playerTrade(char.name, 'sold', `${quantity}x ${material.name}`, totalPrice, char.location || 'Pearl Market');
       
       res.json({
         success: true,

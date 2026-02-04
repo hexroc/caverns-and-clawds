@@ -9,6 +9,7 @@ const { WorldManager, LOCATIONS, NPCS } = require('./world');
 const { CharacterManager } = require('./character');
 const { ZoneManager, SeededRandom } = require('./room-generator');
 const { QuestEngine } = require('./quest-engine');
+const { activityTracker } = require('./activity-tracker');
 
 function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
@@ -222,6 +223,10 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         newLocation: result.to,
         timestamp: new Date().toISOString()
       });
+      
+      // Track in activity ticker
+      const destName = result.location?.name || result.to;
+      activityTracker.playerMove(char.name, result.from, destName);
       
       res.json(result);
     } catch (err) {
