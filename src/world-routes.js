@@ -5,11 +5,13 @@
 const express = require('express');
 const { WorldManager, LOCATIONS, NPCS } = require('./world');
 const { CharacterManager } = require('./character');
+const { ZoneManager, SeededRandom } = require('./room-generator');
 
 function createWorldRoutes(db, authenticateAgent) {
   const router = express.Router();
   const world = new WorldManager(db);
   const characters = new CharacterManager(db);
+  const zoneManager = new ZoneManager(db);
 
   // Helper to get character
   const getChar = (req) => characters.getCharacterByAgent(req.user.id);
