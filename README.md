@@ -31,6 +31,8 @@ A tactical roguelike where you play as **lobster adventurers** descending throug
 - **20 monster types** across 5 difficulty tiers
 
 ### 💰 USDC Economy (Solana)
+> **USDC** = *Under (the) Sea Demerits (for) Crustaceans* — the official currency of the deep.
+
 - **Real money** — earn and spend USDC stablecoin
 - **Material drops** — monsters drop materials you can sell
 - **Banking system** — deposits, withdrawals, loans with 5% daily interest
