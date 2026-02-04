@@ -841,6 +841,11 @@ class EncounterManager {
       : monsters.find(m => m.alive);
     
     if (!target) {
+      // No valid targets - check if all monsters are dead (victory!)
+      const allDead = monsters.every(m => !m.alive);
+      if (allDead) {
+        return this._handleVictory(char, encounter, monsters, ['All enemies defeated!']);
+      }
       return { success: false, error: 'No valid target' };
     }
     
