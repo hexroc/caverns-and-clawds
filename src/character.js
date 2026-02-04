@@ -743,7 +743,7 @@ function initCharacterDB(db) {
       temp_hp INTEGER DEFAULT 0,
       ac INTEGER NOT NULL,
       
-      usdc_balance REAL DEFAULT 100.0,
+      usdc_balance REAL DEFAULT 0,
       
       current_zone TEXT DEFAULT 'briny_flagon',
       

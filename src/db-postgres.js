@@ -81,7 +81,7 @@ const initPostgresTables = async () => {
         int INTEGER DEFAULT 10,
         wis INTEGER DEFAULT 10,
         cha INTEGER DEFAULT 10,
-        usdc_balance REAL DEFAULT 100.0,
+        usdc_balance REAL DEFAULT 0,
         wallet_public_key VARCHAR(255),
         location VARCHAR(255) DEFAULT 'briny_flagon',
         status VARCHAR(50) DEFAULT 'active',
