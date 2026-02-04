@@ -59,11 +59,14 @@
 - [x] Debt collection on defeat (takes materials)
 - [x] Reward for victory (50% debt forgiven + XP)
 
-## Phase 7: Peer-to-Peer Trading 🤝 TODO
-- [ ] Trade request endpoint
-- [ ] Trade accept/reject
-- [ ] USDC transfer between players
-- [ ] Trade history
+## Phase 7: Peer-to-Peer Trading 🤝 ✅ COMPLETE
+- [x] Direct USDC transfers between players
+- [x] Direct material transfers between players
+- [x] Trade offer creation (materials/USDC)
+- [x] Trade accept/reject
+- [x] Open offers (marketplace) and targeted offers
+- [x] Player search for trading
+- [x] Trade expiration
 
 ## Phase 8: Economic Dashboard 📊 TODO
 - [ ] Total USDC in system

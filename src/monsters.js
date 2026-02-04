@@ -942,58 +942,92 @@ const MONSTERS = {
     pearls: [8, 20]
   },
   
-  // === SPECIAL: LOAN SHARK (Debt Collector) ===
+  // === SPECIAL: LOAN SHARK (Debt Collector) - LEVEL 10 NIGHTMARE ===
   
   loan_shark: {
     id: 'loan_shark',
     name: 'The Loan Shark',
     description: 'A massive, scarred shark with cold, calculating eyes. He always collects.',
-    cr: 3,  // Base CR, scales with debt
+    cr: 10,  // ALWAYS level 10
     type: 'beast',
     size: 'large',
     
     stats: {
-      hp: 45,
-      ac: 14,
-      speed: 40,  // Fast swimmer
-      str: 18, dex: 13, con: 15, int: 12, wis: 14, cha: 8
+      hp: 150,
+      ac: 18,
+      speed: 50,  // Very fast
+      str: 20, dex: 14, con: 18, int: 14, wis: 16, cha: 10
     },
     
     attacks: [
       { 
         name: 'Crushing Bite', 
         type: 'melee',
-        hit: 6, 
-        damage: '2d10+4', 
+        hit: 9, 
+        damage: '3d10+5', 
         damageType: 'piercing',
-        description: 'Massive jaws clamp down with bone-crushing force'
+        description: 'Bone-crushing jaws'
       },
       {
-        name: 'Tail Slap',
+        name: 'Tail Slam',
         type: 'melee',
-        hit: 5,
-        damage: '1d8+4',
+        hit: 8,
+        damage: '2d8+5',
         damageType: 'bludgeoning',
-        description: 'A powerful tail sweep'
+        description: 'Devastating tail sweep'
       }
     ],
     
-    abilities: ['debt_sense', 'no_escape', 'interest_accumulator'],
+    abilities: ['debt_sense', 'no_escape', 'relentless', 'backup_coming'],
     immunities: ['frightened', 'charmed'],
     
     behavior: 'relentless',
     special: {
-      noFlee: true,  // Players cannot flee
+      noFlee: true,
       debtCollector: true,
-      dialogue: {
-        spawn: "💀 The water grows cold... A massive shadow approaches.",
-        taunt: "*\"Interest is compounding, friend.\"*",
-        victory: "🦈 *\"Pleasure doing business.\"*",
-        defeat: "*\"I'll be back for the rest...\"*"
-      }
+      alwaysLevel10: true,
+      comesBackWithBackup: true
     },
     
-    loot: [],  // No loot - he takes, not gives
+    loot: [],
+    pearls: [0, 0]
+  },
+  
+  loan_shark_enforcer: {
+    id: 'loan_shark_enforcer',
+    name: 'Shark Enforcer',
+    description: 'A vicious shark working for the Loan Shark. There to make sure you pay.',
+    cr: 5,
+    type: 'beast',
+    size: 'medium',
+    
+    stats: {
+      hp: 75,
+      ac: 15,
+      speed: 40,
+      str: 16, dex: 15, con: 14, int: 8, wis: 12, cha: 6
+    },
+    
+    attacks: [
+      { 
+        name: 'Bite', 
+        type: 'melee',
+        hit: 6, 
+        damage: '2d8+3', 
+        damageType: 'piercing',
+        description: 'Sharp teeth tear into flesh'
+      }
+    ],
+    
+    abilities: ['pack_tactics', 'no_escape'],
+    
+    behavior: 'aggressive',
+    special: {
+      noFlee: true,
+      debtCollector: true
+    },
+    
+    loot: [],
     pearls: [0, 0]
   }
 };

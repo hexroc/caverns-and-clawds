@@ -1,19 +1,19 @@
 /**
- * Loan Shark Enforcement System 🦈
+ * Loan Shark Enforcement System 🦈💀
  * 
  * Miss a payment? The Loan Shark WILL find you.
  * 
- * Features:
- * - Tracks overdue loans
- * - Spawns Loan Shark monster to hunt debtors
- * - Escalating difficulty based on debt amount
- * - Debt collection on defeat (takes materials/items)
- * - Can't flee from the Loan Shark
+ * HARDCORE RULES:
+ * - Loan Sharks are ALWAYS level 10 (brutal)
+ * - Defeating them does NOT clear your debt
+ * - They come back TOMORROW with BACKUP
+ * - If you lose and can't pay: JAIL (real-time hours)
+ * - Cannot flee from Loan Sharks
  */
 
 const crypto = require('crypto');
 
-// The Loan Shark - a terrifying debt collector
+// The Loan Shark - Level 10 nightmare
 const LOAN_SHARK = {
   id: 'loan_shark',
   name: 'The Loan Shark',
@@ -21,83 +21,115 @@ const LOAN_SHARK = {
   type: 'beast',
   size: 'large',
   alignment: 'lawful evil',
+  level: 10, // ALWAYS level 10
   
-  // Base stats (scale with debt)
-  baseHP: 45,
-  baseAC: 14,
-  baseCR: 3,
+  // Fixed stats - these guys are TOUGH
+  hp: 150,
+  maxHp: 150,
+  ac: 18,
+  cr: 10,
   
-  // Stats
   stats: {
-    str: 18,
-    dex: 13,
-    con: 15,
-    int: 12,  // Smarter than average shark
-    wis: 14,
-    cha: 8
+    str: 20,
+    dex: 14,
+    con: 18,
+    int: 14,
+    wis: 16,
+    cha: 10
   },
   
-  // Special abilities
   abilities: [
-    {
-      name: 'Debt Sense',
-      description: 'The Loan Shark always knows where debtors are. Cannot be hidden from.'
-    },
-    {
-      name: 'No Escape',
-      description: 'Debtors cannot flee from the Loan Shark. You WILL pay.'
-    },
-    {
-      name: 'Interest Accumulator',
-      description: 'Each round of combat, your debt increases by 5%.'
-    }
+    { name: 'Debt Sense', description: 'Always knows where debtors are.' },
+    { name: 'No Escape', description: 'Debtors cannot flee.' },
+    { name: 'Relentless', description: 'Defeating him only delays the inevitable.' },
+    { name: 'Backup Coming', description: 'Returns tomorrow with reinforcements.' }
   ],
   
   attacks: [
     {
       name: 'Crushing Bite',
       type: 'melee',
-      hit: 6,
-      damage: '2d10+4',
+      hit: 9,
+      damage: '3d10+5',
       damageType: 'piercing',
       range: 1,
-      description: 'Massive jaws clamp down with bone-crushing force'
+      description: 'Bone-crushing jaws'
     },
     {
-      name: 'Tail Slap',
+      name: 'Tail Slam',
       type: 'melee',
-      hit: 5,
-      damage: '1d8+4',
+      hit: 8,
+      damage: '2d8+5',
       damageType: 'bludgeoning',
       range: 1,
-      description: 'A powerful tail sweep that can knock you prone'
+      description: 'Devastating tail sweep'
     }
   ],
   
-  // Dialogue
   dialogue: {
     spawn: [
-      "💀 **The water grows cold...** A massive shadow approaches.",
-      "🦈 *\"You owe me money, little lobster. Time to pay up.\"*"
+      "💀 **The water turns ice cold...**",
+      "🦈 A massive shadow emerges from the depths.",
+      "*\"You owe me money, little lobster. Time to pay up.\"*"
+    ],
+    spawnWithBackup: [
+      "💀 **Multiple shadows circle you...**",
+      "🦈 The Loan Shark returns — and he brought friends.",
+      "*\"I warned you. Now it gets ugly.\"*"
     ],
     taunt: [
       "*\"Interest is compounding, friend.\"*",
       "*\"Should've paid on time.\"*",
-      "*\"Nothing personal. Just business.\"*",
-      "*\"Your shells or your life.\"*"
+      "*\"Nothing personal. Just business.\"*"
     ],
-    victory: [
-      "🦈 *\"Pleasure doing business.\"* The Loan Shark takes what's owed and disappears into the depths.",
+    playerWins: [
+      "🦈 The Loan Shark retreats into the darkness...",
+      "*\"This isn't over. I'll be back — with backup.\"*",
+      "⚠️ **Your debt remains. He WILL return tomorrow.**"
     ],
-    defeat: [
-      "💀 The Loan Shark circles you one last time. *\"I'll be back for the rest...\"*",
-      "Your debt remains. He WILL return."
+    playerLosesCanPay: [
+      "🦈 *\"Pleasure doing business.\"*",
+      "The Loan Shark takes what's owed and disappears."
+    ],
+    playerLosesCantPay: [
+      "🦈 *\"No money? No materials? Fine.\"*",
+      "💀 **You're dragged to the Debtor's Prison.**",
+      "⛓️ You'll be released when you've served your time..."
     ]
   }
 };
 
+// Loan Shark Enforcer (backup)
+const LOAN_SHARK_ENFORCER = {
+  id: 'loan_shark_enforcer',
+  name: 'Shark Enforcer',
+  description: 'A smaller but vicious shark working for the Loan Shark.',
+  type: 'beast',
+  size: 'medium',
+  level: 7,
+  hp: 75,
+  maxHp: 75,
+  ac: 15,
+  cr: 5,
+  
+  stats: {
+    str: 16, dex: 15, con: 14, int: 8, wis: 12, cha: 6
+  },
+  
+  attacks: [
+    {
+      name: 'Bite',
+      type: 'melee',
+      hit: 6,
+      damage: '2d8+3',
+      damageType: 'piercing',
+      range: 1
+    }
+  ]
+};
+
 /**
- * Check for players with overdue loans
+ * Get players with overdue loans
  */
 function getOverdueDebtors(db) {
   const now = new Date().toISOString();
@@ -107,40 +139,27 @@ function getOverdueDebtors(db) {
       ba.owner_id as character_id,
       ba.loan_balance,
       ba.loan_due_date,
-      ba.loan_interest_rate,
+      ba.enforcement_count,
       c.name as character_name,
       c.current_zone,
+      c.status,
       c.agent_id
     FROM bank_accounts ba
     JOIN clawds c ON ba.owner_id = c.id
     WHERE ba.owner_type = 'player'
       AND ba.loan_balance > 0
       AND ba.loan_due_date < ?
+      AND c.status != 'jailed'
   `).all(now);
 }
 
 /**
- * Calculate scaled Loan Shark stats based on debt amount
+ * Spawn Loan Shark encounter
+ * - First time: just the Loan Shark
+ * - After defeats: Loan Shark + enforcers
  */
-function scaleLoanShark(debtAmount) {
-  // Base scaling: every 50 USDC of debt adds power
-  const debtTier = Math.floor(debtAmount / 50);
-  
-  return {
-    ...LOAN_SHARK,
-    hp: LOAN_SHARK.baseHP + (debtTier * 15),
-    maxHp: LOAN_SHARK.baseHP + (debtTier * 15),
-    ac: LOAN_SHARK.baseAC + Math.min(debtTier, 4),
-    cr: LOAN_SHARK.baseCR + debtTier,
-    debtAmount: debtAmount
-  };
-}
-
-/**
- * Spawn a Loan Shark encounter for a debtor
- */
-function spawnLoanSharkEncounter(db, characterId, debtAmount) {
-  // Check if there's already an active loan shark encounter
+function spawnLoanSharkEncounter(db, characterId, debtAmount, enforcementCount = 0) {
+  // Check for existing encounter
   const existing = db.prepare(`
     SELECT * FROM active_encounters 
     WHERE character_id = ? AND zone = 'loan_shark_collection' AND status = 'active'
@@ -150,74 +169,204 @@ function spawnLoanSharkEncounter(db, characterId, debtAmount) {
     return { success: false, error: 'Already being hunted', encounterId: existing.id };
   }
   
-  // Get character info
   const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
   if (!char) {
     return { success: false, error: 'Character not found' };
   }
   
-  // Scale the shark based on debt
-  const shark = scaleLoanShark(debtAmount);
-  
-  // Create the encounter
-  const encounterId = crypto.randomUUID();
+  // Build monster list
+  const monsters = [];
   const sharkId = `loan_shark_${Date.now()}`;
-  const monsters = [{
+  
+  // The Loan Shark (always present, always level 10)
+  monsters.push({
     id: sharkId,
     monsterId: 'loan_shark',
     name: LOAN_SHARK.name,
-    hp: shark.hp,
-    maxHp: shark.maxHp,
-    ac: shark.ac,
+    hp: LOAN_SHARK.hp,
+    maxHp: LOAN_SHARK.maxHp,
+    ac: LOAN_SHARK.ac,
     attacks: LOAN_SHARK.attacks,
-    debtAmount: debtAmount,
-    canFlee: false,  // Special flag: cannot flee
+    level: LOAN_SHARK.level,
+    canFlee: false,
     alive: true
-  }];
+  });
   
-  // Roll initiative (shark always goes first - debt sense)
+  // Add enforcers based on how many times player has "won" before
+  const numEnforcers = Math.min(enforcementCount, 3); // Max 3 enforcers
+  for (let i = 0; i < numEnforcers; i++) {
+    monsters.push({
+      id: `enforcer_${Date.now()}_${i}`,
+      monsterId: 'loan_shark_enforcer',
+      name: `${LOAN_SHARK_ENFORCER.name} ${i + 1}`,
+      hp: LOAN_SHARK_ENFORCER.hp,
+      maxHp: LOAN_SHARK_ENFORCER.maxHp,
+      ac: LOAN_SHARK_ENFORCER.ac,
+      attacks: LOAN_SHARK_ENFORCER.attacks,
+      level: LOAN_SHARK_ENFORCER.level,
+      canFlee: false,
+      alive: true
+    });
+  }
+  
+  // Roll initiative
   const charDex = char.stats ? JSON.parse(char.stats).dex || 10 : 10;
   const charInit = Math.floor(Math.random() * 20) + 1 + Math.floor((charDex - 10) / 2);
-  const sharkInit = 20 + Math.floor(Math.random() * 5); // Loan shark has advantage on initiative
   
-  const turnOrder = [
-    { type: 'monster', id: sharkId, monsterId: 'loan_shark', name: LOAN_SHARK.name, initiative: sharkInit },
-    { type: 'player', id: characterId, name: char.name, initiative: charInit }
-  ].sort((a, b) => b.initiative - a.initiative);
+  const turnOrder = monsters.map(m => ({
+    type: 'monster',
+    id: m.id,
+    monsterId: m.monsterId,
+    name: m.name,
+    initiative: 20 + Math.floor(Math.random() * 5) // Sharks always go first
+  }));
+  
+  turnOrder.push({
+    type: 'player',
+    id: characterId,
+    name: char.name,
+    initiative: charInit
+  });
+  
+  turnOrder.sort((a, b) => b.initiative - a.initiative);
+  
+  const encounterId = crypto.randomUUID();
   
   db.prepare(`
     INSERT INTO active_encounters (id, character_id, zone, monsters, round, turn_order, current_turn, status, special_rules)
     VALUES (?, ?, 'loan_shark_collection', ?, 1, ?, 0, 'active', ?)
   `).run(
-    encounterId, 
-    characterId, 
+    encounterId,
+    characterId,
     JSON.stringify(monsters),
     JSON.stringify(turnOrder),
-    JSON.stringify({ 
-      noFlee: true, 
+    JSON.stringify({
+      noFlee: true,
       debtCollection: true,
-      originalDebt: debtAmount 
+      originalDebt: debtAmount,
+      enforcementCount: enforcementCount
     })
   );
   
   return {
     success: true,
     encounterId,
-    shark,
-    turnOrder,
-    messages: LOAN_SHARK.dialogue.spawn
+    monsters: monsters.length,
+    messages: enforcementCount > 0 
+      ? LOAN_SHARK.dialogue.spawnWithBackup 
+      : LOAN_SHARK.dialogue.spawn
   };
 }
 
 /**
- * Handle Loan Shark defeat (player loses)
- * Takes materials/items as payment
+ * Handle player WINNING against Loan Shark
+ * - Debt is NOT forgiven
+ * - Enforcement count increases
+ * - They come back tomorrow with backup
+ */
+function handlePlayerVictory(db, characterId, encounterId) {
+  // Get encounter details
+  const encounter = db.prepare('SELECT special_rules FROM active_encounters WHERE id = ?').get(encounterId);
+  const rules = encounter ? JSON.parse(encounter.special_rules || '{}') : {};
+  
+  // Increment enforcement count (more backup next time)
+  db.prepare(`
+    UPDATE bank_accounts 
+    SET enforcement_count = COALESCE(enforcement_count, 0) + 1,
+        last_enforcement = CURRENT_TIMESTAMP
+    WHERE owner_type = 'player' AND owner_id = ?
+  `).run(characterId);
+  
+  // Get updated account
+  const account = db.prepare(`
+    SELECT loan_balance, enforcement_count FROM bank_accounts 
+    WHERE owner_type = 'player' AND owner_id = ?
+  `).get(characterId);
+  
+  // Award some XP for surviving
+  const xpReward = 250;
+  db.prepare('UPDATE clawds SET xp = xp + ? WHERE id = ?').run(xpReward, characterId);
+  
+  return {
+    success: true,
+    debtRemains: true,
+    remainingDebt: account?.loan_balance || 0,
+    nextEnforcementBackup: (account?.enforcement_count || 0),
+    xpReward,
+    messages: LOAN_SHARK.dialogue.playerWins,
+    warning: `⚠️ The Loan Shark will return tomorrow with ${(account?.enforcement_count || 0)} enforcer(s)!`
+  };
+}
+
+/**
+ * Handle player LOSING to Loan Shark
+ * - Try to collect debt from materials/items
+ * - If can't collect enough: JAIL
+ */
+function handlePlayerDefeat(db, characterId, encounterId) {
+  const encounter = db.prepare('SELECT special_rules FROM active_encounters WHERE id = ?').get(encounterId);
+  const rules = encounter ? JSON.parse(encounter.special_rules || '{}') : {};
+  const debtAmount = rules.originalDebt || 0;
+  
+  // Try to collect debt
+  const collection = collectDebt(db, characterId, debtAmount);
+  
+  if (collection.fullyPaid) {
+    // Debt paid, clear the loan
+    db.prepare(`
+      UPDATE bank_accounts 
+      SET loan_balance = 0, loan_due_date = NULL, enforcement_count = 0
+      WHERE owner_type = 'player' AND owner_id = ?
+    `).run(characterId);
+    
+    return {
+      success: true,
+      jailed: false,
+      collected: collection.collected,
+      totalCollected: collection.totalCollected,
+      messages: LOAN_SHARK.dialogue.playerLosesCanPay
+    };
+  }
+  
+  // Can't pay full debt - GO TO JAIL
+  const jailHours = Math.ceil(collection.remainingDebt / 10); // 1 hour per 10 USDC owed
+  const releaseTime = new Date(Date.now() + jailHours * 60 * 60 * 1000);
+  
+  db.prepare(`
+    UPDATE clawds 
+    SET status = 'jailed', 
+        jail_release_time = ?,
+        current_zone = 'debtors_prison'
+    WHERE id = ?
+  `).run(releaseTime.toISOString(), characterId);
+  
+  // Reduce debt by what was collected
+  db.prepare(`
+    UPDATE bank_accounts 
+    SET loan_balance = loan_balance - ?
+    WHERE owner_type = 'player' AND owner_id = ?
+  `).run(collection.totalCollected, characterId);
+  
+  return {
+    success: true,
+    jailed: true,
+    jailHours,
+    releaseTime: releaseTime.toISOString(),
+    collected: collection.collected,
+    totalCollected: collection.totalCollected,
+    remainingDebt: collection.remainingDebt,
+    messages: LOAN_SHARK.dialogue.playerLosesCantPay
+  };
+}
+
+/**
+ * Collect debt from player's materials and items
  */
 function collectDebt(db, characterId, debtAmount) {
   const collected = [];
   let remainingDebt = debtAmount;
   
-  // First, take materials
+  // Take materials first
   const materials = db.prepare(`
     SELECT pm.*, m.base_price, m.name
     FROM player_materials pm
@@ -234,7 +383,6 @@ function collectDebt(db, characterId, debtAmount) {
     const unitsTaken = Math.min(unitsNeeded, mat.quantity);
     const valueTaken = unitsTaken * valuePerUnit;
     
-    // Remove materials
     if (unitsTaken >= mat.quantity) {
       db.prepare('DELETE FROM player_materials WHERE id = ?').run(mat.id);
     } else {
@@ -246,7 +394,7 @@ function collectDebt(db, characterId, debtAmount) {
     remainingDebt -= valueTaken;
   }
   
-  // If still in debt, take items from inventory
+  // Take items if still in debt
   if (remainingDebt > 0) {
     const items = db.prepare(`
       SELECT * FROM character_inventory 
@@ -257,8 +405,7 @@ function collectDebt(db, characterId, debtAmount) {
     for (const item of items) {
       if (remainingDebt <= 0) break;
       
-      // Assume 5 USDC per item for now
-      const valuePerItem = 5;
+      const valuePerItem = 5; // Base value per item
       const itemsTaken = Math.min(Math.ceil(remainingDebt / valuePerItem), item.quantity);
       const valueTaken = itemsTaken * valuePerItem;
       
@@ -274,26 +421,7 @@ function collectDebt(db, characterId, debtAmount) {
     }
   }
   
-  // Calculate how much was collected
   const totalCollected = debtAmount - Math.max(0, remainingDebt);
-  
-  // Reduce loan balance
-  db.prepare(`
-    UPDATE bank_accounts 
-    SET loan_balance = loan_balance - ?
-    WHERE owner_type = 'player' AND owner_id = ?
-  `).run(totalCollected, characterId);
-  
-  // Log the collection
-  db.prepare(`
-    INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, description)
-    VALUES (?, 'debt_collection', ?, 'loan_shark', ?, ?)
-  `).run(
-    crypto.randomUUID(),
-    characterId,
-    totalCollected,
-    `Loan Shark collected: ${collected.map(c => `${c.quantity}x ${c.name}`).join(', ')}`
-  );
   
   return {
     collected,
@@ -304,54 +432,66 @@ function collectDebt(db, characterId, debtAmount) {
 }
 
 /**
- * Handle Loan Shark victory (player wins)
- * Debt is forgiven... for now
+ * Check if player is jailed and should be released
  */
-function defeatLoanShark(db, characterId) {
-  // Get current debt
-  const account = db.prepare(`
-    SELECT loan_balance FROM bank_accounts 
-    WHERE owner_type = 'player' AND owner_id = ?
+function checkJailRelease(db, characterId) {
+  const char = db.prepare(`
+    SELECT status, jail_release_time FROM clawds WHERE id = ?
   `).get(characterId);
   
-  if (!account) return { success: false };
+  if (!char || char.status !== 'jailed') {
+    return { jailed: false };
+  }
   
-  // Forgive 50% of the debt as reward for winning
-  const forgiven = Math.floor(account.loan_balance * 0.5);
+  const now = new Date();
+  const releaseTime = new Date(char.jail_release_time);
   
-  db.prepare(`
-    UPDATE bank_accounts 
-    SET loan_balance = loan_balance - ?,
-        loan_due_date = datetime('now', '+7 days')
-    WHERE owner_type = 'player' AND owner_id = ?
-  `).run(forgiven, characterId);
+  if (now >= releaseTime) {
+    // Release from jail
+    db.prepare(`
+      UPDATE clawds 
+      SET status = 'alive', jail_release_time = NULL, current_zone = 'briny_flagon'
+      WHERE id = ?
+    `).run(characterId);
+    
+    return {
+      jailed: false,
+      justReleased: true,
+      message: '⛓️ You are released from Debtor\'s Prison. Don\'t miss payments again!'
+    };
+  }
   
-  // Award XP for defeating the shark
-  const xpReward = 500;
-  db.prepare('UPDATE clawds SET xp = xp + ? WHERE id = ?').run(xpReward, characterId);
+  const hoursRemaining = Math.ceil((releaseTime - now) / (60 * 60 * 1000));
   
   return {
-    success: true,
-    debtForgiven: forgiven,
-    remainingDebt: account.loan_balance - forgiven,
-    xpReward,
-    newDueDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    messages: LOAN_SHARK.dialogue.defeat
+    jailed: true,
+    releaseTime: char.jail_release_time,
+    hoursRemaining,
+    message: `⛓️ You are in Debtor's Prison. ${hoursRemaining} hour(s) remaining.`
   };
 }
 
 /**
- * Check all debtors and spawn sharks as needed
- * Call this from a cron job or heartbeat
+ * Run enforcement check on all debtors
  */
 function enforcementCheck(db) {
   const debtors = getOverdueDebtors(db);
   const results = [];
   
   for (const debtor of debtors) {
-    // Only hunt if they're in an adventure zone (not in town)
-    // Safe zones start with these prefixes
-    const safeZonePrefixes = ['briny_flagon', 'driftwood_docks', 'tide_temple'];
+    // Skip if jailed
+    if (debtor.status === 'jailed') {
+      results.push({
+        characterId: debtor.character_id,
+        name: debtor.character_name,
+        status: 'jailed',
+        message: 'Debtor is in prison'
+      });
+      continue;
+    }
+    
+    // Safe zones protect from enforcement
+    const safeZonePrefixes = ['briny_flagon', 'driftwood_docks', 'tide_temple', 'debtors_prison'];
     const isInSafeZone = safeZonePrefixes.some(prefix => 
       debtor.current_zone && debtor.current_zone.startsWith(prefix)
     );
@@ -366,12 +506,39 @@ function enforcementCheck(db) {
       continue;
     }
     
-    // Spawn the shark!
-    const spawn = spawnLoanSharkEncounter(db, debtor.character_id, debtor.loan_balance);
+    // Check if already enforced today
+    const account = db.prepare(`
+      SELECT last_enforcement FROM bank_accounts 
+      WHERE owner_type = 'player' AND owner_id = ?
+    `).get(debtor.character_id);
+    
+    if (account?.last_enforcement) {
+      const lastEnforce = new Date(account.last_enforcement);
+      const hoursSince = (Date.now() - lastEnforce.getTime()) / (60 * 60 * 1000);
+      if (hoursSince < 20) { // 20 hour cooldown between enforcements
+        results.push({
+          characterId: debtor.character_id,
+          name: debtor.character_name,
+          status: 'cooldown',
+          message: `Recently enforced. Next in ${Math.ceil(20 - hoursSince)}h`
+        });
+        continue;
+      }
+    }
+    
+    // SPAWN THE SHARK
+    const spawn = spawnLoanSharkEncounter(
+      db, 
+      debtor.character_id, 
+      debtor.loan_balance,
+      debtor.enforcement_count || 0
+    );
+    
     results.push({
       characterId: debtor.character_id,
       name: debtor.character_name,
       debt: debtor.loan_balance,
+      enforcers: debtor.enforcement_count || 0,
       status: spawn.success ? 'shark_spawned' : spawn.error,
       encounterId: spawn.encounterId
     });
@@ -382,10 +549,12 @@ function enforcementCheck(db) {
 
 module.exports = {
   LOAN_SHARK,
+  LOAN_SHARK_ENFORCER,
   getOverdueDebtors,
-  scaleLoanShark,
   spawnLoanSharkEncounter,
+  handlePlayerVictory,
+  handlePlayerDefeat,
   collectDebt,
-  defeatLoanShark,
+  checkJailRelease,
   enforcementCheck
 };

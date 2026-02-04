@@ -1089,6 +1089,280 @@ function createEconomyRoutes(db, authenticateAgent) {
     }
   });
   
+  // ============================================================================
+  // AUCTION HOUSE 🏛️
+  // ============================================================================
+  
+  const auction = require('./auction');
+  
+  /**
+   * GET /api/economy/auctions - List active auctions
+   */
+  router.get('/auctions', (req, res) => {
+    try {
+      const filters = {
+        itemType: req.query.type,
+        itemId: req.query.item,
+        limit: parseInt(req.query.limit) || 50
+      };
+      
+      const auctions = auction.getActiveAuctions(db, filters);
+      res.json({ success: true, auctions });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to get auctions' });
+    }
+  });
+  
+  /**
+   * GET /api/economy/auctions/:id - Get auction details
+   */
+  router.get('/auctions/:id', (req, res) => {
+    try {
+      const auc = auction.getAuction(db, req.params.id);
+      if (!auc) {
+        return res.status(404).json({ success: false, error: 'Auction not found' });
+      }
+      res.json({ success: true, auction: auc });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to get auction' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/auctions - Create an auction
+   */
+  router.post('/auctions', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const result = auction.createAuction(db, char.id, req.body);
+      res.json(result);
+    } catch (err) {
+      console.error('Create auction error:', err);
+      res.status(500).json({ success: false, error: 'Failed to create auction' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/auctions/:id/bid - Place a bid
+   */
+  router.post('/auctions/:id/bid', authenticateAgent, async (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const { amount } = req.body;
+      if (!amount) {
+        return res.status(400).json({ success: false, error: 'Bid amount required' });
+      }
+      
+      const result = await auction.placeBid(db, char.id, req.params.id, amount);
+      res.json(result);
+    } catch (err) {
+      console.error('Bid error:', err);
+      res.status(500).json({ success: false, error: 'Failed to place bid' });
+    }
+  });
+  
+  /**
+   * POST /api/economy/auctions/:id/buyout - Buyout an auction
+   */
+  router.post('/auctions/:id/buyout', authenticateAgent, async (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const result = await auction.buyout(db, char.id, req.params.id);
+      res.json(result);
+    } catch (err) {
+      console.error('Buyout error:', err);
+      res.status(500).json({ success: false, error: 'Failed to buyout' });
+    }
+  });
+  
+  /**
+   * DELETE /api/economy/auctions/:id - Cancel an auction
+   */
+  router.delete('/auctions/:id', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const result = auction.cancelAuction(db, char.id, req.params.id);
+      res.json(result);
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to cancel auction' });
+    }
+  });
+  
+  /**
+   * GET /api/economy/auctions/my/listings - Get my auction listings
+   */
+  router.get('/auctions/my/listings', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const auctions = auction.getMyAuctions(db, char.id);
+      res.json({ success: true, auctions });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to get my auctions' });
+    }
+  });
+  
+  /**
+   * GET /api/economy/auctions/my/bids - Get my bids
+   */
+  router.get('/auctions/my/bids', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const bids = auction.getMyBids(db, char.id);
+      res.json({ success: true, bids });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to get my bids' });
+    }
+  });
+  
+  // ============================================================================
+  // ECONOMY DASHBOARD 📊
+  // ============================================================================
+  
+  /**
+   * GET /api/economy/dashboard - Economy overview
+   */
+  router.get('/dashboard', (req, res) => {
+    try {
+      // Total USDC in system (approximation based on transactions)
+      const transactionStats = db.prepare(`
+        SELECT 
+          COUNT(*) as total_transactions,
+          SUM(CASE WHEN type = 'sale' THEN amount ELSE 0 END) as total_sales,
+          SUM(CASE WHEN type = 'job_pay' THEN amount ELSE 0 END) as total_wages,
+          SUM(CASE WHEN type = 'loan' THEN amount ELSE 0 END) as total_loans
+        FROM economy_transactions
+      `).get();
+      
+      // Active loans
+      const loanStats = db.prepare(`
+        SELECT 
+          COUNT(*) as active_loans,
+          SUM(loan_balance) as total_debt,
+          SUM(CASE WHEN loan_due_date < datetime('now') THEN 1 ELSE 0 END) as overdue_loans
+        FROM bank_accounts
+        WHERE loan_balance > 0
+      `).get();
+      
+      // Material supply
+      const materialSupply = db.prepare(`
+        SELECT m.id, m.name, m.base_price, m.rarity,
+          COALESCE(SUM(pm.quantity), 0) as player_supply,
+          COALESCE(nm.npc_supply, 0) as npc_supply
+        FROM materials m
+        LEFT JOIN player_materials pm ON m.id = pm.material_id
+        LEFT JOIN (
+          SELECT material_id, SUM(quantity) as npc_supply 
+          FROM npc_materials GROUP BY material_id
+        ) nm ON m.id = nm.material_id
+        GROUP BY m.id
+        ORDER BY m.base_price DESC
+      `).all();
+      
+      // Active auctions
+      const auctionStats = db.prepare(`
+        SELECT 
+          COUNT(*) as active_auctions,
+          SUM(current_bid) as total_bid_value
+        FROM auctions
+        WHERE status = 'active'
+      `).get();
+      
+      // Player count
+      const playerStats = db.prepare(`
+        SELECT 
+          COUNT(*) as total_players,
+          SUM(CASE WHEN status = 'jailed' THEN 1 ELSE 0 END) as jailed_players
+        FROM clawds
+      `).get();
+      
+      // Recent transactions
+      const recentTx = db.prepare(`
+        SELECT type, amount, description, created_at
+        FROM economy_transactions
+        ORDER BY created_at DESC
+        LIMIT 10
+      `).all();
+      
+      res.json({
+        success: true,
+        dashboard: {
+          economy: {
+            totalTransactions: transactionStats.total_transactions,
+            totalSales: transactionStats.total_sales || 0,
+            totalWages: transactionStats.total_wages || 0,
+            totalLoans: transactionStats.total_loans || 0
+          },
+          loans: {
+            activeLoans: loanStats.active_loans || 0,
+            totalDebt: loanStats.total_debt || 0,
+            overdueLoans: loanStats.overdue_loans || 0
+          },
+          supply: materialSupply.map(m => ({
+            material: m.name,
+            rarity: m.rarity,
+            basePrice: m.base_price,
+            playerSupply: m.player_supply,
+            npcSupply: m.npc_supply,
+            totalSupply: m.player_supply + m.npc_supply
+          })),
+          auctions: {
+            active: auctionStats.active_auctions || 0,
+            totalValue: auctionStats.total_bid_value || 0
+          },
+          players: {
+            total: playerStats.total_players || 0,
+            jailed: playerStats.jailed_players || 0
+          },
+          recentTransactions: recentTx
+        }
+      });
+    } catch (err) {
+      console.error('Dashboard error:', err);
+      res.status(500).json({ success: false, error: 'Failed to get dashboard' });
+    }
+  });
+  
+  /**
+   * GET /api/economy/jail/status - Check jail status
+   */
+  router.get('/jail/status', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const jailStatus = loanShark.checkJailRelease(db, char.id);
+      res.json({ success: true, ...jailStatus });
+    } catch (err) {
+      res.status(500).json({ success: false, error: 'Failed to check jail status' });
+    }
+  });
+  
   return router;
 }
 
