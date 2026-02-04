@@ -8,8 +8,8 @@ COPY package*.json ./
 # Install dependencies
 RUN npm ci --only=production
 
-# Force fresh copy with cache bust
-ARG CACHEBUST=1
+# Force cache bust via echo
+RUN echo "bust-1707012345"
 COPY src ./src
 COPY public ./public
 
