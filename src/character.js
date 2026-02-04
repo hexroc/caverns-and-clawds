@@ -1450,6 +1450,28 @@ class CharacterManager {
     
     return { success: true, currency, previousAmount: char[column], newAmount };
   }
+  
+  /**
+   * Teleport character to hub (The Briny Flagon)
+   * Used by recall command
+   */
+  recallToHub(characterId) {
+    const now = Date.now();
+    
+    try {
+      // Update current_zone (which maps to location in the API response)
+      this.db.prepare(`
+        UPDATE clawds 
+        SET current_zone = 'briny_flagon', last_recall = ?, updated_at = CURRENT_TIMESTAMP 
+        WHERE id = ?
+      `).run(now, characterId);
+      
+      return { success: true };
+    } catch (err) {
+      console.error('recallToHub error:', err);
+      return { success: false, error: 'Failed to recall' };
+    }
+  }
 }
 
 // ============================================================================

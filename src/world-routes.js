@@ -107,12 +107,8 @@ function createWorldRoutes(db, authenticateAgent) {
       const now = Date.now();
       const cooldownMs = 10 * 60 * 1000; // 10 minutes
       
-      // Get or create recall tracking
-      const recallData = db.prepare(
-        'SELECT last_recall FROM clawds WHERE id = ?'
-      ).get(char.id);
-      
-      const lastRecall = recallData?.last_recall || 0;
+      // Get recall data using CharacterManager's db connection
+      const lastRecall = char.last_recall || 0;
       const timeSince = now - lastRecall;
       
       if (timeSince < cooldownMs) {
@@ -133,9 +129,12 @@ function createWorldRoutes(db, authenticateAgent) {
         });
       }
       
-      // Teleport to hub
-      db.prepare('UPDATE clawds SET location = ?, last_recall = ? WHERE id = ?')
-        .run('briny_flagon', now, char.id);
+      // Teleport to hub using character manager
+      const result = characters.recallToHub(char.id);
+      
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
       
       res.json({
         success: true,
