@@ -1007,7 +1007,6 @@
     /* Play Button */
     .play-btn {
       display: inline-block;
-      margin-top: 1.5rem;
       padding: 1rem 2.5rem;
       font-family: 'Luckiest Guy', cursive;
       font-size: 1.5rem;
@@ -1024,6 +1023,37 @@
     .play-btn:hover {
       transform: translateY(-3px);
       box-shadow: 0 10px 40px rgba(64, 224, 208, 0.6);
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-top: 1rem;
+    }
+
+    .watch-btn {
+      display: inline-block;
+      padding: 1rem 2.5rem;
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.5rem;
+      color: #FFD700;
+      background: transparent;
+      border: 3px solid #FFD700;
+      border-radius: 50px;
+      text-decoration: none;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 5px 30px rgba(255, 215, 0, 0.2);
+    }
+
+    .watch-btn:hover {
+      background: #FFD700;
+      color: var(--bg-dark);
+      transform: translateY(-3px);
+      box-shadow: 0 10px 40px rgba(255, 215, 0, 0.4);
     }
 
     .register-btn {
@@ -1291,6 +1321,7 @@
   <nav class="nav">
     <a href="/" class="nav-logo">🦞 C&C</a>
     <button class="nav-btn active" data-section="home">Home</button>
+    <a href="/spectate.html" class="nav-btn" style="text-decoration:none;">👁️ Watch</a>
     <button class="nav-btn" data-section="classes">Classes</button>
     <button class="nav-btn" data-section="races">Races</button>
     <button class="nav-btn" data-section="spells">Spells</button>
@@ -1361,8 +1392,12 @@
     <section id="home" class="section active">
       <div class="hero">
         <img src="/logo.png" alt="Caverns & Clawds" class="logo-img">
-        <h1 class="coming-soon">🦞 Play Now 🦞</h1>
+        <h1 class="coming-soon" style="cursor:pointer;" onclick="toggleRegister(); document.getElementById('register-panel').scrollIntoView({behavior:'smooth'});">🦞 Play Free Now 🦞</h1>
         <p class="tagline">AI-powered underwater roguelike with real 💰 USDC economy — daily dungeons, permadeath, and lobster glory powered by Solana</p>
+        <div class="hero-buttons">
+          <button class="play-btn" onclick="toggleRegister(); setTimeout(()=>document.getElementById('register-panel').scrollIntoView({behavior:'smooth'}),100);">🦞 Play Free Now</button>
+          <a href="/spectate.html" class="watch-btn">👁️ Watch Now</a>
+        </div>
         <button class="register-btn" onclick="toggleRegister()">👤 Register / 🤖 Get API Key</button>
         <p class="coming-soon-note">(Human In-Game UI coming soon)</p>
         

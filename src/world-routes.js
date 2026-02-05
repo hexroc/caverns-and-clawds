@@ -401,38 +401,84 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         return res.status(404).json({ success: false, error: 'No character found' });
       }
       
-      // Can only rest at certain locations
-      const restLocations = ['briny_flagon', 'tide_temple'];
-      if (!restLocations.includes(char.location)) {
+      // Can only rest at certain locations — each with different pricing
+      const restOptions = {
+        briny_flagon: { 
+          cost: 0.005, 
+          name: 'The Briny Flagon',
+          flavor: 'You settle into a worn booth with a mug of seaweed ale. The warmth of the tavern seeps into your shell as you rest.',
+          healPercent: 1.0 // Full heal
+        },
+        tide_temple: { 
+          cost: 0.002, 
+          name: 'Tide Temple',
+          flavor: 'Priestess Marina offers a blessing as you rest in the temple\'s healing waters.',
+          healPercent: 1.0 // Full heal (sacred waters)
+        }
+      };
+
+      const restOption = restOptions[char.location];
+      if (!restOption) {
         return res.status(400).json({ 
           success: false, 
           error: 'You can only rest at the tavern or temple',
-          hint: 'Go to The Briny Flagon or Tide Temple'
+          hint: 'Go to The Briny Flagon (0.005 USDC) or Tide Temple (0.002 USDC)',
+          restLocations: Object.entries(restOptions).map(([id, o]) => ({ id, name: o.name, cost: o.cost }))
         });
       }
       
       const previousHP = char.hp_current;
       const maxHP = char.hp_max;
+      const healAmount = Math.floor((maxHP - previousHP) * restOption.healPercent);
       
-      // Full heal at rest
-      const healAmount = maxHP - previousHP;
+      // Already full HP?
+      if (healAmount <= 0) {
+        return res.json({
+          success: true,
+          message: 'You\'re already at full health! No need to rest.',
+          previousHP, currentHP: previousHP, maxHP,
+          cost: 0, location: restOption.name
+        });
+      }
+
+      // Check and deduct USDC
+      const balance = char.usdc_balance || 0;
+      if (balance < restOption.cost) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Not enough USDC. Resting here costs ${restOption.cost} USDC.`,
+          cost: restOption.cost,
+          balance: parseFloat(balance.toFixed(4))
+        });
+      }
+
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+        .run(restOption.cost, char.id);
+      
+      // Heal
       if (healAmount > 0) {
         characters.updateHP(char.id, healAmount);
       }
       
-      const location = LOCATIONS[char.location];
-      const flavor = char.location === 'briny_flagon' 
-        ? 'You settle into a worn booth with a mug of seaweed ale. The warmth of the tavern seeps into your shell as you rest.'
-        : 'Priestess Marina offers a blessing as you rest in the temple\'s healing waters.';
-      
+      // Track activity
+      if (activityTracker) {
+        activityTracker.track(char.name || char.id, 'rest', {
+          location: restOption.name,
+          healed: healAmount,
+          cost: restOption.cost
+        });
+      }
+
       res.json({
         success: true,
-        message: `You rest and recover. HP restored to full.`,
-        flavor,
+        message: `You rest and recover. HP restored to full. Cost: ${restOption.cost} USDC`,
+        flavor: restOption.flavor,
         previousHP,
-        currentHP: maxHP,
+        currentHP: previousHP + healAmount,
         maxHP,
-        location: location.name
+        cost: restOption.cost,
+        newBalance: parseFloat((balance - restOption.cost).toFixed(4)),
+        location: restOption.name
       });
     } catch (err) {
       console.error('Rest error:', err);
