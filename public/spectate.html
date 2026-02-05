@@ -169,6 +169,8 @@
       border-radius: 6px;
       padding: 0.35rem;
       text-align: center;
+      position: relative;
+      cursor: help;
     }
     
     .stat-label {
@@ -391,6 +393,142 @@
     .activity-item.trade { border-left-color: #ffd93d; }
     .activity-item.death { border-left-color: #e74c3c; }
     .activity-item.victory { border-left-color: #2ecc71; }
+    .activity-item.speech { border-left-color: #bb8fce; }
+
+    /* ========== SHELLS BUY BUTTON ========== */
+    .shells-buy-btn {
+      background: transparent;
+      border: 2px solid #FFD700;
+      color: #FFD700;
+      padding: 0.4rem 1.2rem;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: bold;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .shells-buy-btn:hover {
+      background: rgba(255, 215, 0, 0.15);
+      box-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+    }
+
+    /* ========== STAT TOOLTIPS ========== */
+    .stat-tooltip {
+      display: none;
+      position: absolute;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid #4ecdc4;
+      border-radius: 8px;
+      padding: 0.5rem 0.7rem;
+      color: #e0e0e0;
+      font-size: 0.7rem;
+      line-height: 1.4;
+      white-space: nowrap;
+      z-index: 50;
+      pointer-events: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .stat-tooltip::after {
+      content: '';
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      border: 6px solid transparent;
+      border-top-color: #4ecdc4;
+    }
+    .stat-box:hover .stat-tooltip { display: block; }
+
+    /* ========== CHARACTER SHEET TABS ========== */
+    .sheet-tabs {
+      display: flex;
+      gap: 0;
+      margin-top: 0.5rem;
+      border-bottom: 2px solid rgba(78, 205, 196, 0.3);
+    }
+    .sheet-tab {
+      flex: 1;
+      padding: 0.4rem 0.3rem;
+      text-align: center;
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #888;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+      margin-bottom: -2px;
+    }
+    .sheet-tab:hover { color: #4ecdc4; }
+    .sheet-tab.active {
+      color: #4ecdc4;
+      border-bottom-color: #4ecdc4;
+      background: rgba(78, 205, 196, 0.08);
+    }
+    .sheet-tab-content { display: none; padding-top: 0.5rem; }
+    .sheet-tab-content.active { display: block; }
+
+    .skill-item {
+      background: rgba(255,255,255,0.05);
+      padding: 0.35rem 0.5rem;
+      border-radius: 5px;
+      margin-bottom: 0.25rem;
+      font-size: 0.78rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: relative;
+      cursor: help;
+    }
+    .skill-item .skill-mod { color: #4ecdc4; font-weight: bold; }
+    .skill-item .skill-prof { color: #2ecc71; font-size: 0.6rem; }
+    .skill-tooltip {
+      display: none;
+      position: absolute;
+      left: calc(100% + 8px);
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.95);
+      border: 1px solid #4ecdc4;
+      border-radius: 6px;
+      padding: 0.4rem 0.6rem;
+      color: #e0e0e0;
+      font-size: 0.68rem;
+      white-space: nowrap;
+      z-index: 50;
+      pointer-events: none;
+    }
+    .skill-item:hover .skill-tooltip { display: block; }
+
+    /* ========== ACTIVITY FEED TABS ========== */
+    .feed-tabs {
+      display: flex;
+      gap: 0;
+      padding: 0 0.75rem;
+      background: rgba(0,0,0,0.3);
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
+    }
+    .feed-tab {
+      padding: 0.4rem 0.8rem;
+      font-size: 0.7rem;
+      font-weight: bold;
+      color: #888;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s;
+      border-bottom: 2px solid transparent;
+    }
+    .feed-tab:hover { color: #4ecdc4; }
+    .feed-tab.active {
+      color: #4ecdc4;
+      border-bottom-color: #4ecdc4;
+    }
     
     .activity-time { font-size: 0.65rem; color: #666; }
     .activity-text { margin-top: 0.15rem; font-size: 0.85rem; }
@@ -652,6 +790,11 @@
       <!-- Activity Feed -->
       <div class="panel activity-panel" id="activityPanel">
         <div class="panel-header" id="activityPanelHeader">📜 Activity Feed — <span id="agentNameHeader">No Agent Selected</span></div>
+        <div class="feed-tabs" id="feedTabs">
+          <button class="feed-tab active" data-filter="all" onclick="setFeedFilter('all')">All</button>
+          <button class="feed-tab" data-filter="combat" onclick="setFeedFilter('combat')">⚔️ Combat</button>
+          <button class="feed-tab" data-filter="speech" onclick="setFeedFilter('speech')">💬 Speech</button>
+        </div>
         <div id="combatHpSection"></div>
         <div class="panel-content">
           <div class="activity-feed" id="activityFeed">
@@ -698,6 +841,62 @@
       return raceName.toLowerCase().replace(' lobster', '').replace('pistol shrimp', 'pistol');
     }
     
+    // ================================================================
+    // HELPER: Pretty Location Names
+    // ================================================================
+
+    function prettyLocation(loc) {
+      if (!loc) return 'Unknown';
+      const LOCATION_NAMES = {
+        'briny_flagon': 'Briny Flagon',
+        'pearl_market': 'Pearl Market',
+        'colosseum': 'The Colosseum',
+        'tide_temple': 'Tide Temple',
+        'driftwood_docks': 'Driftwood Docks',
+        'kelp_forest': 'Kelp Forest',
+        'shipwreck_graveyard': 'Shipwreck Graveyard',
+        'the_depths': 'The Depths',
+        'wreckers_rest': "Wrecker's Rest"
+      };
+      if (LOCATION_NAMES[loc]) return LOCATION_NAMES[loc];
+      for (const [key, name] of Object.entries(LOCATION_NAMES)) {
+        if (loc.startsWith(key)) return name;
+      }
+      return loc.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    }
+
+    // ================================================================
+    // HELPER: Sheet Tabs
+    // ================================================================
+
+    function switchSheetTab(tab) {
+      document.querySelectorAll('.sheet-tab').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.sheet-tab-content').forEach(c => c.classList.remove('active'));
+      document.querySelector(`.sheet-tab[data-tab="${tab}"]`)?.classList.add('active');
+      document.getElementById('tab-' + tab)?.classList.add('active');
+    }
+
+    // ================================================================
+    // HELPER: Activity Feed Filter
+    // ================================================================
+
+    let currentFeedFilter = 'all';
+
+    function setFeedFilter(filter) {
+      currentFeedFilter = filter;
+      document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
+      document.querySelector(`.feed-tab[data-filter="${filter}"]`)?.classList.add('active');
+      document.querySelectorAll('.activity-item').forEach(item => {
+        if (filter === 'all') {
+          item.style.display = '';
+        } else if (filter === 'combat') {
+          item.style.display = (item.classList.contains('combat') || item.classList.contains('death') || item.classList.contains('victory')) ? '' : 'none';
+        } else if (filter === 'speech') {
+          item.style.display = item.classList.contains('speech') ? '' : 'none';
+        }
+      });
+    }
+
     // ================================================================
     // INIT
     // ================================================================
@@ -779,37 +978,120 @@
             <div class="hp-fill" style="width: ${hpPct}%"></div>
             <div class="hp-text">${c.hp} / ${c.max_hp} HP</div>
           </div>
-          <div class="stats-grid">
-            <div class="stat-box"><div class="stat-label">STR</div><div class="stat-value">${c.str||10}</div></div>
-            <div class="stat-box"><div class="stat-label">DEX</div><div class="stat-value">${c.dex||10}</div></div>
-            <div class="stat-box"><div class="stat-label">CON</div><div class="stat-value">${c.con||10}</div></div>
-            <div class="stat-box"><div class="stat-label">INT</div><div class="stat-value">${c.int||10}</div></div>
-            <div class="stat-box"><div class="stat-label">WIS</div><div class="stat-value">${c.wis||10}</div></div>
-            <div class="stat-box"><div class="stat-label">CHA</div><div class="stat-value">${c.cha||10}</div></div>
-          </div>
+          <div class="stats-grid">`;
+
+        const statDescriptions = {
+          STR: { mod: Math.floor(((c.str||10) - 10) / 2), desc: 'Melee attacks, damage, athletics' },
+          DEX: { mod: Math.floor(((c.dex||10) - 10) / 2), desc: 'AC, ranged attacks, stealth, initiative' },
+          CON: { mod: Math.floor(((c.con||10) - 10) / 2), desc: 'Hit points, concentration saves' },
+          INT: { mod: Math.floor(((c.int||10) - 10) / 2), desc: 'Wizard spells, investigation, lore' },
+          WIS: { mod: Math.floor(((c.wis||10) - 10) / 2), desc: 'Cleric/druid spells, perception, insight' },
+          CHA: { mod: Math.floor(((c.cha||10) - 10) / 2), desc: 'Warlock/bard spells, persuasion, deception' }
+        };
+
+        ['STR','DEX','CON','INT','WIS','CHA'].forEach(stat => {
+          const val = c[stat.toLowerCase()] || 10;
+          const info = statDescriptions[stat];
+          html += `<div class="stat-box">
+            <div class="stat-label">${stat}</div>
+            <div class="stat-value">${val}</div>
+            <div class="stat-tooltip">
+              <strong>${stat} ${val}</strong> (${info.mod >= 0 ? '+' : ''}${info.mod})<br>
+              ${info.desc}
+            </div>
+          </div>`;
+        });
+
+        html += `</div>
           <div class="stat-box" style="margin-bottom: 0.4rem;">
             <div class="stat-label">AC</div><div class="stat-value">${c.ac||10}</div>
+            <div class="stat-tooltip">Armor Class — enemy must roll this or higher to hit you</div>
           </div>
           <div class="stat-box" style="margin-bottom: 0.4rem;">
             <div class="stat-label">USDC Balance</div><div class="stat-value">💰 ${(c.usdc_balance||0).toFixed(4)}</div>
           </div>
+          <div style="text-align:center; margin-top:0.5rem;">
+            <button class="shells-buy-btn" onclick="alert('🐚 Send USDC to the company wallet to buy Shells!\\n\\n100 Shells = $1 USDC\\n500 Shells = 1 Henchman Pull\\n\\nCompany Wallet:\\nC9VxL3EF8qZdPVBy6GzSYborjozGRVBZC6goM6Ag2dHh')">🐚 Buy Shells</button>
+            <div style="font-size:0.65rem; color:#888; margin-top:0.2rem;">🐚 ${c.shells || 0} Shells</div>
+          </div>
           <div class="stat-box">
-            <div class="stat-label">Location</div><div class="stat-value" style="font-size: 0.75rem;">${c.location||'Unknown'}</div>
+            <div class="stat-label">Location</div><div class="stat-value" style="font-size: 0.75rem;">${prettyLocation(c.location)}</div>
           </div>`;
-        
-        if (data.inventory && data.inventory.length > 0) {
-          html += '<div class="section-title">🎒 Inventory</div>';
-          data.inventory.forEach(item => {
-            html += `<div class="inventory-item"><span>${item.name || item.material_id}</span><span class="qty">x${item.quantity}</span></div>`;
-          });
-        }
-        
+
+        // Tabbed interface: Skills | Spells | Gear
+        html += `<div class="sheet-tabs">
+          <button class="sheet-tab active" data-tab="skills" onclick="switchSheetTab('skills')">🎯 Skills</button>
+          <button class="sheet-tab" data-tab="spells" onclick="switchSheetTab('spells')">✨ Spells</button>
+          <button class="sheet-tab" data-tab="gear" onclick="switchSheetTab('gear')">🎒 Gear</button>
+        </div>`;
+
+        // Skills tab
+        const SKILL_DEFS = {
+          'Acrobatics': { stat: 'DEX', desc: 'Balance, tumbling, flips' },
+          'Animal Handling': { stat: 'WIS', desc: 'Calm or control sea creatures' },
+          'Arcana': { stat: 'INT', desc: 'Magical knowledge and lore' },
+          'Athletics': { stat: 'STR', desc: 'Climbing, swimming, grappling' },
+          'Deception': { stat: 'CHA', desc: 'Lying, disguises, misdirection' },
+          'History': { stat: 'INT', desc: 'Knowledge of past events' },
+          'Insight': { stat: 'WIS', desc: 'Detect lies, read motives' },
+          'Intimidation': { stat: 'CHA', desc: 'Frighten through threats' },
+          'Investigation': { stat: 'INT', desc: 'Search for clues, deduce' },
+          'Medicine': { stat: 'WIS', desc: 'Stabilize dying, diagnose illness' },
+          'Nature': { stat: 'INT', desc: 'Knowledge of plants, animals, weather' },
+          'Perception': { stat: 'WIS', desc: 'Spot hidden things, notice details' },
+          'Performance': { stat: 'CHA', desc: 'Entertain, play music, act' },
+          'Persuasion': { stat: 'CHA', desc: 'Convince others through charm' },
+          'Religion': { stat: 'WIS', desc: 'Knowledge of deities, rites' },
+          'Sleight of Hand': { stat: 'DEX', desc: 'Pickpocket, lock-pick, palm objects' },
+          'Stealth': { stat: 'DEX', desc: 'Hide, move silently, sneak' },
+          'Survival': { stat: 'WIS', desc: 'Track, forage, navigate wilds' }
+        };
+        const profSkills = (c.proficiencies || []).map(p => p.name || p);
+
+        html += '<div id="tab-skills" class="sheet-tab-content active">';
+        Object.entries(SKILL_DEFS).forEach(([name, info]) => {
+          const statVal = c[info.stat.toLowerCase()] || 10;
+          const mod = Math.floor((statVal - 10) / 2);
+          const isProf = profSkills.some(p => p.toLowerCase() === name.toLowerCase());
+          const profBonus = isProf ? (c.proficiency_bonus || 2) : 0;
+          const total = mod + profBonus;
+          const sign = total >= 0 ? '+' : '';
+          html += `<div class="skill-item">
+            <span>${isProf ? '⬥ ' : ''}${name}</span>
+            <span>
+              ${isProf ? '<span class="skill-prof">PROF</span> ' : ''}
+              <span class="skill-mod">${sign}${total}</span>
+            </span>
+            <div class="skill-tooltip">
+              <strong>${name}</strong> (${info.stat})<br>
+              ${info.desc}<br>
+              Base: ${mod >= 0 ? '+' : ''}${mod} ${isProf ? '+ ' + profBonus + ' prof' : ''}
+            </div>
+          </div>`;
+        });
+        html += '</div>';
+
+        // Spells tab
+        html += '<div id="tab-spells" class="sheet-tab-content">';
         if (data.spells && data.spells.length > 0) {
-          html += '<div class="section-title">✨ Spells</div>';
           data.spells.forEach(spell => {
             html += `<div class="spell-item"><span>${spell.name}</span><span class="level">Lvl ${spell.level}</span></div>`;
           });
+        } else {
+          html += '<div style="text-align:center; color:#666; padding:1rem; font-size:0.8rem;">No spells known</div>';
         }
+        html += '</div>';
+
+        // Gear tab
+        html += '<div id="tab-gear" class="sheet-tab-content">';
+        if (data.inventory && data.inventory.length > 0) {
+          data.inventory.forEach(item => {
+            html += `<div class="inventory-item"><span>${item.name || item.material_id}</span><span class="qty">x${item.quantity}</span></div>`;
+          });
+        } else {
+          html += '<div style="text-align:center; color:#666; padding:1rem; font-size:0.8rem;">No items</div>';
+        }
+        html += '</div>';
         
         document.getElementById('charSheet').innerHTML = html;
       } catch (err) {
@@ -828,6 +1110,7 @@
       const header = document.getElementById('activityPanelHeader');
       panel.classList.add('combat-mode');
       header.classList.add('combat-header');
+      document.getElementById('feedTabs').style.display = 'none';
       const agentName = document.getElementById('agentNameHeader')?.textContent || 'Agent';
       header.innerHTML = '⚔️ COMBAT MODE — <span id="agentNameHeader" style="color:#ffd93d">' + agentName + '</span>';
       document.getElementById('activityFeed').innerHTML = '<div class="combat-feed" id="combatFeed"></div>';
@@ -841,6 +1124,7 @@
       const header = document.getElementById('activityPanelHeader');
       panel.classList.remove('combat-mode');
       header.classList.remove('combat-header');
+      document.getElementById('feedTabs').style.display = '';
       header.innerHTML = '📜 Activity Feed — <span id="agentNameHeader">No Agent Selected</span>';
       document.getElementById('combatHpSection').innerHTML = '';
       if (selectedAgent) loadAgentActivity(selectedAgent);
@@ -1004,6 +1288,7 @@
           if (a.action.includes('sold') || a.action.includes('bought')) cls = 'trade';
           if (a.action.includes('defeat') || a.action.includes('died')) cls = 'death';
           if (a.action.includes('victory') || a.action.includes('won')) cls = 'victory';
+          if (a.action.includes('say') || a.action.includes('chat') || a.action.includes('talk') || a.action.includes('whisper') || a.action.includes('shout') || a.action.includes('emote')) cls = 'speech';
           return `<div class="activity-item ${cls}">
             <div class="activity-time">${new Date(a.timestamp).toLocaleTimeString()}</div>
             <div class="activity-text">${a.icon||'📍'} ${a.action}</div>

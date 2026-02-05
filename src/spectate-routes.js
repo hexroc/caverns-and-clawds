@@ -116,6 +116,29 @@ router.get('/character/:userId', (req, res) => {
     } catch (e) {
       // Spells table might not exist
     }
+
+    // Get proficiencies (if table exists)
+    let proficiencies = [];
+    try {
+      proficiencies = db.prepare(`
+        SELECT * FROM character_proficiencies
+        WHERE character_id = ?
+      `).all(char.id);
+    } catch (e) {
+      // Proficiencies table might not exist
+    }
+
+    // Get shell balance (if column exists)
+    let shells = 0;
+    try {
+      const shellRow = db.prepare(`SELECT shells FROM clawds WHERE id = ?`).get(char.id);
+      if (shellRow) shells = shellRow.shells || 0;
+    } catch (e) {
+      // shells column might not exist
+    }
+
+    const level = char.level || 1;
+    const proficiency_bonus = Math.ceil(level / 4) + 1;
     
     res.json({
       success: true,
@@ -136,7 +159,10 @@ router.get('/character/:userId', (req, res) => {
         wis: char.wis,
         cha: char.cha,
         usdc_balance: char.usdc_balance,
-        location: char.location
+        location: char.location,
+        shells: shells,
+        proficiencies: proficiencies,
+        proficiency_bonus: proficiency_bonus
       },
       inventory,
       equipment,
