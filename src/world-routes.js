@@ -455,6 +455,14 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
       db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
         .run(restOption.cost, char.id);
       
+      // Route payment to NPC (closed loop — tavern keeper or temple gets the USDC)
+      const restNpcMap = { briny_flagon: 'npc_barnacle_bob', tide_temple: 'npc_mystic_mantis' };
+      const restNpcId = restNpcMap[char.location];
+      if (restNpcId) {
+        db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+          .run(restOption.cost, restNpcId);
+      }
+
       // Heal
       if (healAmount > 0) {
         characters.updateHP(char.id, healAmount);

@@ -73,7 +73,13 @@ async function getVaultInfo() {
  * Simulate emission distribution to NPCs
  */
 async function simulateEmission(db, dailyYield) {
-  const npcs = ['npc_madame_pearl', 'npc_ironshell_gus', 'npc_coral_trader', 'npc_weapon_smith', 'npc_old_shellworth'];
+  // All NPCs that need daily stipends from the bank
+  const npcs = [
+    'npc_barnacle_bob', 'npc_coral_smith', 'npc_old_shellworth', 
+    'npc_mystic_mantis', 'npc_loan_shark',
+    'npc_madame_pearl', 'npc_ironshell_gus', 'npc_wreckers_salvage',
+    'npc_quest_giver'
+  ];
   const perNpc = dailyYield / npcs.length;
   
   const results = [];

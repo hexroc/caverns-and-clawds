@@ -693,6 +693,15 @@ class QuestManager {
       leveledUp = true;
     }
     
+    // Deduct quest reward from quest giver NPC (closed loop)
+    if (rewards.usdc > 0) {
+      const questNpc = this.db.prepare('SELECT balance_cache FROM system_wallets WHERE id = ?').get('npc_quest_giver');
+      if (questNpc && questNpc.balance_cache >= rewards.usdc) {
+        this.db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+          .run(rewards.usdc, 'npc_quest_giver');
+      }
+    }
+
     this.db.prepare(
       'UPDATE clawds SET xp = ?, level = ?, usdc_balance = usdc_balance + ? WHERE id = ?'
     ).run(newXP, newLevel, rewards.usdc, characterId);

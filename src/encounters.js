@@ -2314,10 +2314,10 @@ class EncounterManager {
     switch (method) {
       case 'paid':
         const currentUsdc = char.usdc_balance || 0;
-        if (currentUsdc < 25) {
-          return { success: false, error: 'Not enough USDC. Need 25.' };
+        if (currentUsdc < 0.025) {
+          return { success: false, error: 'Not enough USDC. Need 0.025.' };
         }
-        usdcCost = 25;
+        usdcCost = 0.025;
         xpLoss = Math.floor(char.xp * 0.10);  // 10% XP loss
         message = 'Priestess Marina channels the Ocean Mother\'s blessing. You gasp back to life.';
         break;
@@ -2398,6 +2398,12 @@ class EncounterManager {
           usdc_balance = usdc_balance - ?, status = 'alive', current_zone = 'tide_temple'
       WHERE id = ?
     `).run(respawnHP, newHPMax, newXP, newLevel, usdcCost, characterId);
+
+    // Route resurrection payment to Tide Temple NPC (closed loop)
+    if (usdcCost > 0) {
+      this.db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+        .run(usdcCost, 'npc_mystic_mantis');
+    }
     
     const result = {
       success: true,

@@ -560,6 +560,10 @@ function createEconomyRoutes(db, authenticateAgent) {
       db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
         .run(amount, char.id);
       
+      // Deduct from bank wallet (closed loop — loan comes FROM the bank)
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+        .run(amount, 'bank');
+      
       // Set due date (7 days from now)
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
@@ -866,6 +870,14 @@ function createEconomyRoutes(db, authenticateAgent) {
       if (!transfer.success) {
         console.log(`⚠️ Job payment failed (simulating): ${transfer.error}`);
       }
+
+      // Deduct from NPC wallet (closed loop)
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+        .run(assignment.pay, assignment.npc_id);
+      
+      // Credit player's in-game balance
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+        .run(assignment.pay, char.id);
       
       // Mark job complete
       db.prepare(`

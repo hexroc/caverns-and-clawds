@@ -35,8 +35,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 50,
       xp_per_level: 10,
-      usdc_base: 2.5,
-      usdc_per_level: 0.5
+      usdc_base: 0.0025,
+      usdc_per_level: 0.0005
     },
     repeatable: true,
     cooldown_hours: 20,
@@ -65,8 +65,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 75,
       xp_per_level: 15,
-      usdc_base: 4.0,
-      usdc_per_level: 0.8
+      usdc_base: 0.004,
+      usdc_per_level: 0.0008
     },
     repeatable: true,
     cooldown_hours: 24,
@@ -94,8 +94,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 100,
       xp_per_level: 20,
-      usdc_base: 6.0,
-      usdc_per_level: 1.2
+      usdc_base: 0.006,
+      usdc_per_level: 0.0012
     },
     repeatable: true,
     cooldown_hours: 48,
@@ -124,8 +124,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 150,
       xp_per_level: 25,
-      usdc_base: 8.0,
-      usdc_per_level: 1.5,
+      usdc_base: 0.008,
+      usdc_per_level: 0.0015,
       items: [{ item_id: 'potion_healing', quantity: 1, chance: 0.5 }]
     },
     repeatable: true,
@@ -156,8 +156,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 100,
       xp_per_level: 15,
-      usdc_base: 5.0,
-      usdc_per_level: 1.0
+      usdc_base: 0.005,
+      usdc_per_level: 0.001
     },
     repeatable: true,
     cooldown_hours: 48,
@@ -185,8 +185,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 200,
       xp_per_level: 25,
-      usdc_base: 100,
-      usdc_per_level: 20
+      usdc_base: 0.1,
+      usdc_per_level: 0.02
     },
     repeatable: true,
     cooldown_hours: 72,
@@ -214,8 +214,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 175,
       xp_per_level: 30,
-      usdc_base: 90,
-      usdc_per_level: 18
+      usdc_base: 0.09,
+      usdc_per_level: 0.018
     },
     repeatable: true,
     cooldown_hours: 48,
@@ -246,8 +246,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 75,
       xp_per_level: 12,
-      usdc_base: 45,
-      usdc_per_level: 0.8
+      usdc_base: 0.045,
+      usdc_per_level: 0.0008
     },
     time_limit_minutes: 60,
     repeatable: true,
@@ -278,8 +278,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 125,
       xp_per_level: 20,
-      usdc_base: 75,
-      usdc_per_level: 1.5,
+      usdc_base: 0.075,
+      usdc_per_level: 0.0015,
       random_items: {
         pool: ['potion_healing', 'antitoxin', 'rations'],
         count: 1
@@ -313,8 +313,8 @@ const QUEST_TEMPLATES = {
     rewards: {
       xp_base: 200,
       xp_per_level: 30,
-      usdc_base: 120,
-      usdc_per_level: 25,
+      usdc_base: 0.12,
+      usdc_per_level: 0.025,
       items: [{ item_id: 'potion_greater_healing', quantity: 1 }]
     },
     repeatable: false,
@@ -1389,6 +1389,16 @@ class QuestEngine {
     while (newLevel < 20 && newXP >= (xpThresholds[newLevel + 1] || 999999)) {
       newLevel++;
       leveledUp = true;
+    }
+
+    // Deduct USDC reward from quest giver NPC wallet (closed loop)
+    if (usdcGained > 0) {
+      const questNpc = this.db.prepare('SELECT balance_cache FROM system_wallets WHERE id = ?').get('npc_quest_giver');
+      if (questNpc && questNpc.balance_cache >= usdcGained) {
+        this.db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+          .run(usdcGained, 'npc_quest_giver');
+      }
+      // If NPC can't afford it, still pay (backed by bank) but log it
     }
 
     // Update character

@@ -180,7 +180,13 @@ function initSystemWallets() {
     { id: 'npc_coral_smith', name: 'Coral the Smith', type: 'npc' },
     { id: 'npc_old_shellworth', name: 'Old Shellworth', type: 'npc' },
     { id: 'npc_mystic_mantis', name: 'Mystic Mantis', type: 'npc' },
-    { id: 'npc_loan_shark', name: 'The Loan Shark', type: 'npc' }
+    { id: 'npc_loan_shark', name: 'The Loan Shark', type: 'npc' },
+    // Shop NPCs (item buying/selling)
+    { id: 'npc_madame_pearl', name: 'Madame Pearl', type: 'npc' },
+    { id: 'npc_ironshell_gus', name: 'Ironshell Gus', type: 'npc' },
+    { id: 'npc_wreckers_salvage', name: "Wrecker's Salvage", type: 'npc' },
+    // Quest giver NPCs
+    { id: 'npc_quest_giver', name: 'Quest Board', type: 'npc' }
   ];
   
   for (const npc of npcs) {

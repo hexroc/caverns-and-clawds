@@ -395,10 +395,14 @@ function buyPropertyCash(db, characterId, propertyId) {
     VALUES (?, ?, ?, ?)
   `).run(deedId, propertyId, characterId, property.current_price);
   
+  // Route payment to bank (closed loop — system property sales go to bank)
+  db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+    .run(property.current_price, 'bank');
+
   // Log transaction
   db.prepare(`
     INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, description)
-    VALUES (?, 'purchase', ?, 'system', ?, ?)
+    VALUES (?, 'purchase', ?, 'bank', ?, ?)
   `).run(crypto.randomUUID(), characterId, property.current_price, `Property: ${property.name}`);
   
   return {

@@ -10,9 +10,32 @@ const crypto = require('crypto');
 const { NPCS, LOCATIONS } = require('./world');
 const { CharacterManager, ITEMS } = require('./character');
 
+// Map world.js NPC IDs to system_wallets IDs
+const NPC_WALLET_MAP = {
+  'madame_pearl': 'npc_madame_pearl',
+  'ironshell_gus': 'npc_ironshell_gus',
+  'wreckers_rest_salvage': 'npc_wreckers_salvage'
+};
+
 function createShopRoutes(db, authenticateAgent) {
   const router = express.Router();
   const characters = new CharacterManager(db);
+
+  // Helper: get NPC wallet balance
+  const getNpcBalance = (npcId) => {
+    const walletId = NPC_WALLET_MAP[npcId];
+    if (!walletId) return Infinity; // Unknown NPC = no limit (fallback)
+    const row = db.prepare('SELECT balance_cache FROM system_wallets WHERE id = ?').get(walletId);
+    return row ? (row.balance_cache || 0) : 0;
+  };
+
+  // Helper: adjust NPC wallet balance  
+  const adjustNpcBalance = (npcId, amount) => {
+    const walletId = NPC_WALLET_MAP[npcId];
+    if (!walletId) return;
+    db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+      .run(amount, walletId);
+  };
 
   // Helper to get character
   const getChar = (req) => characters.getCharacterByAgent(req.user.id);
@@ -200,13 +223,16 @@ function createShopRoutes(db, authenticateAgent) {
       }
 
       // Process transaction
-      // 1. Deduct USDC
+      // 1. Deduct USDC from player
       const currencyResult = characters.updateCurrency(char.id, 'usdc', -totalCost);
       if (!currencyResult.success) {
         return res.status(400).json(currencyResult);
       }
 
-      // 2. Add item to inventory
+      // 2. Credit NPC wallet (closed loop — money goes TO the NPC)
+      adjustNpcBalance(npcId, totalCost);
+
+      // 3. Add item to inventory
       const existingItem = db.prepare(
         'SELECT * FROM character_inventory WHERE character_id = ? AND item_id = ?'
       ).get(char.id, itemId);
@@ -298,17 +324,30 @@ function createShopRoutes(db, authenticateAgent) {
       }
 
       // Calculate sell value (50% of base value)
-      const unitValue = Math.floor(item.value * npc.shop.sellMultiplier);
-      const totalValue = unitValue * quantity;
+      const unitValue = parseFloat((item.value * npc.shop.sellMultiplier).toFixed(4));
+      const totalValue = parseFloat((unitValue * quantity).toFixed(4));
+
+      // Check if NPC can afford to buy
+      const npcBalance = getNpcBalance(npcId);
+      if (npcBalance < totalValue) {
+        return res.status(400).json({
+          success: false,
+          error: `${npc.name} doesn't have enough USDC right now. Try again later or sell to another merchant.`,
+          npcBalance: parseFloat(npcBalance.toFixed(4))
+        });
+      }
 
       // Process transaction
-      // 1. Add USDC
+      // 1. Add USDC to player
       const currencyResult = characters.updateCurrency(char.id, 'usdc', totalValue);
       if (!currencyResult.success) {
         return res.status(400).json(currencyResult);
       }
 
-      // 2. Remove item from inventory
+      // 2. Deduct from NPC wallet (closed loop — money comes FROM the NPC)
+      adjustNpcBalance(npcId, -totalValue);
+
+      // 3. Remove item from inventory
       if (ownedItem.quantity > quantity) {
         db.prepare(
           'UPDATE character_inventory SET quantity = quantity - ? WHERE id = ?'
