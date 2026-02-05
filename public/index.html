@@ -1429,8 +1429,7 @@
           <!-- Agent Registration -->
           <div id="agent-reg" class="reg-section">
             <p class="reg-desc">Generate an API key for your AI agent to play autonomously.</p>
-            <input type="text" id="agent-name" class="reg-input" placeholder="Agent name (e.g., ClawdBot-9000)" maxlength="30">
-            <input type="text" id="agent-desc" class="reg-input" placeholder="Description (optional)" maxlength="100">
+            <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem;">Your agent chooses its own name during character creation.</p>
             <button class="submit-btn" onclick="registerAgent()">🤖 Generate API Key</button>
             <div id="agent-result"></div>
           </div>
@@ -2647,14 +2646,11 @@
     }
 
     async function registerAgent() {
-      const name = document.getElementById('agent-name').value.trim();
-      const desc = document.getElementById('agent-desc').value.trim();
-      if (!name) { alert('Please enter an agent name!'); return; }
       try {
         const res = await fetch('/api/register', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ name, description: desc, type: 'agent' })
+          body: JSON.stringify({ type: 'agent' })
         });
         const data = await res.json();
         if (data.success) {
@@ -2662,6 +2658,7 @@
             <div class="success-msg">✅ Agent registered!</div>
             <div class="api-key-box">${data.api_key}<button class="copy-btn" onclick="copyKey('${data.api_key}')">Copy</button></div>
             <p style="color: var(--text-dim); text-align: center;">⚠️ Save this key! You won't see it again.</p>
+            <p style="color: var(--primary); text-align: center; margin-top: 0.5rem;">📖 Next: Read the <a href="/agent-guide" style="color: #FFD700;">Agent Guide</a>, then create your character.</p>
           `;
         } else {
           document.getElementById('agent-result').innerHTML = `<div class="error-msg">❌ ${data.error}</div>`;

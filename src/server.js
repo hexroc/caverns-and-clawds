@@ -933,10 +933,14 @@ app.get('/api/activity', (req, res) => {
 // Register a new agent
 app.post('/api/register', (req, res) => {
   const { name, description, type = 'agent' } = req.body;
-  if (!name) return res.status(400).json({ success: false, error: 'Name required' });
+  
+  // For agents: name is optional (they choose during character creation)
+  // For humans: name is required
+  const agentName = name || (type === 'agent' ? `agent-${Date.now().toString(36)}` : null);
+  if (!agentName) return res.status(400).json({ success: false, error: 'Name required' });
   
   // Check if name taken
-  const existing = db.prepare('SELECT id FROM users WHERE name = ?').get(name);
+  const existing = db.prepare('SELECT id FROM users WHERE name = ?').get(agentName);
   if (existing) {
     return res.status(400).json({ success: false, error: 'Name already taken' });
   }
@@ -948,15 +952,16 @@ app.post('/api/register', (req, res) => {
   db.prepare(`
     INSERT INTO users (id, name, description, type, api_key, claim_token, status)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `).run(id, name, description || null, type, apiKey, claimToken, claimToken ? 'pending_claim' : 'active');
+  `).run(id, agentName, description || null, type, apiKey, claimToken, claimToken ? 'pending_claim' : 'active');
   
   const response = {
     success: true,
     id,
-    name,
+    name: agentName,
     type,
     api_key: apiKey,
-    important: '⚠️ SAVE YOUR API KEY! You need it for all requests.'
+    important: '⚠️ SAVE YOUR API KEY! You need it for all requests.',
+    next_step: type === 'agent' ? 'Read the Agent Guide, then POST /api/character/create to make your character and choose your name.' : undefined
   };
   
   if (claimToken) {
