@@ -2247,15 +2247,16 @@ class EncounterManager {
     
     const options = [];
     
-    // Option 1: Paid resurrection (25 USDC, 10% XP loss)
+    // Option 1: Paid resurrection (0.025 USDC, 10% XP loss)
+    const RESURRECTION_COST = 0.025;
     const paidXPLoss = Math.floor(char.xp * 0.10);
     const usdcBalance = char.usdc_balance || 0;
     options.push({
       type: 'paid',
-      cost: { usdc: 25 },
+      cost: { usdc: RESURRECTION_COST },
       xpLoss: paidXPLoss,
       xpLossPercent: '10%',
-      available: usdcBalance >= 25,
+      available: usdcBalance >= RESURRECTION_COST,
       description: 'Priestess Marina performs the rite. Lose 10% of your XP.'
     });
     

@@ -129,17 +129,21 @@ function createHenchmanRoutes(db, authenticateAgent) {
       });
     }
     
-    // Deduct USDC
+    // Deduct USDC and route to bank (closed loop)
     db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
       .run(cost, char.id);
+    db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+      .run(cost, 'bank');
     
     // DO THE PULL!
     const result = henchmen.pullHenchman(char.id, 'usdc');
     
     if (!result.success) {
-      // Refund on error
+      // Refund on error (reverse both sides)
       db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
         .run(cost, char.id);
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+        .run(cost, 'bank');
       return res.status(500).json(result);
     }
     

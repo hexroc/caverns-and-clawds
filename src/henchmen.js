@@ -927,9 +927,11 @@ class HenchmanManager {
       return { success: false, error: `Need ${REVIVAL_OPTIONS.resurrection.cost} USDC to resurrect (you have ${balance})` };
     }
     
-    // Deduct USDC and revive
+    // Deduct USDC and route to bank (closed loop)
     this.db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
       .run(REVIVAL_OPTIONS.resurrection.cost, characterId);
+    this.db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+      .run(REVIVAL_OPTIONS.resurrection.cost, 'bank');
     
     this.db.prepare(`
       UPDATE character_henchmen 

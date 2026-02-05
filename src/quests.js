@@ -693,12 +693,21 @@ class QuestManager {
       leveledUp = true;
     }
     
-    // Deduct quest reward from quest giver NPC (closed loop)
+    // Deduct quest reward from quest giver NPC (closed loop — no money printing!)
     if (rewards.usdc > 0) {
       const questNpc = this.db.prepare('SELECT balance_cache FROM system_wallets WHERE id = ?').get('npc_quest_giver');
       if (questNpc && questNpc.balance_cache >= rewards.usdc) {
         this.db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
           .run(rewards.usdc, 'npc_quest_giver');
+      } else {
+        // Cap reward at NPC balance — no money printing
+        const available = questNpc ? Math.max(0, questNpc.balance_cache) : 0;
+        if (available > 0) {
+          this.db.prepare('UPDATE system_wallets SET balance_cache = 0 WHERE id = ?')
+            .run('npc_quest_giver');
+        }
+        console.log(`⚠️ Quest NPC low on funds: wanted ${rewards.usdc}, has ${available}. Capping reward.`);
+        rewards.usdc = available;
       }
     }
 

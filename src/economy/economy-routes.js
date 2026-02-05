@@ -886,11 +886,15 @@ function createEconomyRoutes(db, authenticateAgent) {
         char.wallet_public_key = newWallet.publicKey;
       }
       
-      // Transfer payment: NPC -> Player
-      const transfer = await wallet.transferUSDC(npcSecret, char.wallet_public_key, assignment.pay);
-      
-      if (!transfer.success) {
-        console.log(`⚠️ Job payment failed (simulating): ${transfer.error}`);
+      // Transfer payment: NPC -> Player (on-chain, may fail gracefully)
+      let transfer = { success: false, signature: 'simulated' };
+      try {
+        transfer = await wallet.transferUSDC(npcSecret, char.wallet_public_key, assignment.pay);
+        if (!transfer.success) {
+          console.log(`⚠️ Job payment failed (simulating): ${transfer.error}`);
+        }
+      } catch (txErr) {
+        console.log(`⚠️ Job payment on-chain skipped: ${txErr.message}`);
       }
 
       // Deduct from NPC wallet (closed loop)
