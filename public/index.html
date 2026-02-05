@@ -863,6 +863,137 @@
       .race-card-avatar .lobster-svg { width: 70px; height: 70px; }
     }
 
+    /* ========== CLASS CARDS ========== */
+    .classes-showcase {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .class-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    .class-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(64, 224, 208, 0.15);
+    }
+
+    .class-card-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.25rem 0.5rem;
+    }
+
+    .class-card-icon {
+      flex-shrink: 0;
+      width: 72px;
+      height: 72px;
+    }
+    .class-card-icon .class-icon-svg {
+      width: 72px;
+      height: 72px;
+    }
+    .class-icon-svg svg {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .class-card-info { flex: 1; min-width: 0; }
+
+    .class-card-name {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.2rem;
+      color: var(--primary);
+    }
+
+    .class-card-sub {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.35rem;
+    }
+
+    .class-card-badges {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .class-badge-hit {
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(231, 76, 60, 0.15);
+      color: #e74c3c;
+      border: 1px solid rgba(231, 76, 60, 0.25);
+    }
+
+    .class-badge-stat {
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 0.15rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(64, 224, 208, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(64, 224, 208, 0.25);
+    }
+
+    .class-badge-save {
+      font-size: 0.65rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: rgba(255, 215, 0, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    .class-card-desc {
+      padding: 0 1.25rem 0.5rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .class-card-skills {
+      padding: 0.5rem 1.25rem 1rem;
+      border-top: 1px solid rgba(255,255,255,0.05);
+    }
+
+    .class-card-skills-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 0.35rem;
+    }
+
+    .class-card-skill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.25rem;
+    }
+
+    .class-skill-pill {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.4rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.06);
+      color: var(--text-dim);
+    }
+
+    @media (max-width: 600px) {
+      .classes-showcase { grid-template-columns: 1fr; }
+      .class-card-icon { width: 60px; height: 60px; }
+      .class-card-icon .class-icon-svg { width: 60px; height: 60px; }
+    }
+
     /* Play Button */
     .play-btn {
       display: inline-block;
@@ -1144,6 +1275,7 @@
   </style>
   <link rel="stylesheet" href="/css/lobster-paperdolls.css">
   <script src="/js/lobster-svg.js"></script>
+  <script src="/js/class-icons.js"></script>
 </head>
 <body>
   <nav class="nav">
@@ -1463,7 +1595,7 @@
     <section id="classes" class="section">
       <h1 class="section-title">Classes</h1>
       <p class="section-subtitle">Choose your path beneath the waves</p>
-      <div class="cards-grid" id="classes-grid">
+      <div class="classes-showcase" id="classes-grid">
         <div class="loading">Loading classes...</div>
       </div>
     </section>
@@ -2147,21 +2279,55 @@
     function renderClasses() {
       const grid = document.getElementById('classes-grid');
       document.getElementById('stat-classes').textContent = Object.keys(allClasses).length || '5';
-      const icons = { fighter: '⚔️', rogue: '🗡️', cleric: '✨', wizard: '🔮', warlock: '👁️', paladin: '🛡️', bard: '🎵' };
-      const colors = { fighter: 'red', wizard: 'blue', cleric: 'gold', warlock: '', paladin: 'gold', bard: 'teal' };
+      
+      const roleLabels = {
+        fighter: 'Frontline Tank / DPS',
+        rogue: 'Stealth DPS / Utility',
+        cleric: 'Healer / Support',
+        wizard: 'Ranged AoE / Control',
+        warlock: 'Burst DPS / Debuff',
+        paladin: 'Tank / Healer Hybrid',
+        bard: 'Support / Jack of All Trades'
+      };
       
       let html = '';
       for (const [id, cls] of Object.entries(allClasses)) {
+        const icon = (typeof createClassIcon === 'function')
+          ? createClassIcon(id) 
+          : '<div style="font-size:2.5rem;text-align:center">⚔️</div>';
+        
+        const saves = (cls.saveProficiencies || [])
+          .map(s => `<span class="class-badge-save">💾 ${s.toUpperCase()}</span>`)
+          .join('');
+        
+        const skills = (cls.skillChoices || [])
+          .map(s => {
+            if (s === 'any') return '<span class="class-skill-pill">Any skill</span>';
+            return `<span class="class-skill-pill">${s.replace('_', ' ')}</span>`;
+          })
+          .join('');
+        
+        const role = roleLabels[id] || '';
+        
         html += `
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon ${colors[id] || ''}">${icons[id] || '🦞'}</div>
-              <div>
-                <div class="card-title">${cls.seaName || cls.name}</div>
-                <div class="card-subtitle">d${cls.hitDie} hit die · ${(cls.primaryStat || 'str').toUpperCase()}</div>
+          <div class="class-card">
+            <div class="class-card-top">
+              <div class="class-card-icon">${icon}</div>
+              <div class="class-card-info">
+                <div class="class-card-name">${cls.seaName || cls.name}</div>
+                <div class="class-card-sub">${cls.name} · ${role}</div>
+                <div class="class-card-badges">
+                  <span class="class-badge-hit">d${cls.hitDie} HP</span>
+                  <span class="class-badge-stat">⭐ ${(cls.primaryStat || 'str').toUpperCase()}</span>
+                  ${saves}
+                </div>
               </div>
             </div>
-            <div class="card-body"><p>${cls.description}</p></div>
+            <div class="class-card-desc">${cls.description}</div>
+            <div class="class-card-skills">
+              <div class="class-card-skills-label">Skill Choices (pick ${cls.numSkills || 2})</div>
+              <div class="class-card-skill-list">${skills}</div>
+            </div>
           </div>
         `;
       }
