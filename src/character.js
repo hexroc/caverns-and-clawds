@@ -603,6 +603,14 @@ const ITEMS = {
     description: 'A golden token blessed by the Ocean Mother. Allows resurrection with no XP penalty. Earned through achievements.',
     value: 0.0001,
     soulbound: true
+  },
+  henchman_voucher: {
+    name: 'Henchman Pull Voucher',
+    type: 'voucher',
+    rarity: 'legendary',
+    description: 'A shimmering coral token that grants one free henchman gacha pull. Incredibly rare — found only by the most persistent adventurers.',
+    value: 5.0,
+    soulbound: true
   }
 };
 

@@ -804,8 +804,11 @@ const PULL_RATES = {
 };
 
 const PULL_COSTS = {
-  usdc: 0.025        // 2.5 cents per pull (micro-economy)
+  usdc: 5.0           // $5 per pull — revenue goes to company wallet
 };
+
+// Company revenue wallet for microtransaction purchases
+const COMPANY_WALLET = 'C9VxL3EF8qZdPVBy6GzSYborjozGRVBZC6goM6Ag2dHh';
 
 // ============================================================================
 // REVIVAL SYSTEM
@@ -1362,5 +1365,6 @@ module.exports = {
   MAX_STARS,
   STAR_BONUSES,
   DUPES_FOR_STAR,
-  REVIVAL_OPTIONS
+  REVIVAL_OPTIONS,
+  COMPANY_WALLET
 };

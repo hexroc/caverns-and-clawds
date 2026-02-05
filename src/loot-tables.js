@@ -254,6 +254,11 @@ function generateZoneLoot(monsterId, zoneType, monsterCR = 0.25) {
     }
   }
   
+  // Super rare henchman pull voucher drop (0.1% chance — 1 in 1000 kills)
+  if (Math.random() < 0.001) {
+    items.push({ itemId: 'henchman_voucher', quantity: 1, rarity: 'legendary' });
+  }
+  
   return { items, usdc };
 }
 

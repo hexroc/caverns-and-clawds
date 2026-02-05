@@ -5,7 +5,7 @@
  */
 
 const express = require('express');
-const { HenchmanManager, PULL_RATES, PULL_COSTS, REVIVAL_OPTIONS, STAR_BONUSES, MAX_STARS, HENCHMAN_POOL } = require('./henchmen');
+const { HenchmanManager, PULL_RATES, PULL_COSTS, REVIVAL_OPTIONS, STAR_BONUSES, MAX_STARS, HENCHMAN_POOL, COMPANY_WALLET } = require('./henchmen');
 const { CharacterManager } = require('./character');
 const { AwakenedAbilityManager, AWAKENED_ABILITIES } = require('./awakened-abilities');
 
@@ -118,22 +118,73 @@ function createHenchmanRoutes(db, authenticateAgent) {
       return res.status(404).json({ success: false, error: 'No character found. Create one first!' });
     }
     
-    // USDC is the only payment method now
-    const balance = char.currency?.usdc || 0;
+    const { useVoucher } = req.body || {};
     const cost = PULL_COSTS.usdc;
+    
+    // Check for voucher payment
+    if (useVoucher) {
+      const voucher = db.prepare(
+        'SELECT * FROM character_inventory WHERE character_id = ? AND item_id = ? AND quantity > 0'
+      ).get(char.id, 'henchman_voucher');
+      
+      if (!voucher) {
+        return res.status(400).json({ success: false, error: 'No henchman voucher found!' });
+      }
+      
+      // Consume the voucher
+      if (voucher.quantity > 1) {
+        db.prepare('UPDATE character_inventory SET quantity = quantity - 1 WHERE id = ?').run(voucher.id);
+      } else {
+        db.prepare('DELETE FROM character_inventory WHERE id = ?').run(voucher.id);
+      }
+      
+      // Skip USDC payment — do the pull with voucher
+      const result = henchmen.pullHenchman(char.id, 'usdc');
+      if (!result.success) {
+        // Refund voucher
+        db.prepare(`
+          INSERT INTO character_inventory (id, character_id, item_id, quantity, equipped, slot)
+          VALUES (?, ?, 'henchman_voucher', 1, 0, NULL)
+          ON CONFLICT(character_id, item_id) DO UPDATE SET quantity = quantity + 1
+        `).run(require('crypto').randomUUID(), char.id);
+        return res.status(500).json(result);
+      }
+      
+      return res.json({
+        success: true,
+        pull: result,
+        payment: { method: 'voucher', cost: 0 },
+        message: '🎟️ Voucher redeemed! Free pull!'
+      });
+    }
+    
+    // USDC payment
+    const balance = char.currency?.usdc || 0;
     
     if (balance < cost) {
       return res.status(400).json({ 
         success: false, 
-        error: `Not enough USDC. Need ${cost}, have ${balance}` 
+        error: `Not enough USDC. Need $${cost}, have $${balance.toFixed(2)}`,
+        hint: 'Henchman pull vouchers can drop from monsters (super rare!)'
       });
     }
     
-    // Deduct USDC and route to bank (closed loop)
+    // Deduct USDC — microtransaction revenue goes to company wallet
     db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
       .run(cost, char.id);
-    db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
-      .run(cost, 'bank');
+    
+    // TODO: On-chain transfer to COMPANY_WALLET (C9Vx...dHh) when mainnet is live
+    // For now, track in system_wallets as 'company_revenue'
+    try {
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+        .run(cost, 'company_revenue');
+    } catch (e) {
+      // company_revenue wallet may not exist yet — create it
+      try {
+        db.prepare(`INSERT INTO system_wallets (id, name, public_key, balance_cache) VALUES (?, ?, ?, ?)`)
+          .run('company_revenue', 'Company Revenue', COMPANY_WALLET, cost);
+      } catch (e2) { /* already exists, just update failed */ }
+    }
     
     // DO THE PULL!
     const result = henchmen.pullHenchman(char.id, 'usdc');
@@ -142,8 +193,10 @@ function createHenchmanRoutes(db, authenticateAgent) {
       // Refund on error (reverse both sides)
       db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
         .run(cost, char.id);
-      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
-        .run(cost, 'bank');
+      try {
+        db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+          .run(cost, 'company_revenue');
+      } catch (e) { /* best effort refund tracking */ }
       return res.status(500).json(result);
     }
     
