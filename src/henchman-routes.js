@@ -36,7 +36,8 @@ function createHenchmanRoutes(db, authenticateAgent) {
       success: true,
       info: {
         description: 'Hire henchmen to fight alongside you!',
-        pullCosts: PULL_COSTS,
+        pullCosts: { ...PULL_COSTS, shells: 500 },
+        shellsNote: '🐚 500 Shells = 1 pull ($5). Buy Shells at POST /api/shells/buy',
         rates: PULL_RATES,
         revival: {
           resurrection: `${REVIVAL_OPTIONS.resurrection.cost} USDC`,
@@ -118,7 +119,7 @@ function createHenchmanRoutes(db, authenticateAgent) {
       return res.status(404).json({ success: false, error: 'No character found. Create one first!' });
     }
     
-    const { useVoucher } = req.body || {};
+    const { useVoucher, useShells } = req.body || {};
     const cost = PULL_COSTS.usdc;
     
     // Check for voucher payment
@@ -158,6 +159,32 @@ function createHenchmanRoutes(db, authenticateAgent) {
       });
     }
     
+    // 🐚 Shells payment
+    if (useShells) {
+      const { ShellsManager } = require('./economy/shells');
+      const shellsMgr = new ShellsManager(db);
+      const shellResult = shellsMgr.spendShells(char.id, 'henchman_pull', 1);
+      
+      if (!shellResult.success) {
+        return res.status(400).json(shellResult);
+      }
+      
+      // Do the pull (paid with Shells, no USDC deduction)
+      const result = henchmen.pullHenchman(char.id, 'usdc');
+      if (!result.success) {
+        // Refund shells on error
+        shellsMgr.grantShells(char.id, 500, 'Refund: pull failed');
+        return res.status(500).json(result);
+      }
+      
+      return res.json({
+        success: true,
+        pull: result,
+        payment: { method: 'shells', shellsSpent: shellResult.shellsSpent, shellsRemaining: shellResult.newBalance },
+        message: `🐚 Pulled with Shells! ${shellResult.shellsSpent} Shells spent.`
+      });
+    }
+
     // USDC payment
     const balance = char.currency?.usdc || 0;
     
@@ -165,7 +192,7 @@ function createHenchmanRoutes(db, authenticateAgent) {
       return res.status(400).json({ 
         success: false, 
         error: `Not enough USDC. Need $${cost}, have $${balance.toFixed(2)}`,
-        hint: 'Henchman pull vouchers can drop from monsters (super rare!)'
+        hint: '🐚 Buy Shells instead! POST /api/shells/buy { amount: 5 } → then POST /api/henchmen/pull { useShells: true }. Or find a rare voucher from monsters!'
       });
     }
     

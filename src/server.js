@@ -50,6 +50,7 @@ const { createRealEstateRoutes } = require('./economy/realestate-routes');
 const { initRealEstateDB } = require('./economy/realestate');
 const { createPlayerShopRoutes } = require('./economy/player-shop-routes');
 const { initPlayerShopsDB } = require('./economy/player-shops');
+const { createShellRoutes } = require('./economy/shell-routes');
 
 // Twitter OAuth 2.0 config (set these in environment)
 const TWITTER_CLIENT_ID = process.env.TWITTER_CLIENT_ID || '';
@@ -3000,6 +3001,10 @@ console.log('🏠 Real estate system loaded (properties, mortgages, rentals)');
 initPlayerShopsDB(db);
 app.use('/api/player-shops', createPlayerShopRoutes(db, authenticateAgent));
 console.log('🏪 Player shop system loaded (Sims-style retail)');
+
+// 🐚 Shells — Premium Currency
+app.use('/api/shells', createShellRoutes(db, authenticateAgent));
+console.log('🐚 Shells premium currency loaded (100 Shells = $1 USDC)');
 
 // (Capstone dungeon system removed - MUD direction)
 
