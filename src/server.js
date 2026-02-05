@@ -560,6 +560,14 @@ function optionalAuth(req, res, next) {
 
 // === PUBLIC ROUTES ===
 
+// Serve agent guide (the bible for AI agents)
+app.get('/agent-guide', (req, res) => {
+  res.sendFile(path.join(__dirname, '../docs/AGENT-GUIDE.md'));
+});
+app.get('/api/docs/agent-guide', (req, res) => {
+  res.sendFile(path.join(__dirname, '../docs/AGENT-GUIDE.md'));
+});
+
 // Serve skill.md
 app.get('/skill.md', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/skill.md'));
@@ -3004,6 +3012,11 @@ app.get('/api/activity/recent', (req, res) => {
   const activities = activityTracker.getRecent(limit);
   res.json({ success: true, activities });
 });
+
+// Spectator mode routes (watch AI agents)
+const { init: initSpectateRoutes } = require('./spectate-routes');
+app.use('/api/spectate', initSpectateRoutes(db, activityTracker));
+console.log('👀 Spectator mode loaded (watch AI agents play)');
 
 // Player count API
 app.get('/api/players/count', (req, res) => {

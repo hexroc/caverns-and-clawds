@@ -7,6 +7,11 @@ class ActivityTracker {
     this.activities = [];
     this.maxActivities = 50;
     this.subscribers = new Set();
+    // Combat event log: Map<characterName, Array<combatEvent>>
+    this.combatLogs = new Map();
+    this.maxCombatEvents = 100;
+    // Active combat state: Map<characterName, { inCombat, monsters, playerHp, playerMaxHp, round }>
+    this.activeCombats = new Map();
   }
 
   // Add a new activity
@@ -52,6 +57,85 @@ class ActivityTracker {
   // Get recent activities
   getRecent(limit = 10) {
     return this.activities.slice(0, limit);
+  }
+
+  // Get activities for a specific player
+  getActivitiesForPlayer(playerName, limit = 50) {
+    return this.activities
+      .filter(a => a.player === playerName)
+      .slice(0, limit);
+  }
+
+  // ==========================================
+  // COMBAT EVENT SYSTEM
+  // ==========================================
+
+  /**
+   * Add a detailed combat event for spectator play-by-play
+   * @param {string} characterName - The player character name
+   * @param {Object} event - Combat event data
+   */
+  addCombatEvent(characterName, event) {
+    if (!this.combatLogs.has(characterName)) {
+      this.combatLogs.set(characterName, []);
+    }
+
+    const log = this.combatLogs.get(characterName);
+    const eventWithTime = {
+      id: `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: Date.now(),
+      ...event
+    };
+
+    log.unshift(eventWithTime);
+
+    // Trim to max
+    if (log.length > this.maxCombatEvents) {
+      log.length = this.maxCombatEvents;
+    }
+
+    // Broadcast combat event to subscribers
+    this.broadcast({
+      ...eventWithTime,
+      _combatEvent: true,
+      characterName
+    });
+  }
+
+  /**
+   * Get recent combat events for a character
+   */
+  getCombatLog(characterName, limit = 50) {
+    const log = this.combatLogs.get(characterName) || [];
+    return log.slice(0, limit);
+  }
+
+  /**
+   * Set active combat state for a character
+   */
+  setCombatState(characterName, state) {
+    if (state) {
+      this.activeCombats.set(characterName, {
+        ...state,
+        updatedAt: Date.now()
+      });
+    } else {
+      this.activeCombats.delete(characterName);
+    }
+  }
+
+  /**
+   * Get active combat state for a character
+   */
+  getCombatState(characterName) {
+    return this.activeCombats.get(characterName) || null;
+  }
+
+  /**
+   * Clear combat log for a character (on combat end)
+   */
+  clearCombatState(characterName) {
+    this.activeCombats.delete(characterName);
   }
 
   // Helper methods for common activity types

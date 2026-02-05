@@ -1,0 +1,1956 @@
+/* ============================================================
+   LOBSTER PAPERDOLLS — CSS-Only Art for Caverns & Clawds
+   10 Races, Pure CSS, 120x120px containers
+   Top-down RPG sprite style
+   ============================================================ */
+
+/* --- BASE CONTAINER --- */
+.lobster {
+  position: relative;
+  width: 120px;
+  height: 120px;
+  /* All children absolutely positioned */
+}
+
+.lobster * {
+  position: absolute;
+  box-sizing: border-box;
+}
+
+/* ==========================================================
+   1. AMERICAN LOBSTER
+   Red-brown, classic big symmetrical claws, thick shell
+   ========================================================== */
+.lobster-american .lb-antenna-l,
+.lobster-american .lb-antenna-r {
+  width: 2px;
+  height: 28px;
+  background: #6B1C00;
+  top: 8px;
+  transform-origin: bottom center;
+  border-radius: 1px;
+}
+.lobster-american .lb-antenna-l { left: 42px; transform: rotate(-20deg); }
+.lobster-american .lb-antenna-r { right: 42px; transform: rotate(20deg); }
+
+/* Claws - big and symmetrical */
+.lobster-american .lb-claw-l,
+.lobster-american .lb-claw-r {
+  width: 28px;
+  height: 22px;
+  background: #8B2500;
+  border-radius: 50% 50% 30% 30%;
+  top: 18px;
+  border: 2px solid #6B1C00;
+}
+.lobster-american .lb-claw-l {
+  left: 4px;
+  transform: rotate(15deg);
+}
+.lobster-american .lb-claw-r {
+  right: 4px;
+  transform: rotate(-15deg);
+}
+/* Claw pincers */
+.lobster-american .lb-claw-l::before,
+.lobster-american .lb-claw-r::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 8px;
+  background: #A03000;
+  border-radius: 50%;
+  top: -4px;
+}
+.lobster-american .lb-claw-l::before { left: 2px; }
+.lobster-american .lb-claw-r::before { right: 2px; }
+.lobster-american .lb-claw-l::after,
+.lobster-american .lb-claw-r::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 8px;
+  background: #A03000;
+  border-radius: 50%;
+  top: -4px;
+}
+.lobster-american .lb-claw-l::after { right: 2px; }
+.lobster-american .lb-claw-r::after { left: 2px; }
+
+/* Claw arms */
+.lobster-american .lb-arm-l,
+.lobster-american .lb-arm-r {
+  width: 6px;
+  height: 18px;
+  background: #7A2000;
+  top: 30px;
+  border-radius: 3px;
+}
+.lobster-american .lb-arm-l { left: 28px; transform: rotate(20deg); }
+.lobster-american .lb-arm-r { right: 28px; transform: rotate(-20deg); }
+
+/* Head */
+.lobster-american .lb-head {
+  width: 34px;
+  height: 22px;
+  background: linear-gradient(180deg, #9B3000 0%, #8B2500 100%);
+  left: 43px;
+  top: 30px;
+  border-radius: 50% 50% 40% 40%;
+  border: 2px solid #6B1C00;
+  z-index: 2;
+}
+
+/* Eyes */
+.lobster-american .lb-eye-l,
+.lobster-american .lb-eye-r {
+  width: 8px;
+  height: 8px;
+  background: #111;
+  border-radius: 50%;
+  top: 32px;
+  z-index: 3;
+  border: 2px solid #9B3000;
+}
+.lobster-american .lb-eye-l { left: 42px; }
+.lobster-american .lb-eye-r { right: 42px; }
+.lobster-american .lb-eye-l::after,
+.lobster-american .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  top: 0;
+  left: 1px;
+}
+
+/* Body - thick shell */
+.lobster-american .lb-body {
+  width: 36px;
+  height: 30px;
+  background: linear-gradient(180deg, #8B2500 0%, #7A2000 50%, #6B1C00 100%);
+  left: 42px;
+  top: 48px;
+  border-radius: 8px;
+  border: 2px solid #5A1500;
+  z-index: 1;
+}
+/* Shell line detail */
+.lobster-american .lb-body::before {
+  content: '';
+  position: absolute;
+  width: 24px;
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  top: 10px;
+  left: 4px;
+}
+.lobster-american .lb-body::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
+  top: 18px;
+  left: 6px;
+}
+
+/* Tail segments */
+.lobster-american .lb-segment-1 {
+  width: 28px;
+  height: 10px;
+  background: #7A2000;
+  left: 46px;
+  top: 76px;
+  border-radius: 4px;
+  border: 1px solid #5A1500;
+}
+.lobster-american .lb-segment-2 {
+  width: 22px;
+  height: 10px;
+  background: #6B1C00;
+  left: 49px;
+  top: 84px;
+  border-radius: 4px;
+  border: 1px solid #4A1000;
+}
+
+/* Tail fan */
+.lobster-american .lb-tail {
+  width: 30px;
+  height: 16px;
+  background: #8B2500;
+  left: 45px;
+  top: 92px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #5A1500;
+}
+.lobster-american .lb-tail::before {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 12px;
+  background: #5A1500;
+  left: 50%;
+  top: 2px;
+}
+.lobster-american .lb-tail::after {
+  content: '';
+  position: absolute;
+  width: 1px;
+  height: 10px;
+  background: #5A1500;
+  left: 30%;
+  top: 2px;
+  box-shadow: 8px 0 0 #5A1500;
+}
+
+/* Legs */
+.lobster-american .lb-leg-l1,
+.lobster-american .lb-leg-l2,
+.lobster-american .lb-leg-l3,
+.lobster-american .lb-leg-r1,
+.lobster-american .lb-leg-r2,
+.lobster-american .lb-leg-r3 {
+  width: 14px;
+  height: 3px;
+  background: #6B1C00;
+  border-radius: 2px;
+}
+.lobster-american .lb-leg-l1 { left: 30px; top: 54px; transform: rotate(-25deg); }
+.lobster-american .lb-leg-l2 { left: 28px; top: 62px; transform: rotate(-15deg); }
+.lobster-american .lb-leg-l3 { left: 30px; top: 70px; transform: rotate(-5deg); }
+.lobster-american .lb-leg-r1 { right: 30px; top: 54px; transform: rotate(25deg); }
+.lobster-american .lb-leg-r2 { right: 28px; top: 62px; transform: rotate(15deg); }
+.lobster-american .lb-leg-r3 { right: 30px; top: 70px; transform: rotate(5deg); }
+
+
+/* ==========================================================
+   2. EUROPEAN LOBSTER
+   Blue-purple, sleek elegant body, magical shimmer
+   ========================================================== */
+.lobster-european .lb-antenna-l,
+.lobster-european .lb-antenna-r {
+  width: 2px;
+  height: 32px;
+  background: linear-gradient(180deg, #5B7FC7, #2E4B8F);
+  top: 4px;
+  border-radius: 1px;
+}
+.lobster-european .lb-antenna-l { left: 44px; transform: rotate(-15deg); }
+.lobster-european .lb-antenna-r { right: 44px; transform: rotate(15deg); }
+
+/* Sleek claws */
+.lobster-european .lb-claw-l,
+.lobster-european .lb-claw-r {
+  width: 22px;
+  height: 18px;
+  background: linear-gradient(135deg, #4169B8, #2E4B8F);
+  border-radius: 45% 45% 25% 25%;
+  top: 20px;
+  border: 2px solid #1E3570;
+}
+.lobster-european .lb-claw-l { left: 12px; transform: rotate(10deg); }
+.lobster-european .lb-claw-r { right: 12px; transform: rotate(-10deg); }
+.lobster-european .lb-claw-l::before,
+.lobster-european .lb-claw-r::before {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 6px;
+  background: #5B7FC7;
+  border-radius: 50%;
+  top: -3px;
+}
+.lobster-european .lb-claw-l::before { left: 2px; }
+.lobster-european .lb-claw-r::before { right: 2px; }
+.lobster-european .lb-claw-l::after,
+.lobster-european .lb-claw-r::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 6px;
+  background: #5B7FC7;
+  border-radius: 50%;
+  top: -3px;
+}
+.lobster-european .lb-claw-l::after { right: 2px; }
+.lobster-european .lb-claw-r::after { left: 2px; }
+
+/* Claw arms */
+.lobster-european .lb-arm-l,
+.lobster-european .lb-arm-r {
+  width: 5px;
+  height: 16px;
+  background: #2E4B8F;
+  top: 32px;
+  border-radius: 3px;
+}
+.lobster-european .lb-arm-l { left: 32px; transform: rotate(15deg); }
+.lobster-european .lb-arm-r { right: 32px; transform: rotate(-15deg); }
+
+/* Elegant head */
+.lobster-european .lb-head {
+  width: 30px;
+  height: 20px;
+  background: linear-gradient(180deg, #5B7FC7, #3A5BA0, #2E4B8F);
+  left: 45px;
+  top: 30px;
+  border-radius: 50% 50% 35% 35%;
+  border: 2px solid #1E3570;
+  z-index: 2;
+}
+
+/* Bright eyes */
+.lobster-european .lb-eye-l,
+.lobster-european .lb-eye-r {
+  width: 7px;
+  height: 7px;
+  background: #fff;
+  border-radius: 50%;
+  top: 33px;
+  z-index: 3;
+  border: 2px solid #2E4B8F;
+}
+.lobster-european .lb-eye-l { left: 45px; }
+.lobster-european .lb-eye-r { right: 45px; }
+.lobster-european .lb-eye-l::after,
+.lobster-european .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #1E3570;
+  border-radius: 50%;
+  top: 0;
+  left: 1px;
+}
+
+/* Sleek body */
+.lobster-european .lb-body {
+  width: 30px;
+  height: 28px;
+  background: linear-gradient(180deg, #3A5BA0, #2E4B8F);
+  left: 45px;
+  top: 46px;
+  border-radius: 10px 10px 6px 6px;
+  border: 2px solid #1E3570;
+  z-index: 1;
+}
+/* Shimmer effect */
+.lobster-european .lb-body::before {
+  content: '';
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg,
+    transparent 30%,
+    rgba(255,255,255,0.2) 45%,
+    rgba(255,255,255,0.3) 50%,
+    rgba(255,255,255,0.2) 55%,
+    transparent 70%
+  );
+  border-radius: inherit;
+  animation: europeanShimmer 3s ease-in-out infinite;
+}
+
+@keyframes europeanShimmer {
+  0%, 100% { background-position: -50px -50px; opacity: 0.5; }
+  50% { background-position: 50px 50px; opacity: 1; }
+}
+
+/* Segments */
+.lobster-european .lb-segment-1 {
+  width: 24px;
+  height: 10px;
+  background: #2E4B8F;
+  left: 48px;
+  top: 72px;
+  border-radius: 3px;
+  border: 1px solid #1E3570;
+}
+.lobster-european .lb-segment-2 {
+  width: 18px;
+  height: 8px;
+  background: #253F7A;
+  left: 51px;
+  top: 80px;
+  border-radius: 3px;
+  border: 1px solid #1E3570;
+}
+
+/* Tail */
+.lobster-european .lb-tail {
+  width: 26px;
+  height: 14px;
+  background: #3A5BA0;
+  left: 47px;
+  top: 86px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #1E3570;
+}
+
+/* Magical sparkles (via box-shadow) */
+.lobster-european .lb-tail::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  top: -30px;
+  left: -10px;
+  box-shadow:
+    25px -15px 0 rgba(255,255,255,0.8),
+    -8px -40px 0 rgba(255,255,255,0.6),
+    30px -50px 0 rgba(255,255,255,0.7),
+    -15px -20px 0 rgba(255,255,255,0.5),
+    15px -65px 0 rgba(255,255,255,0.6);
+  animation: sparkle 2s ease-in-out infinite alternate;
+}
+
+@keyframes sparkle {
+  0% { opacity: 0.3; }
+  100% { opacity: 1; }
+}
+
+/* Legs */
+.lobster-european .lb-leg-l1,
+.lobster-european .lb-leg-l2,
+.lobster-european .lb-leg-l3,
+.lobster-european .lb-leg-r1,
+.lobster-european .lb-leg-r2,
+.lobster-european .lb-leg-r3 {
+  width: 12px;
+  height: 2px;
+  background: #2E4B8F;
+  border-radius: 1px;
+}
+.lobster-european .lb-leg-l1 { left: 34px; top: 52px; transform: rotate(-20deg); }
+.lobster-european .lb-leg-l2 { left: 33px; top: 58px; transform: rotate(-10deg); }
+.lobster-european .lb-leg-l3 { left: 34px; top: 64px; transform: rotate(0deg); }
+.lobster-european .lb-leg-r1 { right: 34px; top: 52px; transform: rotate(20deg); }
+.lobster-european .lb-leg-r2 { right: 33px; top: 58px; transform: rotate(10deg); }
+.lobster-european .lb-leg-r3 { right: 34px; top: 64px; transform: rotate(0deg); }
+
+
+/* ==========================================================
+   3. SLIPPER LOBSTER
+   Sandy tan, wide flat body, plate-like shell, no visible claws
+   ========================================================== */
+/* Short stubby antennae */
+.lobster-slipper .lb-antenna-l,
+.lobster-slipper .lb-antenna-r {
+  width: 8px;
+  height: 10px;
+  background: #B89A58;
+  top: 20px;
+  border-radius: 50% 50% 0 0;
+}
+.lobster-slipper .lb-antenna-l { left: 28px; }
+.lobster-slipper .lb-antenna-r { right: 28px; }
+
+/* No visible claws - hide or make tiny */
+.lobster-slipper .lb-claw-l,
+.lobster-slipper .lb-claw-r {
+  display: none;
+}
+.lobster-slipper .lb-arm-l,
+.lobster-slipper .lb-arm-r {
+  display: none;
+}
+
+/* Wide flat head */
+.lobster-slipper .lb-head {
+  width: 60px;
+  height: 18px;
+  background: linear-gradient(180deg, #D4B87A, #C2A366);
+  left: 30px;
+  top: 28px;
+  border-radius: 30px 30px 5px 5px;
+  border: 2px solid #A88C50;
+  z-index: 2;
+}
+/* Plate texture */
+.lobster-slipper .lb-head::before {
+  content: '';
+  position: absolute;
+  width: 50px;
+  height: 1px;
+  background: rgba(255,255,255,0.2);
+  top: 6px;
+  left: 3px;
+}
+
+/* Small dark eyes set wide apart */
+.lobster-slipper .lb-eye-l,
+.lobster-slipper .lb-eye-r {
+  width: 6px;
+  height: 6px;
+  background: #222;
+  border-radius: 50%;
+  top: 30px;
+  z-index: 3;
+}
+.lobster-slipper .lb-eye-l { left: 36px; }
+.lobster-slipper .lb-eye-r { right: 36px; }
+
+/* Very wide flat body */
+.lobster-slipper .lb-body {
+  width: 56px;
+  height: 30px;
+  background: linear-gradient(180deg, #C2A366, #B89A58, #A88C50);
+  left: 32px;
+  top: 44px;
+  border-radius: 12px;
+  border: 2px solid #8A7440;
+  z-index: 1;
+}
+/* Plate ridges */
+.lobster-slipper .lb-body::before {
+  content: '';
+  position: absolute;
+  width: 44px;
+  height: 1px;
+  background: rgba(0,0,0,0.1);
+  top: 10px;
+  left: 4px;
+  box-shadow: 0 8px 0 rgba(0,0,0,0.08);
+}
+
+/* Segments - also wide */
+.lobster-slipper .lb-segment-1 {
+  width: 44px;
+  height: 10px;
+  background: #B89A58;
+  left: 38px;
+  top: 72px;
+  border-radius: 4px;
+  border: 1px solid #8A7440;
+}
+.lobster-slipper .lb-segment-2 {
+  width: 36px;
+  height: 8px;
+  background: #A88C50;
+  left: 42px;
+  top: 80px;
+  border-radius: 4px;
+  border: 1px solid #8A7440;
+}
+
+/* Wide fan tail */
+.lobster-slipper .lb-tail {
+  width: 44px;
+  height: 16px;
+  background: #C2A366;
+  left: 38px;
+  top: 86px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #8A7440;
+}
+
+/* Flat wide legs */
+.lobster-slipper .lb-leg-l1,
+.lobster-slipper .lb-leg-l2,
+.lobster-slipper .lb-leg-l3,
+.lobster-slipper .lb-leg-r1,
+.lobster-slipper .lb-leg-r2,
+.lobster-slipper .lb-leg-r3 {
+  width: 10px;
+  height: 4px;
+  background: #A88C50;
+  border-radius: 2px;
+}
+.lobster-slipper .lb-leg-l1 { left: 24px; top: 50px; }
+.lobster-slipper .lb-leg-l2 { left: 22px; top: 58px; }
+.lobster-slipper .lb-leg-l3 { left: 24px; top: 66px; }
+.lobster-slipper .lb-leg-r1 { right: 24px; top: 50px; }
+.lobster-slipper .lb-leg-r2 { right: 22px; top: 58px; }
+.lobster-slipper .lb-leg-r3 { right: 24px; top: 66px; }
+
+
+/* ==========================================================
+   4. SQUAT LOBSTER
+   Orange-yellow, compact round body, big cute eyes, curled tail
+   ========================================================== */
+/* Short antennae */
+.lobster-squat .lb-antenna-l,
+.lobster-squat .lb-antenna-r {
+  width: 2px;
+  height: 16px;
+  background: #CC7000;
+  top: 16px;
+  border-radius: 1px;
+}
+.lobster-squat .lb-antenna-l { left: 44px; transform: rotate(-25deg); }
+.lobster-squat .lb-antenna-r { right: 44px; transform: rotate(25deg); }
+
+/* Small cute claws */
+.lobster-squat .lb-claw-l,
+.lobster-squat .lb-claw-r {
+  width: 16px;
+  height: 14px;
+  background: #FF8C00;
+  border-radius: 50%;
+  top: 22px;
+  border: 2px solid #CC7000;
+}
+.lobster-squat .lb-claw-l { left: 16px; }
+.lobster-squat .lb-claw-r { right: 16px; }
+/* Pincer lines */
+.lobster-squat .lb-claw-l::before,
+.lobster-squat .lb-claw-r::before {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 1px;
+  background: #CC7000;
+  top: 5px;
+  left: 3px;
+}
+
+/* Arms */
+.lobster-squat .lb-arm-l,
+.lobster-squat .lb-arm-r {
+  width: 5px;
+  height: 12px;
+  background: #E07800;
+  top: 32px;
+  border-radius: 3px;
+}
+.lobster-squat .lb-arm-l { left: 30px; transform: rotate(20deg); }
+.lobster-squat .lb-arm-r { right: 30px; transform: rotate(-20deg); }
+
+/* Round head */
+.lobster-squat .lb-head {
+  width: 36px;
+  height: 20px;
+  background: linear-gradient(180deg, #FFAA33, #FF8C00);
+  left: 42px;
+  top: 28px;
+  border-radius: 50%;
+  border: 2px solid #CC7000;
+  z-index: 2;
+}
+
+/* BIG cute eyes - this is the signature feature */
+.lobster-squat .lb-eye-l,
+.lobster-squat .lb-eye-r {
+  width: 14px;
+  height: 14px;
+  background: #fff;
+  border-radius: 50%;
+  top: 24px;
+  z-index: 3;
+  border: 2px solid #CC7000;
+}
+.lobster-squat .lb-eye-l { left: 38px; }
+.lobster-squat .lb-eye-r { right: 38px; }
+/* Pupils */
+.lobster-squat .lb-eye-l::after,
+.lobster-squat .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: #222;
+  border-radius: 50%;
+  top: 2px;
+  left: 3px;
+}
+/* Cute highlights */
+.lobster-squat .lb-eye-l::before,
+.lobster-squat .lb-eye-r::before {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #fff;
+  border-radius: 50%;
+  top: 2px;
+  left: 5px;
+  z-index: 4;
+}
+
+/* Compact round body */
+.lobster-squat .lb-body {
+  width: 38px;
+  height: 28px;
+  background: linear-gradient(180deg, #FF8C00, #E07800);
+  left: 41px;
+  top: 44px;
+  border-radius: 50%;
+  border: 2px solid #CC7000;
+  z-index: 1;
+}
+
+/* Curled tail (tucked under) */
+.lobster-squat .lb-segment-1 {
+  width: 20px;
+  height: 8px;
+  background: #E07800;
+  left: 50px;
+  top: 70px;
+  border-radius: 3px;
+  border: 1px solid #CC7000;
+}
+.lobster-squat .lb-segment-2 {
+  width: 14px;
+  height: 6px;
+  background: #CC7000;
+  left: 53px;
+  top: 76px;
+  border-radius: 3px;
+  border: 1px solid #AA5C00;
+}
+
+/* Curled tail */
+.lobster-squat .lb-tail {
+  width: 12px;
+  height: 12px;
+  background: transparent;
+  left: 54px;
+  top: 80px;
+  border: 3px solid #CC7000;
+  border-radius: 0 0 50% 50%;
+  border-top: none;
+}
+
+/* Legs */
+.lobster-squat .lb-leg-l1,
+.lobster-squat .lb-leg-l2,
+.lobster-squat .lb-leg-l3,
+.lobster-squat .lb-leg-r1,
+.lobster-squat .lb-leg-r2,
+.lobster-squat .lb-leg-r3 {
+  width: 10px;
+  height: 2px;
+  background: #CC7000;
+  border-radius: 1px;
+}
+.lobster-squat .lb-leg-l1 { left: 32px; top: 50px; transform: rotate(-20deg); }
+.lobster-squat .lb-leg-l2 { left: 30px; top: 56px; transform: rotate(-10deg); }
+.lobster-squat .lb-leg-l3 { left: 32px; top: 62px; }
+.lobster-squat .lb-leg-r1 { right: 32px; top: 50px; transform: rotate(20deg); }
+.lobster-squat .lb-leg-r2 { right: 30px; top: 56px; transform: rotate(10deg); }
+.lobster-squat .lb-leg-r3 { right: 32px; top: 62px; }
+
+
+/* ==========================================================
+   5. SPINY LOBSTER
+   Orange-red, long antennae, spines along body, NO big claws
+   ========================================================== */
+/* VERY long antennae - signature feature */
+.lobster-spiny .lb-antenna-l,
+.lobster-spiny .lb-antenna-r {
+  width: 2px;
+  height: 48px;
+  top: -6px;
+  border-radius: 1px;
+  background: linear-gradient(180deg, #8B4513, #D2691E);
+}
+.lobster-spiny .lb-antenna-l { left: 40px; transform: rotate(-30deg); }
+.lobster-spiny .lb-antenna-r { right: 40px; transform: rotate(30deg); }
+/* Antenna tips */
+.lobster-spiny .lb-antenna-l::after,
+.lobster-spiny .lb-antenna-r::after {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #8B4513;
+  border-radius: 50%;
+  top: -2px;
+  left: -1px;
+}
+
+/* No big claws - just small leg-like appendages */
+.lobster-spiny .lb-claw-l,
+.lobster-spiny .lb-claw-r {
+  width: 8px;
+  height: 10px;
+  background: #C26020;
+  top: 34px;
+  border-radius: 4px 4px 2px 2px;
+  border: 1px solid #8B4513;
+}
+.lobster-spiny .lb-claw-l { left: 24px; transform: rotate(10deg); }
+.lobster-spiny .lb-claw-r { right: 24px; transform: rotate(-10deg); }
+
+.lobster-spiny .lb-arm-l,
+.lobster-spiny .lb-arm-r {
+  width: 4px;
+  height: 12px;
+  background: #B85A1E;
+  top: 38px;
+  border-radius: 2px;
+}
+.lobster-spiny .lb-arm-l { left: 32px; transform: rotate(15deg); }
+.lobster-spiny .lb-arm-r { right: 32px; transform: rotate(-15deg); }
+
+/* Head with spine ridge */
+.lobster-spiny .lb-head {
+  width: 32px;
+  height: 18px;
+  background: linear-gradient(180deg, #D2691E, #C26020);
+  left: 44px;
+  top: 34px;
+  border-radius: 40% 40% 30% 30%;
+  border: 2px solid #8B4513;
+  z-index: 2;
+}
+/* Spine on head */
+.lobster-spiny .lb-head::before {
+  content: '';
+  position: absolute;
+  width: 4px;
+  height: 6px;
+  background: #D2691E;
+  left: 50%;
+  top: -6px;
+  transform: translateX(-50%);
+  clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+}
+
+/* Eyes */
+.lobster-spiny .lb-eye-l,
+.lobster-spiny .lb-eye-r {
+  width: 7px;
+  height: 7px;
+  background: #111;
+  border-radius: 50%;
+  top: 36px;
+  z-index: 3;
+  border: 2px solid #D2691E;
+}
+.lobster-spiny .lb-eye-l { left: 44px; }
+.lobster-spiny .lb-eye-r { right: 44px; }
+
+/* Body with spines */
+.lobster-spiny .lb-body {
+  width: 30px;
+  height: 28px;
+  background: linear-gradient(180deg, #D2691E, #B85A1E);
+  left: 45px;
+  top: 48px;
+  border-radius: 6px;
+  border: 2px solid #8B4513;
+  z-index: 1;
+}
+/* Spines along body (box-shadow triangles simulated) */
+.lobster-spiny .lb-body::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 4px;
+  width: 4px;
+  height: 4px;
+  background: #D2691E;
+  clip-path: polygon(100% 50%, 0% 0%, 0% 100%);
+  box-shadow:
+    0 8px 0 #D2691E,
+    0 16px 0 #D2691E;
+}
+.lobster-spiny .lb-body::after {
+  content: '';
+  position: absolute;
+  right: -6px;
+  top: 4px;
+  width: 4px;
+  height: 4px;
+  background: #D2691E;
+  clip-path: polygon(0% 50%, 100% 0%, 100% 100%);
+  box-shadow:
+    0 8px 0 #D2691E,
+    0 16px 0 #D2691E;
+}
+
+/* Segments */
+.lobster-spiny .lb-segment-1 {
+  width: 24px;
+  height: 8px;
+  background: #B85A1E;
+  left: 48px;
+  top: 74px;
+  border-radius: 3px;
+  border: 1px solid #8B4513;
+}
+.lobster-spiny .lb-segment-2 {
+  width: 18px;
+  height: 8px;
+  background: #A85018;
+  left: 51px;
+  top: 80px;
+  border-radius: 3px;
+  border: 1px solid #8B4513;
+}
+
+/* Tail */
+.lobster-spiny .lb-tail {
+  width: 26px;
+  height: 14px;
+  background: #D2691E;
+  left: 47px;
+  top: 86px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #8B4513;
+}
+
+/* Legs */
+.lobster-spiny .lb-leg-l1,
+.lobster-spiny .lb-leg-l2,
+.lobster-spiny .lb-leg-l3,
+.lobster-spiny .lb-leg-r1,
+.lobster-spiny .lb-leg-r2,
+.lobster-spiny .lb-leg-r3 {
+  width: 14px;
+  height: 2px;
+  background: #A85018;
+  border-radius: 1px;
+}
+.lobster-spiny .lb-leg-l1 { left: 32px; top: 54px; transform: rotate(-20deg); }
+.lobster-spiny .lb-leg-l2 { left: 30px; top: 60px; transform: rotate(-10deg); }
+.lobster-spiny .lb-leg-l3 { left: 32px; top: 66px; }
+.lobster-spiny .lb-leg-r1 { right: 32px; top: 54px; transform: rotate(20deg); }
+.lobster-spiny .lb-leg-r2 { right: 30px; top: 60px; transform: rotate(10deg); }
+.lobster-spiny .lb-leg-r3 { right: 32px; top: 66px; }
+
+
+/* ==========================================================
+   6. REEF LOBSTER
+   Rainbow/tropical multi-color gradient, vibrant, small
+   ========================================================== */
+/* Delicate antennae */
+.lobster-reef .lb-antenna-l,
+.lobster-reef .lb-antenna-r {
+  width: 2px;
+  height: 22px;
+  background: linear-gradient(180deg, #ff6b6b, #ffd93d, #6bcb77);
+  top: 14px;
+  border-radius: 1px;
+}
+.lobster-reef .lb-antenna-l { left: 46px; transform: rotate(-18deg); }
+.lobster-reef .lb-antenna-r { right: 46px; transform: rotate(18deg); }
+
+/* Small colorful claws */
+.lobster-reef .lb-claw-l,
+.lobster-reef .lb-claw-r {
+  width: 14px;
+  height: 12px;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d);
+  border-radius: 50% 50% 30% 30%;
+  top: 28px;
+  border: 1px solid #e05555;
+}
+.lobster-reef .lb-claw-l { left: 20px; transform: rotate(10deg); }
+.lobster-reef .lb-claw-r { right: 20px; transform: rotate(-10deg); }
+.lobster-reef .lb-claw-l::before,
+.lobster-reef .lb-claw-r::before {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 4px;
+  background: #ff8787;
+  border-radius: 50%;
+  top: -2px;
+}
+.lobster-reef .lb-claw-l::before { left: 1px; }
+.lobster-reef .lb-claw-r::before { right: 1px; }
+.lobster-reef .lb-claw-l::after,
+.lobster-reef .lb-claw-r::after {
+  content: '';
+  position: absolute;
+  width: 5px;
+  height: 4px;
+  background: #ff8787;
+  border-radius: 50%;
+  top: -2px;
+}
+.lobster-reef .lb-claw-l::after { right: 1px; }
+.lobster-reef .lb-claw-r::after { left: 1px; }
+
+/* Arms */
+.lobster-reef .lb-arm-l,
+.lobster-reef .lb-arm-r {
+  width: 4px;
+  height: 12px;
+  background: #e05555;
+  top: 34px;
+  border-radius: 2px;
+}
+.lobster-reef .lb-arm-l { left: 34px; transform: rotate(12deg); }
+.lobster-reef .lb-arm-r { right: 34px; transform: rotate(-12deg); }
+
+/* Head - tropical gradient */
+.lobster-reef .lb-head {
+  width: 26px;
+  height: 16px;
+  background: linear-gradient(135deg, #ff6b6b, #ffd93d, #6bcb77, #4ecdc4);
+  left: 47px;
+  top: 34px;
+  border-radius: 50% 50% 35% 35%;
+  border: 2px solid #e05555;
+  z-index: 2;
+  animation: reefShimmer 2s ease-in-out infinite;
+}
+
+@keyframes reefShimmer {
+  0%, 100% { filter: brightness(1); }
+  50% { filter: brightness(1.3) saturate(1.3); }
+}
+
+/* Eyes */
+.lobster-reef .lb-eye-l,
+.lobster-reef .lb-eye-r {
+  width: 6px;
+  height: 6px;
+  background: #111;
+  border-radius: 50%;
+  top: 37px;
+  z-index: 3;
+  border: 1px solid #ffd93d;
+}
+.lobster-reef .lb-eye-l { left: 48px; }
+.lobster-reef .lb-eye-r { right: 48px; }
+.lobster-reef .lb-eye-l::after,
+.lobster-reef .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  top: 0;
+  left: 1px;
+}
+
+/* Body - vibrant coral pattern */
+.lobster-reef .lb-body {
+  width: 26px;
+  height: 22px;
+  background: linear-gradient(180deg, #ffd93d, #ff6b6b, #c44dff, #4ecdc4);
+  left: 47px;
+  top: 48px;
+  border-radius: 8px;
+  border: 2px solid #e05555;
+  z-index: 1;
+  animation: reefShimmer 2s ease-in-out infinite;
+}
+/* Coral pattern dots */
+.lobster-reef .lb-body::before {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(255,255,255,0.5);
+  border-radius: 50%;
+  top: 5px;
+  left: 4px;
+  box-shadow:
+    8px 0 0 rgba(255,255,255,0.4),
+    4px 8px 0 rgba(255,255,255,0.3),
+    12px 6px 0 rgba(255,255,255,0.4);
+}
+
+/* Segments */
+.lobster-reef .lb-segment-1 {
+  width: 20px;
+  height: 7px;
+  background: linear-gradient(90deg, #6bcb77, #4ecdc4);
+  left: 50px;
+  top: 68px;
+  border-radius: 3px;
+  border: 1px solid #4db89f;
+}
+.lobster-reef .lb-segment-2 {
+  width: 16px;
+  height: 6px;
+  background: linear-gradient(90deg, #4ecdc4, #c44dff);
+  left: 52px;
+  top: 74px;
+  border-radius: 3px;
+  border: 1px solid #9b3ed4;
+}
+
+/* Tail */
+.lobster-reef .lb-tail {
+  width: 22px;
+  height: 12px;
+  background: linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77);
+  left: 49px;
+  top: 78px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #e05555;
+}
+
+/* Legs */
+.lobster-reef .lb-leg-l1,
+.lobster-reef .lb-leg-l2,
+.lobster-reef .lb-leg-l3,
+.lobster-reef .lb-leg-r1,
+.lobster-reef .lb-leg-r2,
+.lobster-reef .lb-leg-r3 {
+  width: 10px;
+  height: 2px;
+  background: #e05555;
+  border-radius: 1px;
+}
+.lobster-reef .lb-leg-l1 { left: 38px; top: 52px; transform: rotate(-20deg); }
+.lobster-reef .lb-leg-l2 { left: 36px; top: 58px; transform: rotate(-10deg); }
+.lobster-reef .lb-leg-l3 { left: 38px; top: 63px; }
+.lobster-reef .lb-leg-r1 { right: 38px; top: 52px; transform: rotate(20deg); }
+.lobster-reef .lb-leg-r2 { right: 36px; top: 58px; transform: rotate(10deg); }
+.lobster-reef .lb-leg-r3 { right: 38px; top: 63px; }
+
+
+/* ==========================================================
+   7. PISTOL LOBSTER
+   Green-brown, one MASSIVE oversized claw, one tiny, compact
+   ========================================================== */
+/* Short antennae */
+.lobster-pistol .lb-antenna-l,
+.lobster-pistol .lb-antenna-r {
+  width: 2px;
+  height: 18px;
+  background: #3A5231;
+  top: 14px;
+  border-radius: 1px;
+}
+.lobster-pistol .lb-antenna-l { left: 44px; transform: rotate(-20deg); }
+.lobster-pistol .lb-antenna-r { right: 46px; transform: rotate(15deg); }
+
+/* LEFT CLAW: MASSIVE - the signature feature */
+.lobster-pistol .lb-claw-l {
+  width: 36px;
+  height: 30px;
+  background: linear-gradient(135deg, #5A8050, #4A6741);
+  border-radius: 45% 45% 30% 30%;
+  top: 8px;
+  left: 0;
+  border: 3px solid #3A5231;
+  z-index: 2;
+}
+.lobster-pistol .lb-claw-l::before {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 12px;
+  background: #5A8050;
+  border-radius: 50% 50% 0 0;
+  top: -8px;
+  left: 4px;
+}
+.lobster-pistol .lb-claw-l::after {
+  content: '';
+  position: absolute;
+  width: 14px;
+  height: 12px;
+  background: #5A8050;
+  border-radius: 50% 50% 0 0;
+  top: -8px;
+  right: 4px;
+}
+
+/* RIGHT CLAW: Tiny */
+.lobster-pistol .lb-claw-r {
+  width: 10px;
+  height: 8px;
+  background: #4A6741;
+  border-radius: 50%;
+  top: 30px;
+  right: 22px;
+  border: 1px solid #3A5231;
+}
+
+/* Arms */
+.lobster-pistol .lb-arm-l {
+  width: 7px;
+  height: 14px;
+  background: #4A6741;
+  top: 32px;
+  left: 26px;
+  border-radius: 3px;
+  transform: rotate(10deg);
+}
+.lobster-pistol .lb-arm-r {
+  width: 4px;
+  height: 10px;
+  background: #4A6741;
+  top: 34px;
+  right: 30px;
+  border-radius: 2px;
+  transform: rotate(-10deg);
+}
+
+/* Head */
+.lobster-pistol .lb-head {
+  width: 28px;
+  height: 18px;
+  background: linear-gradient(180deg, #5A8050, #4A6741);
+  left: 46px;
+  top: 32px;
+  border-radius: 45% 45% 35% 35%;
+  border: 2px solid #3A5231;
+  z-index: 2;
+}
+
+/* Eyes */
+.lobster-pistol .lb-eye-l,
+.lobster-pistol .lb-eye-r {
+  width: 7px;
+  height: 7px;
+  background: #111;
+  border-radius: 50%;
+  top: 34px;
+  z-index: 3;
+  border: 2px solid #5A8050;
+}
+.lobster-pistol .lb-eye-l { left: 46px; }
+.lobster-pistol .lb-eye-r { right: 46px; }
+.lobster-pistol .lb-eye-l::after,
+.lobster-pistol .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  top: 0;
+  left: 1px;
+}
+
+/* Compact body */
+.lobster-pistol .lb-body {
+  width: 28px;
+  height: 24px;
+  background: linear-gradient(180deg, #4A6741, #3A5231);
+  left: 46px;
+  top: 46px;
+  border-radius: 8px;
+  border: 2px solid #2A4220;
+  z-index: 1;
+}
+
+/* Segments */
+.lobster-pistol .lb-segment-1 {
+  width: 20px;
+  height: 8px;
+  background: #3A5231;
+  left: 50px;
+  top: 68px;
+  border-radius: 3px;
+  border: 1px solid #2A4220;
+}
+.lobster-pistol .lb-segment-2 {
+  width: 16px;
+  height: 6px;
+  background: #2A4220;
+  left: 52px;
+  top: 74px;
+  border-radius: 3px;
+}
+
+/* Tail */
+.lobster-pistol .lb-tail {
+  width: 20px;
+  height: 12px;
+  background: #4A6741;
+  left: 50px;
+  top: 78px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #2A4220;
+}
+
+/* Legs */
+.lobster-pistol .lb-leg-l1,
+.lobster-pistol .lb-leg-l2,
+.lobster-pistol .lb-leg-l3,
+.lobster-pistol .lb-leg-r1,
+.lobster-pistol .lb-leg-r2,
+.lobster-pistol .lb-leg-r3 {
+  width: 12px;
+  height: 2px;
+  background: #3A5231;
+  border-radius: 1px;
+}
+.lobster-pistol .lb-leg-l1 { left: 36px; top: 52px; transform: rotate(-20deg); }
+.lobster-pistol .lb-leg-l2 { left: 34px; top: 58px; transform: rotate(-10deg); }
+.lobster-pistol .lb-leg-l3 { left: 36px; top: 64px; }
+.lobster-pistol .lb-leg-r1 { right: 36px; top: 52px; transform: rotate(20deg); }
+.lobster-pistol .lb-leg-r2 { right: 34px; top: 58px; transform: rotate(10deg); }
+.lobster-pistol .lb-leg-r3 { right: 36px; top: 64px; }
+
+
+/* ==========================================================
+   8. CALICO LOBSTER
+   Mottled orange/black/white patchwork, elegant posture
+   ========================================================== */
+/* Graceful antennae */
+.lobster-calico .lb-antenna-l,
+.lobster-calico .lb-antenna-r {
+  width: 2px;
+  height: 26px;
+  background: linear-gradient(180deg, #333, #D4702A);
+  top: 8px;
+  border-radius: 1px;
+}
+.lobster-calico .lb-antenna-l { left: 42px; transform: rotate(-18deg); }
+.lobster-calico .lb-antenna-r { right: 42px; transform: rotate(18deg); }
+
+/* Elegant medium claws */
+.lobster-calico .lb-claw-l,
+.lobster-calico .lb-claw-r {
+  width: 20px;
+  height: 16px;
+  background: linear-gradient(135deg, #D4702A 30%, #333 50%, #f0e6d3 70%);
+  border-radius: 45% 45% 25% 25%;
+  top: 22px;
+  border: 2px solid #8B4513;
+}
+.lobster-calico .lb-claw-l { left: 12px; transform: rotate(12deg); }
+.lobster-calico .lb-claw-r { right: 12px; transform: rotate(-12deg); }
+.lobster-calico .lb-claw-l::before,
+.lobster-calico .lb-claw-r::before {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 5px;
+  background: #D4702A;
+  border-radius: 50%;
+  top: -3px;
+}
+.lobster-calico .lb-claw-l::before { left: 2px; }
+.lobster-calico .lb-claw-r::before { right: 2px; }
+.lobster-calico .lb-claw-l::after,
+.lobster-calico .lb-claw-r::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 5px;
+  background: #f0e6d3;
+  border-radius: 50%;
+  top: -3px;
+}
+.lobster-calico .lb-claw-l::after { right: 2px; }
+.lobster-calico .lb-claw-r::after { left: 2px; }
+
+/* Arms */
+.lobster-calico .lb-arm-l,
+.lobster-calico .lb-arm-r {
+  width: 5px;
+  height: 14px;
+  background: #8B4513;
+  top: 32px;
+  border-radius: 3px;
+}
+.lobster-calico .lb-arm-l { left: 30px; transform: rotate(15deg); }
+.lobster-calico .lb-arm-r { right: 30px; transform: rotate(-15deg); }
+
+/* Head - mottled pattern */
+.lobster-calico .lb-head {
+  width: 32px;
+  height: 20px;
+  background:
+    radial-gradient(circle at 25% 40%, #D4702A 20%, transparent 25%),
+    radial-gradient(circle at 70% 60%, #333 18%, transparent 23%),
+    radial-gradient(circle at 50% 30%, #f0e6d3 15%, transparent 20%),
+    linear-gradient(180deg, #C0652A, #A85820);
+  left: 44px;
+  top: 30px;
+  border-radius: 50% 50% 35% 35%;
+  border: 2px solid #8B4513;
+  z-index: 2;
+}
+
+/* Eyes */
+.lobster-calico .lb-eye-l,
+.lobster-calico .lb-eye-r {
+  width: 7px;
+  height: 7px;
+  background: #111;
+  border-radius: 50%;
+  top: 33px;
+  z-index: 3;
+  border: 2px solid #C0652A;
+}
+.lobster-calico .lb-eye-l { left: 44px; }
+.lobster-calico .lb-eye-r { right: 44px; }
+.lobster-calico .lb-eye-l::after,
+.lobster-calico .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  background: #fff;
+  border-radius: 50%;
+  top: 0;
+  left: 1px;
+}
+
+/* Body - mottled patchwork */
+.lobster-calico .lb-body {
+  width: 32px;
+  height: 28px;
+  background:
+    radial-gradient(circle at 20% 30%, #333 15%, transparent 20%),
+    radial-gradient(circle at 60% 20%, #f0e6d3 18%, transparent 24%),
+    radial-gradient(circle at 40% 70%, #D4702A 16%, transparent 22%),
+    radial-gradient(circle at 80% 60%, #333 14%, transparent 20%),
+    radial-gradient(circle at 15% 80%, #f0e6d3 12%, transparent 18%),
+    linear-gradient(180deg, #C0652A, #A85820, #8B4513);
+  left: 44px;
+  top: 46px;
+  border-radius: 8px;
+  border: 2px solid #6B3410;
+  z-index: 1;
+}
+
+/* Segments - also mottled */
+.lobster-calico .lb-segment-1 {
+  width: 24px;
+  height: 8px;
+  background: linear-gradient(90deg, #D4702A 30%, #333 50%, #f0e6d3 80%);
+  left: 48px;
+  top: 72px;
+  border-radius: 3px;
+  border: 1px solid #6B3410;
+}
+.lobster-calico .lb-segment-2 {
+  width: 18px;
+  height: 7px;
+  background: linear-gradient(90deg, #f0e6d3 20%, #D4702A 60%, #333 90%);
+  left: 51px;
+  top: 78px;
+  border-radius: 3px;
+  border: 1px solid #6B3410;
+}
+
+/* Tail */
+.lobster-calico .lb-tail {
+  width: 24px;
+  height: 14px;
+  background: linear-gradient(90deg, #D4702A, #333, #f0e6d3);
+  left: 48px;
+  top: 84px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #6B3410;
+}
+
+/* Legs */
+.lobster-calico .lb-leg-l1,
+.lobster-calico .lb-leg-l2,
+.lobster-calico .lb-leg-l3,
+.lobster-calico .lb-leg-r1,
+.lobster-calico .lb-leg-r2,
+.lobster-calico .lb-leg-r3 {
+  width: 12px;
+  height: 2px;
+  background: #8B4513;
+  border-radius: 1px;
+}
+.lobster-calico .lb-leg-l1 { left: 34px; top: 52px; transform: rotate(-20deg); }
+.lobster-calico .lb-leg-l2 { left: 32px; top: 58px; transform: rotate(-10deg); }
+.lobster-calico .lb-leg-l3 { left: 34px; top: 64px; }
+.lobster-calico .lb-leg-r1 { right: 34px; top: 52px; transform: rotate(20deg); }
+.lobster-calico .lb-leg-r2 { right: 32px; top: 58px; transform: rotate(10deg); }
+.lobster-calico .lb-leg-r3 { right: 34px; top: 64px; }
+
+
+/* ==========================================================
+   9. GHOST LOBSTER
+   White/translucent, see-through, faint cyan glow, ethereal
+   ========================================================== */
+/* Ghostly antennae */
+.lobster-ghost .lb-antenna-l,
+.lobster-ghost .lb-antenna-r {
+  width: 2px;
+  height: 26px;
+  background: rgba(200, 230, 240, 0.5);
+  top: 10px;
+  border-radius: 1px;
+}
+.lobster-ghost .lb-antenna-l { left: 44px; transform: rotate(-18deg); }
+.lobster-ghost .lb-antenna-r { right: 44px; transform: rotate(18deg); }
+
+/* Translucent claws */
+.lobster-ghost .lb-claw-l,
+.lobster-ghost .lb-claw-r {
+  width: 22px;
+  height: 18px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 45% 45% 25% 25%;
+  top: 22px;
+  border: 2px solid rgba(100, 220, 240, 0.4);
+  backdrop-filter: blur(1px);
+}
+.lobster-ghost .lb-claw-l { left: 12px; transform: rotate(12deg); }
+.lobster-ghost .lb-claw-r { right: 12px; transform: rotate(-12deg); }
+.lobster-ghost .lb-claw-l::before,
+.lobster-ghost .lb-claw-r::before {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 5px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  top: -3px;
+}
+.lobster-ghost .lb-claw-l::before { left: 2px; }
+.lobster-ghost .lb-claw-r::before { right: 2px; }
+.lobster-ghost .lb-claw-l::after,
+.lobster-ghost .lb-claw-r::after {
+  content: '';
+  position: absolute;
+  width: 7px;
+  height: 5px;
+  background: rgba(255,255,255,0.3);
+  border-radius: 50%;
+  top: -3px;
+}
+.lobster-ghost .lb-claw-l::after { right: 2px; }
+.lobster-ghost .lb-claw-r::after { left: 2px; }
+
+/* Arms */
+.lobster-ghost .lb-arm-l,
+.lobster-ghost .lb-arm-r {
+  width: 5px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  top: 34px;
+  border-radius: 3px;
+}
+.lobster-ghost .lb-arm-l { left: 30px; transform: rotate(15deg); }
+.lobster-ghost .lb-arm-r { right: 30px; transform: rotate(-15deg); }
+
+/* Ethereal head */
+.lobster-ghost .lb-head {
+  width: 30px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.3);
+  left: 45px;
+  top: 30px;
+  border-radius: 50% 50% 35% 35%;
+  border: 2px solid rgba(100, 220, 240, 0.5);
+  z-index: 2;
+  animation: ghostGlow 2.5s ease-in-out infinite;
+}
+
+@keyframes ghostGlow {
+  0%, 100% {
+    box-shadow: 0 0 8px rgba(100, 220, 240, 0.3), 0 0 20px rgba(100, 220, 240, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(100, 220, 240, 0.6), 0 0 35px rgba(100, 220, 240, 0.3);
+  }
+}
+
+/* Ghostly eyes - glowing */
+.lobster-ghost .lb-eye-l,
+.lobster-ghost .lb-eye-r {
+  width: 8px;
+  height: 8px;
+  background: rgba(100, 220, 240, 0.8);
+  border-radius: 50%;
+  top: 32px;
+  z-index: 3;
+  box-shadow: 0 0 6px rgba(100, 220, 240, 0.8);
+  animation: ghostEyeGlow 2.5s ease-in-out infinite;
+}
+.lobster-ghost .lb-eye-l { left: 44px; }
+.lobster-ghost .lb-eye-r { right: 44px; }
+
+@keyframes ghostEyeGlow {
+  0%, 100% { box-shadow: 0 0 4px rgba(100, 220, 240, 0.6); }
+  50% { box-shadow: 0 0 10px rgba(100, 220, 240, 1), 0 0 20px rgba(100, 220, 240, 0.4); }
+}
+
+/* See-through body */
+.lobster-ghost .lb-body {
+  width: 30px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.2);
+  left: 45px;
+  top: 46px;
+  border-radius: 8px;
+  border: 2px solid rgba(100, 220, 240, 0.4);
+  z-index: 1;
+  animation: ghostGlow 2.5s ease-in-out infinite;
+}
+/* Internal "skeleton" visible */
+.lobster-ghost .lb-body::before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 18px;
+  border: 1px solid rgba(100, 220, 240, 0.2);
+  border-radius: 4px;
+  top: 4px;
+  left: 5px;
+}
+
+/* Segments */
+.lobster-ghost .lb-segment-1 {
+  width: 22px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.18);
+  left: 49px;
+  top: 72px;
+  border-radius: 3px;
+  border: 1px solid rgba(100, 220, 240, 0.3);
+}
+.lobster-ghost .lb-segment-2 {
+  width: 16px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.15);
+  left: 52px;
+  top: 78px;
+  border-radius: 3px;
+  border: 1px solid rgba(100, 220, 240, 0.25);
+}
+
+/* Tail */
+.lobster-ghost .lb-tail {
+  width: 24px;
+  height: 14px;
+  background: rgba(255, 255, 255, 0.2);
+  left: 48px;
+  top: 82px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid rgba(100, 220, 240, 0.4);
+}
+
+/* Floating ghost particles */
+.lobster-ghost .lb-tail::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: rgba(100, 220, 240, 0.6);
+  border-radius: 50%;
+  left: 5px;
+  top: -50px;
+  box-shadow:
+    10px -10px 0 rgba(100, 220, 240, 0.4),
+    -8px -25px 0 rgba(100, 220, 240, 0.5),
+    15px -40px 0 rgba(100, 220, 240, 0.3),
+    -5px -60px 0 rgba(100, 220, 240, 0.4);
+  animation: ghostParticles 3s ease-in-out infinite;
+}
+
+@keyframes ghostParticles {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(-5px); opacity: 1; }
+}
+
+/* Legs */
+.lobster-ghost .lb-leg-l1,
+.lobster-ghost .lb-leg-l2,
+.lobster-ghost .lb-leg-l3,
+.lobster-ghost .lb-leg-r1,
+.lobster-ghost .lb-leg-r2,
+.lobster-ghost .lb-leg-r3 {
+  width: 12px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 1px;
+}
+.lobster-ghost .lb-leg-l1 { left: 34px; top: 52px; transform: rotate(-20deg); }
+.lobster-ghost .lb-leg-l2 { left: 32px; top: 58px; transform: rotate(-10deg); }
+.lobster-ghost .lb-leg-l3 { left: 34px; top: 64px; }
+.lobster-ghost .lb-leg-r1 { right: 34px; top: 52px; transform: rotate(20deg); }
+.lobster-ghost .lb-leg-r2 { right: 32px; top: 58px; transform: rotate(10deg); }
+.lobster-ghost .lb-leg-r3 { right: 34px; top: 64px; }
+
+
+/* ==========================================================
+   10. SPLIT LOBSTER
+   Two-toned split down middle (red/blue), chimeric, mismatched claws
+   ========================================================== */
+/* Asymmetric antennae */
+.lobster-split .lb-antenna-l {
+  width: 2px;
+  height: 24px;
+  background: #C41E3A;
+  top: 10px;
+  left: 44px;
+  transform: rotate(-18deg);
+  border-radius: 1px;
+}
+.lobster-split .lb-antenna-r {
+  width: 2px;
+  height: 28px;
+  background: #1E90FF;
+  top: 8px;
+  right: 44px;
+  transform: rotate(22deg);
+  border-radius: 1px;
+}
+
+/* LEFT CLAW - Large red */
+.lobster-split .lb-claw-l {
+  width: 26px;
+  height: 20px;
+  background: linear-gradient(135deg, #E63350, #C41E3A);
+  border-radius: 45% 45% 25% 25%;
+  top: 18px;
+  left: 8px;
+  border: 2px solid #9A1530;
+  transform: rotate(10deg);
+}
+.lobster-split .lb-claw-l::before {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 7px;
+  background: #E63350;
+  border-radius: 50%;
+  top: -4px;
+  left: 2px;
+}
+.lobster-split .lb-claw-l::after {
+  content: '';
+  position: absolute;
+  width: 10px;
+  height: 7px;
+  background: #E63350;
+  border-radius: 50%;
+  top: -4px;
+  right: 2px;
+}
+
+/* RIGHT CLAW - Small blue */
+.lobster-split .lb-claw-r {
+  width: 16px;
+  height: 12px;
+  background: linear-gradient(135deg, #3AA0FF, #1E90FF);
+  border-radius: 50%;
+  top: 26px;
+  right: 18px;
+  border: 2px solid #1570CC;
+  transform: rotate(-8deg);
+}
+
+/* Arms */
+.lobster-split .lb-arm-l {
+  width: 6px;
+  height: 14px;
+  background: #C41E3A;
+  top: 32px;
+  left: 28px;
+  border-radius: 3px;
+  transform: rotate(15deg);
+}
+.lobster-split .lb-arm-r {
+  width: 4px;
+  height: 12px;
+  background: #1E90FF;
+  top: 34px;
+  right: 32px;
+  border-radius: 3px;
+  transform: rotate(-12deg);
+}
+
+/* Head - split down the middle */
+.lobster-split .lb-head {
+  width: 32px;
+  height: 20px;
+  background: linear-gradient(90deg, #C41E3A 50%, #1E90FF 50%);
+  left: 44px;
+  top: 30px;
+  border-radius: 50% 50% 35% 35%;
+  border: 2px solid #555;
+  z-index: 2;
+}
+/* Dividing line */
+.lobster-split .lb-head::before {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  background: rgba(255,255,255,0.3);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* Mismatched eyes */
+.lobster-split .lb-eye-l {
+  width: 8px;
+  height: 8px;
+  background: #FF6B8A;
+  border-radius: 50%;
+  top: 32px;
+  left: 44px;
+  z-index: 3;
+  border: 2px solid #C41E3A;
+}
+.lobster-split .lb-eye-r {
+  width: 7px;
+  height: 7px;
+  background: #7BC4FF;
+  border-radius: 50%;
+  top: 33px;
+  right: 44px;
+  z-index: 3;
+  border: 2px solid #1E90FF;
+}
+.lobster-split .lb-eye-l::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #111;
+  border-radius: 50%;
+  top: 1px;
+  left: 1px;
+}
+.lobster-split .lb-eye-r::after {
+  content: '';
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: #111;
+  border-radius: 50%;
+  top: 0;
+  left: 1px;
+}
+
+/* Body - split */
+.lobster-split .lb-body {
+  width: 32px;
+  height: 28px;
+  background: linear-gradient(90deg, #C41E3A 50%, #1E90FF 50%);
+  left: 44px;
+  top: 46px;
+  border-radius: 8px;
+  border: 2px solid #555;
+  z-index: 1;
+  animation: splitCrackle 1.5s ease-in-out infinite;
+}
+
+@keyframes splitCrackle {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
+  }
+  25% {
+    box-shadow: -2px 0 8px rgba(196, 30, 58, 0.5), 2px 0 8px rgba(30, 144, 255, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.2);
+  }
+  75% {
+    box-shadow: 2px 0 10px rgba(196, 30, 58, 0.6), -2px 0 10px rgba(30, 144, 255, 0.6);
+  }
+}
+
+/* Energy crackle line down the middle */
+.lobster-split .lb-body::before {
+  content: '';
+  position: absolute;
+  width: 2px;
+  height: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.8),
+    rgba(255,255,100,0.6),
+    rgba(255,255,255,0.9),
+    rgba(255,255,100,0.5),
+    rgba(255,255,255,0.7)
+  );
+  animation: energyLine 0.8s linear infinite;
+  z-index: 2;
+}
+
+@keyframes energyLine {
+  0% { opacity: 0.5; }
+  50% { opacity: 1; }
+  100% { opacity: 0.5; }
+}
+
+/* Segments - split */
+.lobster-split .lb-segment-1 {
+  width: 24px;
+  height: 8px;
+  background: linear-gradient(90deg, #A81830 50%, #1878DD 50%);
+  left: 48px;
+  top: 72px;
+  border-radius: 3px;
+  border: 1px solid #555;
+}
+.lobster-split .lb-segment-2 {
+  width: 18px;
+  height: 7px;
+  background: linear-gradient(90deg, #9A1530 50%, #1570CC 50%);
+  left: 51px;
+  top: 78px;
+  border-radius: 3px;
+  border: 1px solid #555;
+}
+
+/* Tail - split */
+.lobster-split .lb-tail {
+  width: 26px;
+  height: 14px;
+  background: linear-gradient(90deg, #C41E3A 50%, #1E90FF 50%);
+  left: 47px;
+  top: 84px;
+  border-radius: 0 0 50% 50%;
+  border: 2px solid #555;
+}
+
+/* Legs - mismatched colors */
+.lobster-split .lb-leg-l1,
+.lobster-split .lb-leg-l2,
+.lobster-split .lb-leg-l3 {
+  width: 12px;
+  height: 2px;
+  background: #C41E3A;
+  border-radius: 1px;
+}
+.lobster-split .lb-leg-r1,
+.lobster-split .lb-leg-r2,
+.lobster-split .lb-leg-r3 {
+  width: 12px;
+  height: 2px;
+  background: #1E90FF;
+  border-radius: 1px;
+}
+.lobster-split .lb-leg-l1 { left: 34px; top: 52px; transform: rotate(-20deg); }
+.lobster-split .lb-leg-l2 { left: 32px; top: 58px; transform: rotate(-10deg); }
+.lobster-split .lb-leg-l3 { left: 34px; top: 64px; }
+.lobster-split .lb-leg-r1 { right: 34px; top: 52px; transform: rotate(20deg); }
+.lobster-split .lb-leg-r2 { right: 32px; top: 58px; transform: rotate(10deg); }
+.lobster-split .lb-leg-r3 { right: 34px; top: 64px; }
+
+
+/* ==========================================================
+   UTILITY: Generate lobster HTML via JS
+   Call createLobsterHTML(raceClass) to get the HTML string
+   ========================================================== */
+/* The standard inner elements for any lobster */
+/*
+  Required HTML structure:
+  <div class="lobster lobster-{race}">
+    <div class="lb-antenna-l"></div>
+    <div class="lb-antenna-r"></div>
+    <div class="lb-claw-l"></div>
+    <div class="lb-claw-r"></div>
+    <div class="lb-arm-l"></div>
+    <div class="lb-arm-r"></div>
+    <div class="lb-head"></div>
+    <div class="lb-eye-l"></div>
+    <div class="lb-eye-r"></div>
+    <div class="lb-body"></div>
+    <div class="lb-segment-1"></div>
+    <div class="lb-segment-2"></div>
+    <div class="lb-tail"></div>
+    <div class="lb-leg-l1"></div>
+    <div class="lb-leg-l2"></div>
+    <div class="lb-leg-l3"></div>
+    <div class="lb-leg-r1"></div>
+    <div class="lb-leg-r2"></div>
+    <div class="lb-leg-r3"></div>
+  </div>
+*/
