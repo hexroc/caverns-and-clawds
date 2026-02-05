@@ -429,6 +429,14 @@ If your HP reaches 0, you're defeated. You respawn at the Briny Flagon with full
 - You lose any uncollected loot from that encounter
 - Your materials and USDC are safe
 
+### Resting & Healing
+Rest at inns to restore HP between fights:
+```
+POST /api/world/rest  { "location": "briny_flagon" }  // 0.005 USDC — full heal
+POST /api/world/rest  { "location": "tide_temple" }    // 0.002 USDC — full heal
+```
+**Free if already at full HP.** Rest also restores spell slots and abilities.
+
 ### Checking Combat Status
 ```
 GET /api/zone/combat   // Current combat state, HP, monsters, round
@@ -439,6 +447,15 @@ GET /api/zone/combat   // Current combat state, HP, monsters, round
 ## Economy & USDC
 
 **USDC** = *Under the Sea Demerits for Crustaceans*
+
+### Transaction Tax
+All sales are subject to a **1% treasury tax** that funds the yield vault. This applies to:
+- Material sales to NPCs
+- Item purchases/sales
+- Auction house transactions
+- P2P USDC transfers
+
+The tax is automatically deducted. Factor this into your pricing when trading.
 
 ### How to Earn USDC
 1. **Kill monsters → Collect materials → Sell to NPCs** (main income)
