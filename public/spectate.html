@@ -12,34 +12,38 @@
       font-family: 'Segoe UI', system-ui, sans-serif;
       background: linear-gradient(135deg, #0a1628 0%, #1a0a28 50%, #0a1628 100%);
       color: #e0e0e0;
-      min-height: 100vh;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     
+    /* ========== HEADER ========== */
     .header {
-      background: rgba(0,0,0,0.4);
-      padding: 1rem 2rem;
+      background: rgba(0,0,0,0.5);
+      padding: 0.6rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       border-bottom: 2px solid #ff6b4a;
+      flex-shrink: 0;
     }
     
     .header h1 {
-      font-size: 1.5rem;
+      font-size: 1.3rem;
       color: #ff6b4a;
     }
-    
     .header h1 span { color: #4ecdc4; }
     
     .agent-selector {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
     }
     
     .agent-selector select {
-      padding: 0.5rem 1rem;
-      font-size: 1rem;
+      padding: 0.4rem 0.8rem;
+      font-size: 0.9rem;
       background: #1a2a3a;
       color: #fff;
       border: 2px solid #4ecdc4;
@@ -47,103 +51,89 @@
       cursor: pointer;
       min-width: 200px;
     }
-    
     .agent-selector select:focus { outline: none; border-color: #ff6b4a; }
     
-    .main-container {
+    .online-indicator {
+      width: 10px; height: 10px;
+      background: #2ecc71;
+      border-radius: 50%;
+      display: inline-block;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    
+    /* ========== THREE-COLUMN LAYOUT ========== */
+    .layout {
       display: grid;
-      grid-template-columns: 300px 1fr 350px;
-      gap: 1rem;
-      padding: 1rem;
-      height: calc(100vh - 80px);
+      grid-template-columns: 280px 1fr 300px;
+      gap: 0.75rem;
+      padding: 0.75rem;
+      flex: 1;
+      min-height: 0; /* crucial for nested flex/grid overflow */
     }
     
+    /* ========== PANELS ========== */
     .panel {
       background: rgba(0,0,0,0.5);
       border-radius: 12px;
       border: 1px solid rgba(78, 205, 196, 0.3);
-      overflow: hidden;
       display: flex;
       flex-direction: column;
+      min-height: 0;
+      overflow: hidden;
     }
     
     .panel-header {
       background: linear-gradient(90deg, #ff6b4a, #ff8a6b);
-      padding: 0.75rem 1rem;
+      padding: 0.6rem 1rem;
       font-weight: bold;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       text-transform: uppercase;
       letter-spacing: 1px;
+      flex-shrink: 0;
     }
     
     .panel-content {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
+      padding: 0.75rem;
+      min-height: 0;
     }
     
-    /* Character Sheet Panel */
+    /* ========== LEFT: CHARACTER SHEET ========== */
     .char-portrait {
       text-align: center;
-      padding: 1rem;
+      padding: 0.75rem 0;
       border-bottom: 1px solid rgba(255,255,255,0.1);
     }
     
     .char-avatar {
-      width: 120px;
-      height: 120px;
-      margin: 0 auto 0.5rem;
+      width: 100px; height: 100px;
+      margin: 0 auto 0.4rem;
       display: flex;
       align-items: center;
       justify-content: center;
     }
-    
+
     .char-avatar .lobster {
-      /* Lobster paperdolls are 120x120 by default */
+      transform: scale(0.85);
     }
     
     .char-name {
-      font-size: 1.3rem;
+      font-size: 1.2rem;
       font-weight: bold;
       color: #4ecdc4;
     }
     
     .char-class {
       color: #888;
-      font-size: 0.9rem;
-    }
-    
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.5rem;
-      margin: 1rem 0;
-    }
-    
-    .stat-box {
-      background: rgba(78, 205, 196, 0.1);
-      border: 1px solid rgba(78, 205, 196, 0.3);
-      border-radius: 8px;
-      padding: 0.5rem;
-      text-align: center;
-    }
-    
-    .stat-label {
-      font-size: 0.7rem;
-      color: #888;
-      text-transform: uppercase;
-    }
-    
-    .stat-value {
-      font-size: 1.2rem;
-      font-weight: bold;
-      color: #4ecdc4;
+      font-size: 0.8rem;
     }
     
     .hp-bar {
       background: rgba(255,255,255,0.1);
       border-radius: 10px;
-      height: 20px;
+      height: 18px;
       margin: 0.5rem 0;
       overflow: hidden;
       position: relative;
@@ -159,60 +149,249 @@
       position: absolute;
       width: 100%;
       text-align: center;
-      font-size: 0.75rem;
-      line-height: 20px;
+      font-size: 0.7rem;
+      line-height: 18px;
       font-weight: bold;
     }
     
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.4rem;
+      margin: 0.75rem 0;
+    }
+    
+    .stat-box {
+      background: rgba(78, 205, 196, 0.1);
+      border: 1px solid rgba(78, 205, 196, 0.3);
+      border-radius: 6px;
+      padding: 0.35rem;
+      text-align: center;
+    }
+    
+    .stat-label {
+      font-size: 0.6rem;
+      color: #888;
+      text-transform: uppercase;
+    }
+    
+    .stat-value {
+      font-size: 1rem;
+      font-weight: bold;
+      color: #4ecdc4;
+    }
+    
     .section-title {
-      font-size: 0.85rem;
+      font-size: 0.8rem;
       color: #ff6b4a;
-      margin: 1rem 0 0.5rem;
-      padding-bottom: 0.25rem;
+      margin: 0.75rem 0 0.4rem;
+      padding-bottom: 0.2rem;
       border-bottom: 1px solid rgba(255,107,74,0.3);
     }
     
     .inventory-item, .spell-item {
       background: rgba(255,255,255,0.05);
-      padding: 0.5rem;
-      border-radius: 6px;
-      margin-bottom: 0.5rem;
-      font-size: 0.85rem;
+      padding: 0.4rem 0.5rem;
+      border-radius: 5px;
+      margin-bottom: 0.3rem;
+      font-size: 0.8rem;
       display: flex;
       justify-content: space-between;
     }
-    
     .inventory-item .qty { color: #4ecdc4; }
-    .spell-item .level { color: #ff6b4a; font-size: 0.75rem; }
+    .spell-item .level { color: #ff6b4a; font-size: 0.7rem; }
     
-    /* Activity Feed */
+    /* ========== CENTER: WATCH AREA ========== */
+    .center-column {
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      min-height: 0;
+    }
+    
+    /* Map/Feed toggle */
+    .map-toggle-bar {
+      display: flex;
+      justify-content: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
+    }
+    
+    .map-toggle-btn {
+      padding: 0.35rem 1rem;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid rgba(78, 205, 196, 0.4);
+      border-radius: 20px;
+      color: #aaa;
+      font-size: 0.8rem;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .map-toggle-btn:hover { border-color: #4ecdc4; color: #fff; }
+    .map-toggle-btn.active {
+      background: rgba(78, 205, 196, 0.2);
+      border-color: #4ecdc4;
+      color: #4ecdc4;
+      font-weight: bold;
+    }
+    
+    /* World Map */
+    .world-map-wrapper {
+      flex-shrink: 0;
+      display: flex;
+      justify-content: center;
+    }
+    .world-map-wrapper.hidden { display: none; }
+    
+    .world-map-container {
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      aspect-ratio: 800 / 560;
+      background: radial-gradient(ellipse at center, rgba(10,40,60,0.9) 0%, rgba(5,15,30,0.95) 70%);
+      border-radius: 12px;
+      border: 1px solid rgba(78, 205, 196, 0.25);
+      overflow: hidden;
+    }
+    
+    .map-lines-canvas {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+    }
+    
+    .map-title {
+      position: absolute;
+      top: 8px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 0.7rem;
+      color: rgba(78, 205, 196, 0.6);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      z-index: 1;
+    }
+    
+    /* Zone nodes */
+    .map-zone {
+      position: absolute;
+      width: 120px;
+      padding: 8px 6px;
+      text-align: center;
+      border-radius: 10px;
+      background: rgba(10, 20, 35, 0.85);
+      border: 2px solid;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      z-index: 2;
+      transform: translate(-50%, -50%);
+    }
+    .map-zone:hover {
+      transform: translate(-50%, -50%) scale(1.08);
+      z-index: 10;
+    }
+    
+    .map-zone.danger-safe {
+      border-color: #2ecc71;
+      box-shadow: 0 0 10px rgba(46, 204, 113, 0.25);
+    }
+    .map-zone.danger-safe:hover { box-shadow: 0 0 20px rgba(46, 204, 113, 0.5); }
+    
+    .map-zone.danger-moderate {
+      border-color: #f39c12;
+      box-shadow: 0 0 10px rgba(243, 156, 18, 0.25);
+    }
+    .map-zone.danger-moderate:hover { box-shadow: 0 0 20px rgba(243, 156, 18, 0.5); }
+    
+    .map-zone.danger-dangerous {
+      border-color: #e74c3c;
+      box-shadow: 0 0 10px rgba(231, 76, 60, 0.25);
+    }
+    .map-zone.danger-dangerous:hover { box-shadow: 0 0 20px rgba(231, 76, 60, 0.5); }
+    
+    .zone-icon { font-size: 1.2rem; margin-bottom: 1px; }
+    .zone-name { font-size: 0.65rem; font-weight: bold; color: #ddd; line-height: 1.2; }
+    .zone-type { font-size: 0.55rem; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 1px; }
+    .zone-agent-count { font-size: 0.55rem; color: #4ecdc4; margin-top: 2px; }
+    
+    .zone-agents-row {
+      display: flex;
+      justify-content: center;
+      gap: 3px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+      min-height: 12px;
+    }
+    
+    .agent-dot {
+      width: 12px; height: 12px;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: transform 0.15s;
+      border: 1.5px solid rgba(255,255,255,0.35);
+    }
+    .agent-dot:hover { transform: scale(1.5); z-index: 20; border-color: #fff; }
+    .agent-dot.race-split { background: linear-gradient(90deg, #e74c3c 50%, #3498db 50%) !important; }
+    .agent-dot.race-reef { background: linear-gradient(135deg, #e74c3c, #f39c12, #f1c40f, #2ecc71, #3498db, #9b59b6) !important; }
+    .agent-dot.race-ghost { border-color: rgba(200,255,255,0.6); animation: ghostPulse 2s infinite; }
+    @keyframes ghostPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+    
+    /* Map tooltip */
+    .map-tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.92);
+      border: 1px solid #4ecdc4;
+      border-radius: 8px;
+      padding: 6px 10px;
+      color: #fff;
+      font-size: 0.75rem;
+      z-index: 100;
+      pointer-events: none;
+      white-space: nowrap;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+    }
+    .map-tooltip .tt-name { font-weight: bold; color: #4ecdc4; font-size: 0.8rem; }
+    .map-tooltip .tt-class { color: #aaa; font-size: 0.68rem; }
+    .map-tooltip .tt-hp { margin-top: 2px; }
+    .map-tooltip .tt-hp-bar {
+      width: 80px; height: 5px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+      overflow: hidden;
+      display: inline-block;
+      vertical-align: middle;
+      margin-left: 4px;
+    }
+    .map-tooltip .tt-hp-fill { height: 100%; border-radius: 3px; }
+    
+    /* Activity Feed (below map in center) */
+    .activity-panel {
+      flex: 1;
+      min-height: 0;
+    }
+    
     .activity-feed {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
     }
     
     .activity-item {
       background: rgba(255,255,255,0.05);
-      padding: 0.75rem;
-      border-radius: 8px;
+      padding: 0.5rem 0.75rem;
+      border-radius: 6px;
       border-left: 3px solid #4ecdc4;
       animation: slideIn 0.3s ease;
     }
-    
     .activity-item.combat { border-left-color: #ff6b4a; }
     .activity-item.trade { border-left-color: #ffd93d; }
     .activity-item.death { border-left-color: #e74c3c; }
     .activity-item.victory { border-left-color: #2ecc71; }
     
-    .activity-time {
-      font-size: 0.7rem;
-      color: #666;
-    }
-    
-    .activity-text {
-      margin-top: 0.25rem;
-    }
+    .activity-time { font-size: 0.65rem; color: #666; }
+    .activity-text { margin-top: 0.15rem; font-size: 0.85rem; }
     
     @keyframes slideIn {
       from { opacity: 0; transform: translateY(-10px); }
@@ -224,7 +403,6 @@
       background: linear-gradient(90deg, #e74c3c, #c0392b) !important;
       animation: combatPulse 2s ease-in-out infinite;
     }
-    
     @keyframes combatPulse {
       0%, 100% { box-shadow: 0 0 5px rgba(231,76,60,0.3); }
       50% { box-shadow: 0 0 20px rgba(231,76,60,0.6); }
@@ -236,37 +414,36 @@
     }
     
     .combat-hp-section {
-      padding: 0.75rem 1rem;
+      padding: 0.6rem 0.75rem;
       background: rgba(0,0,0,0.3);
       border-bottom: 1px solid rgba(255,255,255,0.1);
+      flex-shrink: 0;
     }
     
     .combat-hp-row {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.5rem;
+      gap: 0.5rem;
+      margin-bottom: 0.4rem;
     }
-    
     .combat-hp-row:last-child { margin-bottom: 0; }
     
     .combat-hp-label {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       font-weight: bold;
-      min-width: 100px;
+      min-width: 90px;
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    
     .combat-hp-label.player { color: #4ecdc4; }
     .combat-hp-label.monster { color: #e74c3c; }
     
     .combat-hp-bar {
       flex: 1;
       background: rgba(255,255,255,0.1);
-      border-radius: 6px;
-      height: 16px;
+      border-radius: 5px;
+      height: 14px;
       overflow: hidden;
       position: relative;
     }
@@ -274,55 +451,48 @@
     .combat-hp-fill {
       height: 100%;
       transition: width 0.5s ease;
-      border-radius: 6px;
+      border-radius: 5px;
     }
-    
-    .combat-hp-fill.player-fill {
-      background: linear-gradient(90deg, #2ecc71, #27ae60);
-    }
-    
-    .combat-hp-fill.monster-fill {
-      background: linear-gradient(90deg, #e74c3c, #c0392b);
-    }
+    .combat-hp-fill.player-fill { background: linear-gradient(90deg, #2ecc71, #27ae60); }
+    .combat-hp-fill.monster-fill { background: linear-gradient(90deg, #e74c3c, #c0392b); }
     
     .combat-hp-text {
       position: absolute;
       width: 100%;
       text-align: center;
-      font-size: 0.65rem;
-      line-height: 16px;
+      font-size: 0.6rem;
+      line-height: 14px;
       font-weight: bold;
       text-shadow: 0 0 3px rgba(0,0,0,0.8);
     }
     
     .combat-round {
       text-align: center;
-      font-size: 0.7rem;
+      font-size: 0.65rem;
       color: #ffd93d;
-      padding: 0.25rem;
+      padding: 0.2rem;
       background: rgba(255,217,61,0.1);
       border-radius: 4px;
-      margin-top: 0.5rem;
+      margin-top: 0.4rem;
     }
     
     /* Combat narration events */
     .combat-feed {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
-      padding: 0.5rem 0;
+      gap: 0.4rem;
+      padding: 0.4rem 0;
     }
     
     .combat-event {
-      padding: 0.6rem 0.75rem;
-      border-radius: 8px;
+      padding: 0.5rem 0.6rem;
+      border-radius: 6px;
       border-left: 3px solid #666;
-      font-size: 0.85rem;
-      line-height: 1.4;
+      font-size: 0.8rem;
+      line-height: 1.3;
       animation: combatFadeIn 0.5s ease;
       background: rgba(255,255,255,0.03);
     }
-    
     @keyframes combatFadeIn {
       from { opacity: 0; transform: translateX(-20px); }
       to { opacity: 1; transform: translateX(0); }
@@ -339,345 +509,102 @@
     .combat-event.start { border-left-color: #ff6b4a; color: #ff8a6b; background: rgba(255,107,74,0.1); }
     .combat-event.flee { border-left-color: #3498db; color: #5dade2; }
     .combat-event.spell-damage { border-left-color: #9b59b6; color: #bb8fce; }
-    
     .combat-event strong { color: #fff; }
     .combat-event em { font-style: italic; opacity: 0.8; }
-    .combat-event .damage-num { font-weight: bold; }
+    .combat-event .event-time { font-size: 0.6rem; color: #555; margin-top: 0.15rem; }
     
-    .combat-event .event-time {
-      font-size: 0.65rem;
-      color: #555;
-      margin-top: 0.2rem;
-    }
-    
-    /* Human Chat */
+    /* ========== RIGHT: CHAT ========== */
     .chat-messages {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
+      padding: 0.75rem;
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      gap: 0.4rem;
+      min-height: 0;
     }
     
     .chat-msg {
       background: rgba(255,255,255,0.05);
-      padding: 0.5rem 0.75rem;
+      padding: 0.4rem 0.6rem;
       border-radius: 8px;
       max-width: 90%;
     }
-    
     .chat-msg.self {
       background: rgba(78, 205, 196, 0.2);
       align-self: flex-end;
     }
     
     .chat-author {
-      font-size: 0.75rem;
+      font-size: 0.7rem;
       color: #4ecdc4;
       font-weight: bold;
     }
-    
     .chat-text {
-      font-size: 0.9rem;
-      margin-top: 0.25rem;
+      font-size: 0.85rem;
+      margin-top: 0.15rem;
     }
     
     .chat-input-area {
-      padding: 1rem;
+      padding: 0.6rem;
       border-top: 1px solid rgba(255,255,255,0.1);
       display: flex;
-      gap: 0.5rem;
+      gap: 0.4rem;
+      flex-shrink: 0;
     }
     
     .chat-input-area input {
       flex: 1;
-      padding: 0.5rem 1rem;
+      padding: 0.4rem 0.75rem;
       background: #1a2a3a;
       border: 1px solid #4ecdc4;
       border-radius: 20px;
       color: #fff;
-      font-size: 0.9rem;
+      font-size: 0.85rem;
     }
-    
     .chat-input-area input:focus { outline: none; border-color: #ff6b4a; }
     
     .chat-input-area button {
-      padding: 0.5rem 1rem;
+      padding: 0.4rem 0.8rem;
       background: linear-gradient(90deg, #ff6b4a, #ff8a6b);
       border: none;
       border-radius: 20px;
       color: #fff;
       font-weight: bold;
       cursor: pointer;
+      font-size: 0.8rem;
     }
-    
     .chat-input-area button:hover { opacity: 0.9; }
     
-    /* Status indicators */
-    .online-indicator {
-      width: 10px;
-      height: 10px;
-      background: #2ecc71;
-      border-radius: 50%;
-      display: inline-block;
-      margin-right: 0.5rem;
-      animation: pulse 2s infinite;
-    }
-    
-    @keyframes pulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
+    /* Placeholders */
     .no-agent {
       text-align: center;
-      padding: 2rem;
+      padding: 1.5rem;
       color: #666;
     }
+    .no-agent .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
     
-    .no-agent .icon { font-size: 3rem; margin-bottom: 1rem; }
-    
-    /* ========== WORLD MAP ========== */
-    .map-toggle-bar {
-      display: flex;
-      justify-content: center;
-      gap: 0.5rem;
-      padding: 0.5rem 1rem;
-    }
-    
-    .map-toggle-btn {
-      padding: 0.4rem 1.2rem;
-      background: rgba(0,0,0,0.4);
-      border: 1px solid rgba(78, 205, 196, 0.4);
-      border-radius: 20px;
-      color: #aaa;
-      font-size: 0.85rem;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .map-toggle-btn:hover { border-color: #4ecdc4; color: #fff; }
-    .map-toggle-btn.active {
-      background: rgba(78, 205, 196, 0.2);
-      border-color: #4ecdc4;
-      color: #4ecdc4;
-      font-weight: bold;
-    }
-    
-    .world-map-container {
-      position: relative;
-      width: 800px;
-      height: 660px;
-      margin: 0 auto 1rem;
-      background: radial-gradient(ellipse at center, rgba(10,40,60,0.9) 0%, rgba(5,15,30,0.95) 70%);
-      border-radius: 16px;
-      border: 1px solid rgba(78, 205, 196, 0.25);
-      overflow: hidden;
-    }
-    
-    .world-map-container.hidden { display: none; }
-    
-    /* Canvas for connection lines */
-    .map-lines-canvas {
-      position: absolute;
-      top: 0; left: 0;
-      width: 100%; height: 100%;
-      pointer-events: none;
-    }
-    
-    /* Zone nodes */
-    .map-zone {
-      position: absolute;
-      width: 140px;
-      padding: 10px 8px;
-      text-align: center;
-      border-radius: 12px;
-      background: rgba(10, 20, 35, 0.85);
-      border: 2px solid;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      z-index: 2;
-      transform: translate(-50%, -50%);
-    }
-    
-    .map-zone:hover {
-      transform: translate(-50%, -50%) scale(1.08);
-      z-index: 10;
-    }
-    
-    .map-zone.danger-safe {
-      border-color: #2ecc71;
-      box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
-    }
-    .map-zone.danger-safe:hover {
-      box-shadow: 0 0 22px rgba(46, 204, 113, 0.5);
-    }
-    
-    .map-zone.danger-moderate {
-      border-color: #f39c12;
-      box-shadow: 0 0 12px rgba(243, 156, 18, 0.25);
-    }
-    .map-zone.danger-moderate:hover {
-      box-shadow: 0 0 22px rgba(243, 156, 18, 0.5);
-    }
-    
-    .map-zone.danger-dangerous {
-      border-color: #e74c3c;
-      box-shadow: 0 0 12px rgba(231, 76, 60, 0.25);
-    }
-    .map-zone.danger-dangerous:hover {
-      box-shadow: 0 0 22px rgba(231, 76, 60, 0.5);
-    }
-    
-    .zone-icon {
-      font-size: 1.4rem;
-      margin-bottom: 2px;
-    }
-    
-    .zone-name {
-      font-size: 0.72rem;
-      font-weight: bold;
-      color: #ddd;
-      line-height: 1.2;
-    }
-    
-    .zone-type {
-      font-size: 0.6rem;
-      color: #888;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      margin-top: 2px;
-    }
-    
-    .zone-agent-count {
-      font-size: 0.6rem;
-      color: #4ecdc4;
-      margin-top: 3px;
-    }
-    
-    /* Agent dots inside zones */
-    .zone-agents-row {
-      display: flex;
-      justify-content: center;
-      gap: 4px;
-      flex-wrap: wrap;
-      margin-top: 5px;
-      min-height: 14px;
-    }
-    
-    .agent-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 50%;
-      cursor: pointer;
-      position: relative;
-      transition: transform 0.15s;
-      border: 1.5px solid rgba(255,255,255,0.35);
-    }
-    
-    .agent-dot:hover {
-      transform: scale(1.5);
-      z-index: 20;
-      border-color: #fff;
-    }
-    
-    .agent-dot.race-split {
-      background: linear-gradient(90deg, #e74c3c 50%, #3498db 50%) !important;
-    }
-    
-    .agent-dot.race-reef {
-      background: linear-gradient(135deg, #e74c3c, #f39c12, #f1c40f, #2ecc71, #3498db, #9b59b6) !important;
-    }
-    
-    .agent-dot.race-ghost {
-      border-color: rgba(200,255,255,0.6);
-      animation: ghostPulse 2s infinite;
-    }
-    
-    @keyframes ghostPulse {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.5; }
-    }
-    
-    /* Tooltip */
-    .map-tooltip {
-      position: absolute;
-      background: rgba(0, 0, 0, 0.92);
-      border: 1px solid #4ecdc4;
-      border-radius: 8px;
-      padding: 8px 12px;
-      color: #fff;
-      font-size: 0.78rem;
-      z-index: 100;
-      pointer-events: none;
-      white-space: nowrap;
-      display: none;
-      box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-    }
-    
-    .map-tooltip .tt-name {
-      font-weight: bold;
-      color: #4ecdc4;
-      font-size: 0.85rem;
-    }
-    
-    .map-tooltip .tt-class {
-      color: #aaa;
-      font-size: 0.72rem;
-    }
-    
-    .map-tooltip .tt-hp {
-      margin-top: 3px;
-    }
-    
-    .map-tooltip .tt-hp-bar {
-      width: 100px;
-      height: 6px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 3px;
-      overflow: hidden;
-      display: inline-block;
-      vertical-align: middle;
-      margin-left: 4px;
-    }
-    
-    .map-tooltip .tt-hp-fill {
-      height: 100%;
-      border-radius: 3px;
-    }
-    
-    /* Map title */
-    .map-title {
-      position: absolute;
-      top: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 0.8rem;
-      color: rgba(78, 205, 196, 0.6);
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      z-index: 1;
-    }
-    
-    /* Responsive */
-    @media (max-width: 1200px) {
-      .main-container {
-        grid-template-columns: 1fr;
-        grid-template-rows: auto 1fr auto;
+    /* ========== RESPONSIVE ========== */
+    @media (max-width: 1100px) {
+      .layout {
+        grid-template-columns: 240px 1fr 260px;
       }
     }
     
-    @media (max-width: 850px) {
+    @media (max-width: 900px) {
+      .layout {
+        grid-template-columns: 1fr;
+        grid-template-rows: auto 1fr auto;
+        overflow-y: auto;
+      }
       .world-map-container {
-        width: 100%;
-        height: auto;
-        aspect-ratio: 800/660;
+        max-width: 100%;
       }
     }
   </style>
 </head>
 <body>
+  <!-- HEADER -->
   <div class="header">
     <h1>🦞 <span>Caverns</span> & <span>Clawds</span> — Spectator Mode</h1>
     <div class="agent-selector">
@@ -689,22 +616,10 @@
     </div>
   </div>
   
-  <!-- Map / Feed toggle -->
-  <div class="map-toggle-bar">
-    <button class="map-toggle-btn active" id="btnShowMap" onclick="toggleMapView(true)">🗺️ World Map</button>
-    <button class="map-toggle-btn" id="btnHideMap" onclick="toggleMapView(false)">📜 Feed Only</button>
-  </div>
-  
-  <!-- World Map -->
-  <div class="world-map-container" id="worldMap">
-    <div class="map-title">🌊 The Shallows</div>
-    <canvas class="map-lines-canvas" id="mapCanvas" width="800" height="660"></canvas>
-    <!-- Zone nodes injected by JS -->
-    <div class="map-tooltip" id="mapTooltip"></div>
-  </div>
-  
-  <div class="main-container">
-    <!-- Character Sheet Panel -->
+  <!-- THREE-COLUMN LAYOUT -->
+  <div class="layout">
+    
+    <!-- LEFT: CHARACTER SHEET -->
     <div class="panel" id="charPanel">
       <div class="panel-header">📋 Character Sheet</div>
       <div class="panel-content" id="charSheet">
@@ -715,21 +630,39 @@
       </div>
     </div>
     
-    <!-- Activity Feed Panel -->
-    <div class="panel" id="activityPanel">
-      <div class="panel-header" id="activityPanelHeader">📜 Activity Feed — <span id="agentNameHeader">No Agent Selected</span></div>
-      <div id="combatHpSection"></div>
-      <div class="panel-content">
-        <div class="activity-feed" id="activityFeed">
-          <div class="no-agent">
-            <div class="icon">👀</div>
-            <p>Select an agent to watch their adventures</p>
+    <!-- CENTER: WATCH (Map + Activity) -->
+    <div class="center-column">
+      <!-- Map toggle -->
+      <div class="map-toggle-bar">
+        <button class="map-toggle-btn active" id="btnShowMap" onclick="toggleMapView(true)">🗺️ World Map</button>
+        <button class="map-toggle-btn" id="btnHideMap" onclick="toggleMapView(false)">📜 Feed Only</button>
+      </div>
+      
+      <!-- World Map -->
+      <div class="world-map-wrapper" id="worldMapWrapper">
+        <div class="world-map-container" id="worldMap">
+          <div class="map-title">🌊 The Shallows</div>
+          <canvas class="map-lines-canvas" id="mapCanvas"></canvas>
+          <div class="map-tooltip" id="mapTooltip"></div>
+        </div>
+      </div>
+      
+      <!-- Activity Feed -->
+      <div class="panel activity-panel" id="activityPanel">
+        <div class="panel-header" id="activityPanelHeader">📜 Activity Feed — <span id="agentNameHeader">No Agent Selected</span></div>
+        <div id="combatHpSection"></div>
+        <div class="panel-content">
+          <div class="activity-feed" id="activityFeed">
+            <div class="no-agent">
+              <div class="icon">👀</div>
+              <p>Select an agent to watch their adventures</p>
+            </div>
           </div>
         </div>
       </div>
     </div>
     
-    <!-- Human Chat Panel -->
+    <!-- RIGHT: CHAT -->
     <div class="panel">
       <div class="panel-header">💬 Spectator Chat (Humans Only)</div>
       <div class="chat-messages" id="chatMessages">
@@ -749,81 +682,64 @@
     let selectedAgent = null;
     let agents = [];
     let spectatorName = 'Spectator_' + Math.floor(Math.random() * 1000);
-    let activityPollInterval = null;
     let isInCombatMode = false;
     let seenCombatEventIds = new Set();
     
-    // Lobster paperdoll HTML generator
+    // ================================================================
+    // LOBSTER PAPERDOLL
+    // ================================================================
+    
     function createLobsterHTML(raceClass) {
       return `<div class="lobster ${raceClass}">
-        <div class="lb-antenna-l"></div>
-        <div class="lb-antenna-r"></div>
-        <div class="lb-claw-l"></div>
-        <div class="lb-claw-r"></div>
-        <div class="lb-arm-l"></div>
-        <div class="lb-arm-r"></div>
+        <div class="lb-antenna-l"></div><div class="lb-antenna-r"></div>
+        <div class="lb-claw-l"></div><div class="lb-claw-r"></div>
+        <div class="lb-arm-l"></div><div class="lb-arm-r"></div>
         <div class="lb-head"></div>
-        <div class="lb-eye-l"></div>
-        <div class="lb-eye-r"></div>
+        <div class="lb-eye-l"></div><div class="lb-eye-r"></div>
         <div class="lb-body"></div>
-        <div class="lb-segment-1"></div>
-        <div class="lb-segment-2"></div>
+        <div class="lb-segment-1"></div><div class="lb-segment-2"></div>
         <div class="lb-tail"></div>
-        <div class="lb-leg-l1"></div>
-        <div class="lb-leg-l2"></div>
-        <div class="lb-leg-l3"></div>
-        <div class="lb-leg-r1"></div>
-        <div class="lb-leg-r2"></div>
-        <div class="lb-leg-r3"></div>
+        <div class="lb-leg-l1"></div><div class="lb-leg-l2"></div><div class="lb-leg-l3"></div>
+        <div class="lb-leg-r1"></div><div class="lb-leg-r2"></div><div class="lb-leg-r3"></div>
       </div>`;
     }
     
-    // Map race name to CSS class
     function getRaceCSSClass(raceName) {
       if (!raceName) return 'lobster-american';
       const raceMap = {
-        'american': 'lobster-american',
-        'american lobster': 'lobster-american',
-        'european': 'lobster-european',
-        'european lobster': 'lobster-european',
-        'slipper': 'lobster-slipper',
-        'slipper lobster': 'lobster-slipper',
-        'squat': 'lobster-squat',
-        'squat lobster': 'lobster-squat',
-        'spiny': 'lobster-spiny',
-        'spiny lobster': 'lobster-spiny',
-        'reef': 'lobster-reef',
-        'reef lobster': 'lobster-reef',
-        'pistol': 'lobster-pistol',
-        'pistol lobster': 'lobster-pistol',
-        'pistol shrimp': 'lobster-pistol',
-        'calico': 'lobster-calico',
-        'calico lobster': 'lobster-calico',
-        'ghost': 'lobster-ghost',
-        'ghost lobster': 'lobster-ghost',
-        'split': 'lobster-split',
-        'split lobster': 'lobster-split',
+        'american': 'lobster-american', 'american lobster': 'lobster-american',
+        'european': 'lobster-european', 'european lobster': 'lobster-european',
+        'slipper': 'lobster-slipper', 'slipper lobster': 'lobster-slipper',
+        'squat': 'lobster-squat', 'squat lobster': 'lobster-squat',
+        'spiny': 'lobster-spiny', 'spiny lobster': 'lobster-spiny',
+        'reef': 'lobster-reef', 'reef lobster': 'lobster-reef',
+        'pistol': 'lobster-pistol', 'pistol lobster': 'lobster-pistol', 'pistol shrimp': 'lobster-pistol',
+        'calico': 'lobster-calico', 'calico lobster': 'lobster-calico',
+        'ghost': 'lobster-ghost', 'ghost lobster': 'lobster-ghost',
+        'split': 'lobster-split', 'split lobster': 'lobster-split',
       };
       return raceMap[raceName.toLowerCase()] || 'lobster-american';
     }
     
-    // Initialize
+    // ================================================================
+    // INIT
+    // ================================================================
+    
     async function init() {
-      // Load map first (instant visual feedback)
       loadMapData();
-      
       await loadAgents();
-      startActivityPolling();
-      startChatPolling();
+      startPolling();
       
-      // Prompt for name (deferred so map renders first)
       setTimeout(() => {
         const name = prompt('Enter your spectator name:', spectatorName);
         if (name) spectatorName = name;
       }, 300);
     }
     
-    // Load all AI agents
+    // ================================================================
+    // AGENTS
+    // ================================================================
+    
     async function loadAgents() {
       try {
         const res = await fetch('/api/spectate/agents');
@@ -832,11 +748,10 @@
         
         const select = document.getElementById('agentSelect');
         select.innerHTML = '<option value="">-- Select an Agent (' + agents.length + ' online) --</option>';
-        
         agents.forEach(a => {
           const opt = document.createElement('option');
           opt.value = a.id;
-          opt.textContent = a.name + ' (Lvl ' + (a.level || 1) + ' ' + (a.class || 'Unknown') + ')';
+          opt.textContent = a.name + ' (Lvl ' + (a.level || 1) + ' ' + (a.class || '?') + ')';
           select.appendChild(opt);
         });
       } catch (err) {
@@ -844,7 +759,6 @@
       }
     }
     
-    // Select an agent to watch
     async function selectAgent(agentId) {
       if (!agentId) {
         selectedAgent = null;
@@ -854,282 +768,28 @@
         document.getElementById('activityFeed').innerHTML = '<div class="no-agent"><div class="icon">👀</div><p>Select an agent to watch their adventures</p></div>';
         return;
       }
-      
       selectedAgent = agentId;
       seenCombatEventIds.clear();
       await loadCharacterSheet(agentId);
       await checkCombatState(agentId);
     }
     
-    // ==========================================
-    // COMBAT MODE
-    // ==========================================
+    // ================================================================
+    // CHARACTER SHEET
+    // ================================================================
     
-    function enterCombatMode() {
-      if (isInCombatMode) return;
-      isInCombatMode = true;
-      
-      const panel = document.getElementById('activityPanel');
-      const header = document.getElementById('activityPanelHeader');
-      
-      panel.classList.add('combat-mode');
-      header.classList.add('combat-header');
-      const agentName = document.getElementById('agentNameHeader')?.textContent || 'Agent';
-      header.innerHTML = '⚔️ COMBAT MODE — <span id="agentNameHeader" style="color:#ffd93d">' + agentName + '</span>';
-      
-      document.getElementById('activityFeed').innerHTML = '<div class="combat-feed" id="combatFeed"></div>';
-    }
-    
-    function exitCombatMode() {
-      if (!isInCombatMode) return;
-      isInCombatMode = false;
-      seenCombatEventIds.clear();
-      
-      const panel = document.getElementById('activityPanel');
-      const header = document.getElementById('activityPanelHeader');
-      
-      panel.classList.remove('combat-mode');
-      header.classList.remove('combat-header');
-      header.innerHTML = '📜 Activity Feed — <span id="agentNameHeader">No Agent Selected</span>';
-      
-      document.getElementById('combatHpSection').innerHTML = '';
-      
-      if (selectedAgent) {
-        loadAgentActivity(selectedAgent);
-      }
-    }
-    
-    function updateCombatHpBars(data) {
-      const section = document.getElementById('combatHpSection');
-      if (!data || !data.inCombat) {
-        section.innerHTML = '';
-        return;
-      }
-      
-      const c = data.combat || data;
-      const playerHp = c.playerHp || 0;
-      const playerMaxHp = c.playerMaxHp || 1;
-      const playerPct = Math.max(0, Math.min(100, Math.round((playerHp / playerMaxHp) * 100)));
-      
-      let html = '<div class="combat-hp-section">';
-      
-      // Player HP bar
-      const agentName = document.getElementById('agentNameHeader')?.textContent || 'Player';
-      html += `
-        <div class="combat-hp-row">
-          <div class="combat-hp-label player">🦞 ${agentName}</div>
-          <div class="combat-hp-bar">
-            <div class="combat-hp-fill player-fill" style="width: ${playerPct}%"></div>
-            <div class="combat-hp-text">${playerHp} / ${playerMaxHp}</div>
-          </div>
-        </div>`;
-      
-      // Monster HP bars
-      const monsters = c.monsters || [];
-      monsters.forEach(m => {
-        const mPct = Math.max(0, Math.min(100, Math.round((m.hp / m.maxHp) * 100)));
-        html += `
-          <div class="combat-hp-row">
-            <div class="combat-hp-label monster">👹 ${m.name}</div>
-            <div class="combat-hp-bar">
-              <div class="combat-hp-fill monster-fill" style="width: ${mPct}%"></div>
-              <div class="combat-hp-text">${m.hp} / ${m.maxHp}</div>
-            </div>
-          </div>`;
-      });
-      
-      if (c.round) {
-        html += `<div class="combat-round">⚔️ Round ${c.round} — ${c.zone || 'Unknown Zone'}</div>`;
-      }
-      
-      html += '</div>';
-      section.innerHTML = html;
-    }
-    
-    async function checkCombatState(agentId) {
-      try {
-        const res = await fetch('/api/spectate/combat/' + agentId + '/active');
-        const data = await res.json();
-        
-        if (data.inCombat) {
-          enterCombatMode();
-          updateCombatHpBars(data);
-          await loadCombatEvents(agentId);
-        } else {
-          if (isInCombatMode) {
-            exitCombatMode();
-          } else {
-            await loadAgentActivity(agentId);
-          }
-        }
-      } catch (err) {
-        if (!isInCombatMode) {
-          await loadAgentActivity(agentId);
-        }
-      }
-    }
-    
-    async function loadCombatEvents(agentId) {
-      try {
-        const res = await fetch('/api/spectate/combat/' + agentId + '?limit=30');
-        const data = await res.json();
-        
-        if (!data.events || data.events.length === 0) return;
-        
-        const feed = document.getElementById('combatFeed');
-        if (!feed) return;
-        
-        const newEvents = data.events.filter(e => !seenCombatEventIds.has(e.id));
-        if (newEvents.length === 0) return;
-        
-        if (seenCombatEventIds.size === 0) {
-          // Fresh load — show all, oldest first
-          const displayEvents = data.events.slice(0, 30).reverse();
-          feed.innerHTML = '';
-          displayEvents.forEach(e => {
-            seenCombatEventIds.add(e.id);
-            feed.appendChild(createCombatEventElement(e));
-          });
-        } else {
-          // Append only new events (reverse since they come newest-first)
-          newEvents.reverse().forEach(e => {
-            seenCombatEventIds.add(e.id);
-            feed.appendChild(createCombatEventElement(e));
-          });
-        }
-        
-        // Auto-scroll
-        const content = feed.closest('.panel-content');
-        if (content) content.scrollTop = content.scrollHeight;
-      } catch (err) {
-        console.error('Failed to load combat events:', err);
-      }
-    }
-    
-    function createCombatEventElement(event) {
-      const div = document.createElement('div');
-      const narration = narrateCombatEvent(event);
-      div.className = 'combat-event ' + narration.cssClass;
-      div.innerHTML = `
-        <div>${narration.text}</div>
-        <div class="event-time">${new Date(event.timestamp).toLocaleTimeString()}</div>
-      `;
-      return div;
-    }
-    
-    function narrateCombatEvent(event) {
-      switch (event.type) {
-        case 'combat_start': {
-          const monsterList = (event.monsters || []).map(m => m.name).join(', ');
-          return {
-            cssClass: 'start',
-            text: `⚔️ <strong>COMBAT BEGINS!</strong> ${event.description || ('Enemies appear: ' + monsterList)}`
-          };
-        }
-        case 'combat_attack': {
-          const isPlayerAttacker = !isMonsterName(event.player);
-          if (isPlayerAttacker) {
-            return {
-              cssClass: 'hit',
-              text: `⚔️ <strong>${event.player}</strong> swings their ${event.weapon || 'weapon'} at the ${event.target} — <em>rolls ${event.roll} vs AC ${event.ac}</em>... <strong>HIT!</strong> Deals <strong>${event.damage} ${event.damageType || ''}</strong> damage!`
-            };
-          }
-          return {
-            cssClass: 'damage-taken',
-            text: `🩸 <strong>${event.player}</strong> strikes <strong>${event.target}</strong> with ${event.weapon || 'an attack'} — <em>rolls ${event.roll} vs AC ${event.ac}</em>... <strong>HIT!</strong> <strong>${event.damage} ${event.damageType || ''}</strong> damage!`
-          };
-        }
-        case 'combat_miss': {
-          if (event.critMiss) {
-            return {
-              cssClass: 'miss',
-              text: `🎲 <strong>${event.player}</strong> swings wildly at <strong>${event.target}</strong> — <em>Natural 1!</em> <strong>CRITICAL MISS!</strong>`
-            };
-          }
-          return {
-            cssClass: 'miss',
-            text: `🛡️ <strong>${event.player}</strong> attacks <strong>${event.target}</strong> — <em>rolls ${event.roll || event.totalRoll} vs AC ${event.ac}</em>... <strong>MISS!</strong> The attack glances off armor.`
-          };
-        }
-        case 'combat_critical': {
-          return {
-            cssClass: 'crit',
-            text: `⚡ <strong>CRITICAL HIT!</strong> <strong>${event.player}</strong>'s ${event.weapon || 'weapon'} finds a weak spot on ${event.target} — <strong>${event.damage} ${event.damageType || ''}</strong> damage!`
-          };
-        }
-        case 'combat_spell': {
-          if (event.healing) {
-            return {
-              cssClass: 'heal',
-              text: `💚 <strong>${event.player}</strong> channels ${event.spell || 'divine energy'} — Restores <strong>${event.healing} HP</strong>!` +
-                (event.newHp ? ` (${event.newHp}/${event.maxHp} HP)` : '')
-            };
-          }
-          if (event.damage) {
-            return {
-              cssClass: 'spell-damage',
-              text: `✨ <strong>${event.player}</strong> casts <strong>${event.spell}</strong> at ${event.target} — <strong>${event.damage} ${event.damageType || 'arcane'}</strong> damage!`
-            };
-          }
-          return {
-            cssClass: 'heal',
-            text: `✨ <strong>${event.player}</strong> casts <strong>${event.spell || 'a spell'}</strong>!`
-          };
-        }
-        case 'combat_death':
-          return {
-            cssClass: 'kill',
-            text: `💀 <strong>${event.target}</strong> crumbles, defeated by <strong>${event.killer}</strong>!`
-          };
-        case 'combat_defeat':
-          return {
-            cssClass: 'defeat',
-            text: `☠️ <strong>${event.player}</strong> falls... the ocean claims another soul.`
-          };
-        case 'combat_victory': {
-          const xp = event.xpGained ? ` Gained <strong>${event.xpGained} XP</strong>!` : '';
-          const loot = (event.materials && event.materials.length) ? ` Loot: ${event.materials.join(', ')}` : '';
-          return {
-            cssClass: 'victory',
-            text: `🎉 <strong>VICTORY!</strong> ${event.player} is triumphant!${xp}${loot}`
-          };
-        }
-        case 'combat_flee':
-          return event.success
-            ? { cssClass: 'flee', text: `🏃 <strong>${event.player}</strong> escapes the battle!` }
-            : { cssClass: 'miss', text: `❌ <strong>${event.player}</strong> tries to flee but the enemies block the escape!` };
-        case 'combat_end':
-          return event.result === 'defeat'
-            ? { cssClass: 'defeat', text: `☠️ <strong>COMBAT OVER</strong> — ${event.player} has fallen...` }
-            : { cssClass: 'victory', text: `🎉 <strong>COMBAT OVER</strong> — Victory!` };
-        default:
-          return { cssClass: '', text: `📋 ${event.type}: ${JSON.stringify(event).substring(0, 100)}` };
-      }
-    }
-    
-    function isMonsterName(name) {
-      if (!name) return false;
-      const monsterKeywords = ['Giant Crab', 'King Crab', 'Kelp Lurker', 'Reef Shark', 'Fish Swarm',
-        'Drowned Sailor', 'Barnacle Horror', 'Sea Wraith', 'Moray Terror', 'Treasure Mimic', 'Anchor Wight',
-        'Ghost Captain', 'Magma Crab', 'Loan Shark'];
-      return monsterKeywords.some(m => name.includes(m));
-    }
-    
-    // Load character sheet
     async function loadCharacterSheet(agentId) {
       try {
         const res = await fetch('/api/spectate/character/' + agentId);
         const data = await res.json();
-        
         if (!data.character) {
           document.getElementById('charSheet').innerHTML = '<div class="no-agent"><p>Character not found</p></div>';
           return;
         }
-        
         const c = data.character;
         document.getElementById('agentNameHeader').textContent = c.name;
         
-        const hpPercent = Math.round((c.hp / c.max_hp) * 100);
+        const hpPct = Math.round((c.hp / c.max_hp) * 100);
         const raceClass = getRaceCSSClass(c.race);
         
         let html = `
@@ -1138,35 +798,28 @@
             <div class="char-name">${c.name}</div>
             <div class="char-class">Level ${c.level} ${c.race} ${c.class}</div>
           </div>
-          
           <div class="hp-bar">
-            <div class="hp-fill" style="width: ${hpPercent}%"></div>
+            <div class="hp-fill" style="width: ${hpPct}%"></div>
             <div class="hp-text">${c.hp} / ${c.max_hp} HP</div>
           </div>
-          
           <div class="stats-grid">
-            <div class="stat-box"><div class="stat-label">STR</div><div class="stat-value">${c.str || 10}</div></div>
-            <div class="stat-box"><div class="stat-label">DEX</div><div class="stat-value">${c.dex || 10}</div></div>
-            <div class="stat-box"><div class="stat-label">CON</div><div class="stat-value">${c.con || 10}</div></div>
-            <div class="stat-box"><div class="stat-label">INT</div><div class="stat-value">${c.int || 10}</div></div>
-            <div class="stat-box"><div class="stat-label">WIS</div><div class="stat-value">${c.wis || 10}</div></div>
-            <div class="stat-box"><div class="stat-label">CHA</div><div class="stat-value">${c.cha || 10}</div></div>
+            <div class="stat-box"><div class="stat-label">STR</div><div class="stat-value">${c.str||10}</div></div>
+            <div class="stat-box"><div class="stat-label">DEX</div><div class="stat-value">${c.dex||10}</div></div>
+            <div class="stat-box"><div class="stat-label">CON</div><div class="stat-value">${c.con||10}</div></div>
+            <div class="stat-box"><div class="stat-label">INT</div><div class="stat-value">${c.int||10}</div></div>
+            <div class="stat-box"><div class="stat-label">WIS</div><div class="stat-value">${c.wis||10}</div></div>
+            <div class="stat-box"><div class="stat-label">CHA</div><div class="stat-value">${c.cha||10}</div></div>
           </div>
-          
-          <div class="stat-box" style="margin-bottom: 0.5rem;">
-            <div class="stat-label">AC</div><div class="stat-value">${c.ac || 10}</div>
+          <div class="stat-box" style="margin-bottom: 0.4rem;">
+            <div class="stat-label">AC</div><div class="stat-value">${c.ac||10}</div>
           </div>
-          
-          <div class="stat-box" style="margin-bottom: 0.5rem;">
-            <div class="stat-label">USDC Balance</div><div class="stat-value">💰 ${(c.usdc_balance || 0).toFixed(4)}</div>
+          <div class="stat-box" style="margin-bottom: 0.4rem;">
+            <div class="stat-label">USDC Balance</div><div class="stat-value">💰 ${(c.usdc_balance||0).toFixed(4)}</div>
           </div>
-          
           <div class="stat-box">
-            <div class="stat-label">Location</div><div class="stat-value" style="font-size: 0.8rem;">${c.location || 'Unknown'}</div>
-          </div>
-        `;
+            <div class="stat-label">Location</div><div class="stat-value" style="font-size: 0.75rem;">${c.location||'Unknown'}</div>
+          </div>`;
         
-        // Inventory
         if (data.inventory && data.inventory.length > 0) {
           html += '<div class="section-title">🎒 Inventory</div>';
           data.inventory.forEach(item => {
@@ -1174,7 +827,6 @@
           });
         }
         
-        // Spells
         if (data.spells && data.spells.length > 0) {
           html += '<div class="section-title">✨ Spells</div>';
           data.spells.forEach(spell => {
@@ -1188,13 +840,180 @@
       }
     }
     
-    // Load agent activity (non-combat mode)
+    // ================================================================
+    // COMBAT MODE
+    // ================================================================
+    
+    function enterCombatMode() {
+      if (isInCombatMode) return;
+      isInCombatMode = true;
+      const panel = document.getElementById('activityPanel');
+      const header = document.getElementById('activityPanelHeader');
+      panel.classList.add('combat-mode');
+      header.classList.add('combat-header');
+      const agentName = document.getElementById('agentNameHeader')?.textContent || 'Agent';
+      header.innerHTML = '⚔️ COMBAT MODE — <span id="agentNameHeader" style="color:#ffd93d">' + agentName + '</span>';
+      document.getElementById('activityFeed').innerHTML = '<div class="combat-feed" id="combatFeed"></div>';
+    }
+    
+    function exitCombatMode() {
+      if (!isInCombatMode) return;
+      isInCombatMode = false;
+      seenCombatEventIds.clear();
+      const panel = document.getElementById('activityPanel');
+      const header = document.getElementById('activityPanelHeader');
+      panel.classList.remove('combat-mode');
+      header.classList.remove('combat-header');
+      header.innerHTML = '📜 Activity Feed — <span id="agentNameHeader">No Agent Selected</span>';
+      document.getElementById('combatHpSection').innerHTML = '';
+      if (selectedAgent) loadAgentActivity(selectedAgent);
+    }
+    
+    function updateCombatHpBars(data) {
+      const section = document.getElementById('combatHpSection');
+      if (!data || !data.inCombat) { section.innerHTML = ''; return; }
+      const c = data.combat || data;
+      const playerHp = c.playerHp || 0;
+      const playerMaxHp = c.playerMaxHp || 1;
+      const playerPct = Math.max(0, Math.min(100, Math.round((playerHp / playerMaxHp) * 100)));
+      const agentName = document.getElementById('agentNameHeader')?.textContent || 'Player';
+      
+      let html = '<div class="combat-hp-section">';
+      html += `<div class="combat-hp-row">
+        <div class="combat-hp-label player">🦞 ${agentName}</div>
+        <div class="combat-hp-bar">
+          <div class="combat-hp-fill player-fill" style="width:${playerPct}%"></div>
+          <div class="combat-hp-text">${playerHp} / ${playerMaxHp}</div>
+        </div>
+      </div>`;
+      
+      (c.monsters || []).forEach(m => {
+        const mPct = Math.max(0, Math.min(100, Math.round((m.hp / m.maxHp) * 100)));
+        html += `<div class="combat-hp-row">
+          <div class="combat-hp-label monster">👹 ${m.name}</div>
+          <div class="combat-hp-bar">
+            <div class="combat-hp-fill monster-fill" style="width:${mPct}%"></div>
+            <div class="combat-hp-text">${m.hp} / ${m.maxHp}</div>
+          </div>
+        </div>`;
+      });
+      
+      if (c.round) html += `<div class="combat-round">⚔️ Round ${c.round} — ${c.zone || 'Unknown Zone'}</div>`;
+      html += '</div>';
+      section.innerHTML = html;
+    }
+    
+    async function checkCombatState(agentId) {
+      try {
+        const res = await fetch('/api/spectate/combat/' + agentId + '/active');
+        const data = await res.json();
+        if (data.inCombat) {
+          enterCombatMode();
+          updateCombatHpBars(data);
+          await loadCombatEvents(agentId);
+        } else {
+          if (isInCombatMode) exitCombatMode();
+          else await loadAgentActivity(agentId);
+        }
+      } catch (err) {
+        if (!isInCombatMode) await loadAgentActivity(agentId);
+      }
+    }
+    
+    async function loadCombatEvents(agentId) {
+      try {
+        const res = await fetch('/api/spectate/combat/' + agentId + '?limit=30');
+        const data = await res.json();
+        if (!data.events || data.events.length === 0) return;
+        
+        const feed = document.getElementById('combatFeed');
+        if (!feed) return;
+        
+        const newEvents = data.events.filter(e => !seenCombatEventIds.has(e.id));
+        if (newEvents.length === 0) return;
+        
+        if (seenCombatEventIds.size === 0) {
+          const displayEvents = data.events.slice(0, 30).reverse();
+          feed.innerHTML = '';
+          displayEvents.forEach(e => {
+            seenCombatEventIds.add(e.id);
+            feed.appendChild(createCombatEventElement(e));
+          });
+        } else {
+          newEvents.reverse().forEach(e => {
+            seenCombatEventIds.add(e.id);
+            feed.appendChild(createCombatEventElement(e));
+          });
+        }
+        
+        const content = feed.closest('.panel-content');
+        if (content) content.scrollTop = content.scrollHeight;
+      } catch (err) {
+        console.error('Failed to load combat events:', err);
+      }
+    }
+    
+    function createCombatEventElement(event) {
+      const div = document.createElement('div');
+      const narration = narrateCombatEvent(event);
+      div.className = 'combat-event ' + narration.cssClass;
+      div.innerHTML = `<div>${narration.text}</div><div class="event-time">${new Date(event.timestamp).toLocaleTimeString()}</div>`;
+      return div;
+    }
+    
+    function narrateCombatEvent(event) {
+      switch (event.type) {
+        case 'combat_start': {
+          const monsterList = (event.monsters || []).map(m => m.name).join(', ');
+          return { cssClass: 'start', text: `⚔️ <strong>COMBAT BEGINS!</strong> ${event.description || ('Enemies appear: ' + monsterList)}` };
+        }
+        case 'combat_attack': {
+          const isPlayer = !isMonsterName(event.player);
+          if (isPlayer) return { cssClass: 'hit', text: `⚔️ <strong>${event.player}</strong> swings at ${event.target} — <em>${event.roll} vs AC ${event.ac}</em>... <strong>HIT!</strong> <strong>${event.damage} ${event.damageType||''}</strong> damage!` };
+          return { cssClass: 'damage-taken', text: `🩸 <strong>${event.player}</strong> strikes <strong>${event.target}</strong> — <em>${event.roll} vs AC ${event.ac}</em>... <strong>HIT!</strong> <strong>${event.damage} ${event.damageType||''}</strong> damage!` };
+        }
+        case 'combat_miss':
+          if (event.critMiss) return { cssClass: 'miss', text: `🎲 <strong>${event.player}</strong> swings wildly — <em>Natural 1!</em> <strong>CRITICAL MISS!</strong>` };
+          return { cssClass: 'miss', text: `🛡️ <strong>${event.player}</strong> attacks <strong>${event.target}</strong> — <em>${event.roll||event.totalRoll} vs AC ${event.ac}</em>... <strong>MISS!</strong>` };
+        case 'combat_critical':
+          return { cssClass: 'crit', text: `⚡ <strong>CRITICAL HIT!</strong> <strong>${event.player}</strong> finds a weak spot on ${event.target} — <strong>${event.damage} ${event.damageType||''}</strong> damage!` };
+        case 'combat_spell':
+          if (event.healing) return { cssClass: 'heal', text: `💚 <strong>${event.player}</strong> channels ${event.spell||'divine energy'} — Restores <strong>${event.healing} HP</strong>!` + (event.newHp ? ` (${event.newHp}/${event.maxHp} HP)` : '') };
+          if (event.damage) return { cssClass: 'spell-damage', text: `✨ <strong>${event.player}</strong> casts <strong>${event.spell}</strong> at ${event.target} — <strong>${event.damage} ${event.damageType||'arcane'}</strong> damage!` };
+          return { cssClass: 'heal', text: `✨ <strong>${event.player}</strong> casts <strong>${event.spell||'a spell'}</strong>!` };
+        case 'combat_death':
+          return { cssClass: 'kill', text: `💀 <strong>${event.target}</strong> crumbles, defeated by <strong>${event.killer}</strong>!` };
+        case 'combat_defeat':
+          return { cssClass: 'defeat', text: `☠️ <strong>${event.player}</strong> falls... the ocean claims another soul.` };
+        case 'combat_victory': {
+          const xp = event.xpGained ? ` Gained <strong>${event.xpGained} XP</strong>!` : '';
+          const loot = (event.materials && event.materials.length) ? ` Loot: ${event.materials.join(', ')}` : '';
+          return { cssClass: 'victory', text: `🎉 <strong>VICTORY!</strong> ${event.player} is triumphant!${xp}${loot}` };
+        }
+        case 'combat_flee':
+          return event.success ? { cssClass: 'flee', text: `🏃 <strong>${event.player}</strong> escapes!` } : { cssClass: 'miss', text: `❌ <strong>${event.player}</strong> tries to flee but is blocked!` };
+        case 'combat_end':
+          return event.result === 'defeat' ? { cssClass: 'defeat', text: `☠️ <strong>COMBAT OVER</strong> — ${event.player} has fallen...` } : { cssClass: 'victory', text: `🎉 <strong>COMBAT OVER</strong> — Victory!` };
+        default:
+          return { cssClass: '', text: `📋 ${event.type}: ${JSON.stringify(event).substring(0, 100)}` };
+      }
+    }
+    
+    function isMonsterName(name) {
+      if (!name) return false;
+      const keywords = ['Giant Crab','King Crab','Kelp Lurker','Reef Shark','Fish Swarm','Drowned Sailor','Barnacle Horror','Sea Wraith','Moray Terror','Treasure Mimic','Anchor Wight','Ghost Captain','Magma Crab','Loan Shark'];
+      return keywords.some(m => name.includes(m));
+    }
+    
+    // ================================================================
+    // ACTIVITY FEED (non-combat)
+    // ================================================================
+    
     async function loadAgentActivity(agentId) {
-      if (isInCombatMode) return; // Don't overwrite combat feed
+      if (isInCombatMode) return;
       try {
         const res = await fetch('/api/spectate/activity/' + agentId + '?limit=50');
         const data = await res.json();
-        
         const feed = document.getElementById('activityFeed');
         
         if (!data.activities || data.activities.length === 0) {
@@ -1208,39 +1027,35 @@
           if (a.action.includes('sold') || a.action.includes('bought')) cls = 'trade';
           if (a.action.includes('defeat') || a.action.includes('died')) cls = 'death';
           if (a.action.includes('victory') || a.action.includes('won')) cls = 'victory';
-          
-          return `
-            <div class="activity-item ${cls}">
-              <div class="activity-time">${new Date(a.timestamp).toLocaleTimeString()}</div>
-              <div class="activity-text">${a.icon || '📍'} ${a.action}</div>
-            </div>
-          `;
+          return `<div class="activity-item ${cls}">
+            <div class="activity-time">${new Date(a.timestamp).toLocaleTimeString()}</div>
+            <div class="activity-text">${a.icon||'📍'} ${a.action}</div>
+          </div>`;
         }).join('');
       } catch (err) {
         console.error('Failed to load activity:', err);
       }
     }
     
-    // Poll for updates
-    function startActivityPolling() {
+    // ================================================================
+    // POLLING
+    // ================================================================
+    
+    function startPolling() {
+      // Agent/combat/character updates — 3s
       setInterval(async () => {
         if (selectedAgent) {
           await checkCombatState(selectedAgent);
           await loadCharacterSheet(selectedAgent);
         }
-        await loadAgents(); // Refresh agent list
-      }, 3000); // 3s for snappy combat updates
-    }
-    
-    // Human chat
-    const chatHistory = [];
-    
-    function startChatPolling() {
+        await loadAgents();
+      }, 3000);
+      
+      // Chat — 2s
       setInterval(async () => {
         try {
           const res = await fetch('/api/spectate/chat?since=' + (chatHistory.length > 0 ? chatHistory[chatHistory.length-1].id : 0));
           const data = await res.json();
-          
           if (data.messages) {
             data.messages.forEach(msg => {
               if (!chatHistory.find(m => m.id === msg.id)) {
@@ -1249,11 +1064,18 @@
               }
             });
           }
-        } catch (err) {
-          // Chat endpoint might not exist yet
-        }
+        } catch (err) {}
       }, 2000);
+      
+      // Map — 5s
+      setInterval(() => { if (mapVisible) loadMapData(); }, 5000);
     }
+    
+    // ================================================================
+    // CHAT
+    // ================================================================
+    
+    const chatHistory = [];
     
     function addChatMessage(msg) {
       const div = document.createElement('div');
@@ -1267,7 +1089,6 @@
       const input = document.getElementById('chatInput');
       const text = input.value.trim();
       if (!text) return;
-      
       try {
         await fetch('/api/spectate/chat', {
           method: 'POST',
@@ -1276,7 +1097,6 @@
         });
         input.value = '';
       } catch (err) {
-        // Add locally if server fails
         addChatMessage({ author: spectatorName, text, id: Date.now() });
         input.value = '';
       }
@@ -1287,26 +1107,14 @@
     // ================================================================
     
     const RACE_COLORS = {
-      american: '#8B2500',
-      european: '#2E4B8F',
-      ghost: 'rgba(200,255,255,0.8)',
-      pistol: '#4A6741',
-      reef: 'rainbow',
-      spiny: '#D2691E',
-      slipper: '#C2A366',
-      squat: '#FF8C00',
-      calico: '#DEB887',
-      split: 'split'
+      american: '#8B2500', european: '#2E4B8F', ghost: 'rgba(200,255,255,0.8)',
+      pistol: '#4A6741', reef: 'rainbow', spiny: '#D2691E',
+      slipper: '#C2A366', squat: '#FF8C00', calico: '#DEB887', split: 'split'
     };
     
     const ZONE_ICONS = {
-      hub: '🍺',
-      market: '🛒',
-      arena: '⚔️',
-      temple: '🏛️',
-      docks: '⚓',
-      adventure_zone: '💀',
-      outpost: '🏕️'
+      hub: '🍺', market: '🛒', arena: '⚔️', temple: '🏛️',
+      docks: '⚓', adventure_zone: '💀', outpost: '🏕️'
     };
     
     let mapZones = [];
@@ -1315,7 +1123,7 @@
     
     function toggleMapView(show) {
       mapVisible = show;
-      document.getElementById('worldMap').classList.toggle('hidden', !show);
+      document.getElementById('worldMapWrapper').classList.toggle('hidden', !show);
       document.getElementById('btnShowMap').classList.toggle('active', show);
       document.getElementById('btnHideMap').classList.toggle('active', !show);
     }
@@ -1336,16 +1144,26 @@
     function renderMap() {
       const container = document.getElementById('worldMap');
       const canvas = document.getElementById('mapCanvas');
+      
+      // Size canvas to actual container dimensions
+      const rect = container.getBoundingClientRect();
+      const W = rect.width;
+      const H = rect.height;
+      canvas.width = W;
+      canvas.height = H;
+      
+      // Scale factor from the original 800x660 coords
+      const scaleX = W / 800;
+      const scaleY = H / 660;
+      
       const ctx = canvas.getContext('2d');
       
-      // Clear old zone nodes (keep canvas, tooltip, and title)
       container.querySelectorAll('.map-zone').forEach(el => el.remove());
       
-      // Draw connection lines on canvas
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      // Connection lines
+      ctx.clearRect(0, 0, W, H);
       ctx.strokeStyle = 'rgba(78, 205, 196, 0.2)';
       ctx.lineWidth = 2;
-      
       const drawnPairs = new Set();
       
       mapZones.forEach(zone => {
@@ -1353,13 +1171,11 @@
           const pairKey = [zone.id, connId].sort().join('--');
           if (drawnPairs.has(pairKey)) return;
           drawnPairs.add(pairKey);
-          
           const target = mapZones.find(z => z.id === connId);
           if (!target) return;
-          
           ctx.beginPath();
-          ctx.moveTo(zone.x, zone.y);
-          ctx.lineTo(target.x, target.y);
+          ctx.moveTo(zone.x * scaleX, zone.y * scaleY);
+          ctx.lineTo(target.x * scaleX, target.y * scaleY);
           ctx.stroke();
         });
       });
@@ -1367,109 +1183,75 @@
       // Group agents by zone
       const agentsByZone = {};
       mapAgents.forEach(a => {
-        const zoneId = a.location || 'briny_flagon';
-        if (!agentsByZone[zoneId]) agentsByZone[zoneId] = [];
-        agentsByZone[zoneId].push(a);
+        const z = a.location || 'briny_flagon';
+        if (!agentsByZone[z]) agentsByZone[z] = [];
+        agentsByZone[z].push(a);
       });
       
-      // Render zone nodes
+      // Zone nodes
       mapZones.forEach(zone => {
-        const zoneDiv = document.createElement('div');
-        zoneDiv.className = `map-zone danger-${zone.danger}`;
-        zoneDiv.style.left = zone.x + 'px';
-        zoneDiv.style.top = zone.y + 'px';
-        zoneDiv.dataset.zoneId = zone.id;
+        const div = document.createElement('div');
+        div.className = `map-zone danger-${zone.danger}`;
+        div.style.left = (zone.x * scaleX) + 'px';
+        div.style.top = (zone.y * scaleY) + 'px';
+        div.dataset.zoneId = zone.id;
         
-        const zoneAgents = agentsByZone[zone.id] || [];
+        const za = agentsByZone[zone.id] || [];
         const icon = ZONE_ICONS[zone.type] || '📍';
-        const agentCountText = zoneAgents.length > 0 ? `${zoneAgents.length} adventurer${zoneAgents.length > 1 ? 's' : ''}` : '';
+        const countText = za.length > 0 ? `${za.length} adventurer${za.length > 1 ? 's' : ''}` : '';
         
-        zoneDiv.innerHTML = `
+        div.innerHTML = `
           <div class="zone-icon">${icon}</div>
           <div class="zone-name">${zone.name}</div>
           <div class="zone-type">${zone.danger}</div>
-          ${agentCountText ? `<div class="zone-agent-count">${agentCountText}</div>` : ''}
-          <div class="zone-agents-row">
-            ${zoneAgents.map(a => renderAgentDot(a)).join('')}
-          </div>
+          ${countText ? `<div class="zone-agent-count">${countText}</div>` : ''}
+          <div class="zone-agents-row">${za.map(a => renderAgentDot(a)).join('')}</div>
         `;
-        
-        container.appendChild(zoneDiv);
+        container.appendChild(div);
       });
       
-      // Re-attach event listeners
       attachMapEvents();
     }
     
     function renderAgentDot(agent) {
       const race = (agent.race || '').toLowerCase();
-      let colorStyle = '';
-      let extraClass = '';
+      let style = '', extra = '';
+      if (race === 'split') extra = ' race-split';
+      else if (race === 'reef') extra = ' race-reef';
+      else if (race === 'ghost') { extra = ' race-ghost'; style = `background:${RACE_COLORS.ghost};`; }
+      else style = `background:${RACE_COLORS[race]||'#888'};`;
       
-      if (race === 'split') {
-        extraClass = ' race-split';
-      } else if (race === 'reef') {
-        extraClass = ' race-reef';
-      } else if (race === 'ghost') {
-        extraClass = ' race-ghost';
-        colorStyle = `background: ${RACE_COLORS.ghost};`;
-      } else {
-        const color = RACE_COLORS[race] || '#888';
-        colorStyle = `background: ${color};`;
-      }
-      
-      return `<div class="agent-dot${extraClass}" style="${colorStyle}" 
-                   data-agent-id="${agent.id}" 
-                   data-agent-name="${agent.name}" 
-                   data-agent-class="${agent.class || 'Unknown'}"
-                   data-agent-race="${agent.race || 'Unknown'}"
-                   data-agent-hp="${agent.hp}" 
-                   data-agent-maxhp="${agent.maxHp}" 
-                   data-agent-level="${agent.level}"></div>`;
+      return `<div class="agent-dot${extra}" style="${style}" 
+        data-agent-id="${agent.id}" data-agent-name="${agent.name}" 
+        data-agent-class="${agent.class||'?'}" data-agent-race="${agent.race||'?'}"
+        data-agent-hp="${agent.hp}" data-agent-maxhp="${agent.maxHp}" 
+        data-agent-level="${agent.level}"></div>`;
     }
     
     function attachMapEvents() {
       const tooltip = document.getElementById('mapTooltip');
       
-      // Agent dot events
       document.querySelectorAll('.agent-dot').forEach(dot => {
         dot.addEventListener('mouseenter', (e) => {
           const d = dot.dataset;
           const hpPct = Math.round((d.agentHp / d.agentMaxhp) * 100);
           const hpColor = hpPct > 60 ? '#2ecc71' : hpPct > 30 ? '#f39c12' : '#e74c3c';
-          
           tooltip.innerHTML = `
             <div class="tt-name">${d.agentName}</div>
             <div class="tt-class">Lvl ${d.agentLevel} ${d.agentRace} ${d.agentClass}</div>
-            <div class="tt-hp">
-              HP ${d.agentHp}/${d.agentMaxhp}
+            <div class="tt-hp">HP ${d.agentHp}/${d.agentMaxhp}
               <div class="tt-hp-bar"><div class="tt-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div></div>
-            </div>
-          `;
+            </div>`;
           tooltip.style.display = 'block';
           positionTooltip(e);
         });
-        
         dot.addEventListener('mousemove', positionTooltip);
         dot.addEventListener('mouseleave', () => { tooltip.style.display = 'none'; });
-        
-        // Click to select agent in dropdown
         dot.addEventListener('click', (e) => {
           e.stopPropagation();
-          const agentId = dot.dataset.agentId;
           const select = document.getElementById('agentSelect');
-          if (select) {
-            select.value = agentId;
-            selectAgent(agentId);
-          }
-        });
-      });
-      
-      // Zone hover for tooltip (zone info)
-      document.querySelectorAll('.map-zone').forEach(zoneEl => {
-        zoneEl.addEventListener('mouseenter', (e) => {
-          // Only show zone tooltip if not hovering an agent dot
-          if (e.target.classList.contains('agent-dot')) return;
+          select.value = dot.dataset.agentId;
+          selectAgent(dot.dataset.agentId);
         });
       });
     }
@@ -1480,23 +1262,18 @@
       const rect = container.getBoundingClientRect();
       let x = e.clientX - rect.left + 15;
       let y = e.clientY - rect.top - 10;
-      
-      // Keep tooltip inside container
-      const tw = tooltip.offsetWidth;
-      const th = tooltip.offsetHeight;
-      if (x + tw > rect.width - 10) x = x - tw - 30;
+      const tw = tooltip.offsetWidth, th = tooltip.offsetHeight;
+      if (x + tw > rect.width - 10) x -= tw + 30;
       if (y + th > rect.height - 10) y = rect.height - th - 10;
       if (y < 5) y = 5;
-      
       tooltip.style.left = x + 'px';
       tooltip.style.top = y + 'px';
     }
     
-    // Start
+    // ================================================================
+    // START
+    // ================================================================
     init();
-    
-    // Map auto-refresh on same 5s interval as activity polling
-    setInterval(() => { if (mapVisible) loadMapData(); }, 5000);
   </script>
 </body>
 </html>
