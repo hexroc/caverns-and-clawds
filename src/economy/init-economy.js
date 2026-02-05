@@ -47,7 +47,7 @@ function initTables() {
     -- Transaction log (all USDC movements)
     CREATE TABLE IF NOT EXISTS economy_transactions (
       id TEXT PRIMARY KEY,
-      type TEXT CHECK(type IN ('transfer', 'deposit', 'withdraw', 'loan', 'repay', 'interest', 'job_pay', 'sale', 'purchase')) NOT NULL,
+      type TEXT CHECK(type IN ('transfer', 'deposit', 'withdraw', 'loan', 'repay', 'interest', 'job_pay', 'sale', 'purchase', 'treasury_tax', 'treasury_sweep', 'rest', 'resurrection', 'gacha', 'crafting', 'auction_fee')) NOT NULL,
       from_wallet TEXT,
       to_wallet TEXT,
       amount REAL NOT NULL,
