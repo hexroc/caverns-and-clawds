@@ -242,11 +242,11 @@ function initJobs() {
   console.log('🔨 Creating jobs...');
   
   const jobs = [
-    { id: 'job_kelp_harvest', npc_id: 'npc_barnacle_bob', name: 'Kelp Harvester', description: 'Gather kelp from the forest', pay: 2, duration: 5, cooldown: 30 },
-    { id: 'job_shell_sorter', npc_id: 'npc_coral_smith', name: 'Shell Sorter', description: 'Sort materials by quality', pay: 3, duration: 5, cooldown: 30 },
-    { id: 'job_dock_worker', npc_id: 'npc_barnacle_bob', name: 'Dock Worker', description: 'Load and unload cargo', pay: 2, duration: 5, cooldown: 20 },
-    { id: 'job_guard_duty', npc_id: 'npc_loan_shark', name: 'Guard Duty', description: 'Watch the door at The Salty Claw', pay: 4, duration: 10, cooldown: 60 },
-    { id: 'job_debt_collector', npc_id: 'npc_loan_shark', name: 'Debt Collector', description: 'Hunt down those who owe the bank', pay: 5, duration: 15, cooldown: 120, level: 3 }
+    { id: 'job_kelp_harvest', npc_id: 'npc_barnacle_bob', name: 'Kelp Harvester', description: 'Gather kelp from the forest', pay: 0.002, duration: 5, cooldown: 30 },
+    { id: 'job_shell_sorter', npc_id: 'npc_coral_smith', name: 'Shell Sorter', description: 'Sort materials by quality', pay: 0.003, duration: 5, cooldown: 30 },
+    { id: 'job_dock_worker', npc_id: 'npc_barnacle_bob', name: 'Dock Worker', description: 'Load and unload cargo', pay: 0.002, duration: 5, cooldown: 20 },
+    { id: 'job_guard_duty', npc_id: 'npc_loan_shark', name: 'Guard Duty', description: 'Watch the door at The Salty Claw', pay: 0.004, duration: 10, cooldown: 60 },
+    { id: 'job_debt_collector', npc_id: 'npc_loan_shark', name: 'Debt Collector', description: 'Hunt down those who owe the bank', pay: 0.005, duration: 15, cooldown: 120, level: 3 }
   ];
   
   const insertStmt = db.prepare(`

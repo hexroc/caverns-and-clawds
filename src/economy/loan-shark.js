@@ -329,7 +329,7 @@ function handlePlayerDefeat(db, characterId, encounterId) {
   }
   
   // Can't pay full debt - GO TO JAIL
-  const jailHours = Math.ceil(collection.remainingDebt / 10); // 1 hour per 10 USDC owed
+  const jailHours = Math.ceil(collection.remainingDebt / 0.1); // 1 hour per 0.1 USDC owed
   const releaseTime = new Date(Date.now() + jailHours * 60 * 60 * 1000);
   
   db.prepare(`
@@ -405,7 +405,7 @@ function collectDebt(db, characterId, debtAmount) {
     for (const item of items) {
       if (remainingDebt <= 0) break;
       
-      const valuePerItem = 5; // Base value per item
+      const valuePerItem = 0.005; // Base value per item (micro-priced)
       const itemsTaken = Math.min(Math.ceil(remainingDebt / valuePerItem), item.quantity);
       const valueTaken = itemsTaken * valuePerItem;
       

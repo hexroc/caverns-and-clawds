@@ -611,7 +611,7 @@ function listPropertyForSale(db, characterId, propertyId, salePrice) {
     }
   }
   
-  if (salePrice < 1) {
+  if (salePrice < 0.01) {
     return { success: false, error: 'Sale price must be at least 1 USDC' };
   }
   
@@ -734,7 +734,7 @@ function listPropertyForRent(db, characterId, propertyId, rentPrice) {
     return { success: false, error: 'Property already has an active tenant' };
   }
   
-  if (rentPrice < 1) {
+  if (rentPrice < 0.001) {
     return { success: false, error: 'Rent must be at least 1 USDC' };
   }
   

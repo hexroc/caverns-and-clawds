@@ -517,8 +517,8 @@ function createEconomyRoutes(db, authenticateAgent) {
       
       const { amount } = req.body;
       // Strict type checking - must be a finite positive number
-      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 1 || amount > 100) {
-        return res.status(400).json({ success: false, error: 'Loan amount must be 1-100 USDC (number)' });
+      if (typeof amount !== 'number' || !Number.isFinite(amount) || amount < 0.01 || amount > 1.0) {
+        return res.status(400).json({ success: false, error: 'Loan amount must be 0.01-1.0 USDC (number)' });
       }
       
       // Check existing loan

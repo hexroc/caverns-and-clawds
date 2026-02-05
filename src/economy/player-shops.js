@@ -32,7 +32,7 @@ const SHOP_TIERS = {
     name: 'Boutique Shop',
     maxSlots: 15,
     maxStack: 100,
-    dailyCost: 5,
+    dailyCost: 0.005,
     propertyType: 'shop'
   },
   emporium: {
@@ -40,7 +40,7 @@ const SHOP_TIERS = {
     name: 'Grand Emporium',
     maxSlots: 30,
     maxStack: 200,
-    dailyCost: 15,
+    dailyCost: 0.015,
     propertyType: 'warehouse'
   },
   tavern_shop: {
@@ -48,7 +48,7 @@ const SHOP_TIERS = {
     name: 'Tavern Counter',
     maxSlots: 10,
     maxStack: 100,
-    dailyCost: 10,
+    dailyCost: 0.010,
     propertyType: 'tavern'
   }
 };
@@ -57,21 +57,21 @@ const EMPLOYEE_TYPES = {
   clerk: {
     id: 'clerk',
     name: 'Shop Clerk',
-    dailyWage: 2,
+    dailyWage: 0.002,
     salesBonus: 0.05, // 5% more sales
     description: 'Handles basic transactions'
   },
   hawker: {
     id: 'hawker',
     name: 'Street Hawker',
-    dailyWage: 3,
+    dailyWage: 0.003,
     salesBonus: 0.15, // 15% more sales
     description: 'Brings in customers from the street'
   },
   appraiser: {
     id: 'appraiser',
     name: 'Expert Appraiser',
-    dailyWage: 5,
+    dailyWage: 0.005,
     salesBonus: 0.10,
     buyBonus: 0.10, // Can buy from players at 10% discount
     description: 'Appraises items and haggles with sellers'

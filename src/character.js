@@ -387,37 +387,37 @@ const CLASSES = {
 
 const ITEMS = {
   // Weapons
-  longsword: { name: 'Coral Longsword', type: 'weapon', damage: '1d8', damageType: 'slashing', properties: ['versatile'], value: 15 },
-  shortsword: { name: 'Sharpened Spine', type: 'weapon', damage: '1d6', damageType: 'piercing', properties: ['finesse', 'light'], value: 10 },
-  rapier: { name: 'Needlefish Rapier', type: 'weapon', damage: '1d8', damageType: 'piercing', properties: ['finesse'], value: 25 },
-  dagger: { name: 'Claw Dagger', type: 'weapon', damage: '1d4', damageType: 'piercing', properties: ['finesse', 'light', 'thrown'], value: 2 },
-  handaxe: { name: 'Chitin Hatchet', type: 'weapon', damage: '1d6', damageType: 'slashing', properties: ['light', 'thrown'], value: 5 },
-  mace: { name: 'Conch Mace', type: 'weapon', damage: '1d6', damageType: 'bludgeoning', properties: [], value: 5 },
-  quarterstaff: { name: 'Driftwood Staff', type: 'weapon', damage: '1d6', damageType: 'bludgeoning', properties: ['versatile'], value: 2 },
-  shortbow: { name: 'Spine Bow', type: 'weapon', damage: '1d6', damageType: 'piercing', properties: ['ammunition', 'two_handed'], range: '80/320', value: 25 },
+  longsword: { name: 'Coral Longsword', type: 'weapon', damage: '1d8', damageType: 'slashing', properties: ['versatile'], value: 0.015 },
+  shortsword: { name: 'Sharpened Spine', type: 'weapon', damage: '1d6', damageType: 'piercing', properties: ['finesse', 'light'], value: 0.01 },
+  rapier: { name: 'Needlefish Rapier', type: 'weapon', damage: '1d8', damageType: 'piercing', properties: ['finesse'], value: 0.025 },
+  dagger: { name: 'Claw Dagger', type: 'weapon', damage: '1d4', damageType: 'piercing', properties: ['finesse', 'light', 'thrown'], value: 0.002 },
+  handaxe: { name: 'Chitin Hatchet', type: 'weapon', damage: '1d6', damageType: 'slashing', properties: ['light', 'thrown'], value: 0.005 },
+  mace: { name: 'Conch Mace', type: 'weapon', damage: '1d6', damageType: 'bludgeoning', properties: [], value: 0.005 },
+  quarterstaff: { name: 'Driftwood Staff', type: 'weapon', damage: '1d6', damageType: 'bludgeoning', properties: ['versatile'], value: 0.002 },
+  shortbow: { name: 'Spine Bow', type: 'weapon', damage: '1d6', damageType: 'piercing', properties: ['ammunition', 'two_handed'], range: '80/320', value: 0.025 },
   
   // Armor
-  leather_armor: { name: 'Kelp-Woven Leather', type: 'armor', armorType: 'light', ac: 11, value: 10 },
-  scale_mail: { name: 'Scale Mail', type: 'armor', armorType: 'medium', ac: 14, maxDex: 2, stealthDis: true, value: 50 },
-  chain_mail: { name: 'Barnacle Chain', type: 'armor', armorType: 'heavy', ac: 16, strReq: 13, stealthDis: true, value: 75 },
-  shield: { name: 'Clamshell Shield', type: 'shield', acBonus: 2, value: 10 },
+  leather_armor: { name: 'Kelp-Woven Leather', type: 'armor', armorType: 'light', ac: 11, value: 0.01 },
+  scale_mail: { name: 'Scale Mail', type: 'armor', armorType: 'medium', ac: 14, maxDex: 2, stealthDis: true, value: 0.05 },
+  chain_mail: { name: 'Barnacle Chain', type: 'armor', armorType: 'heavy', ac: 16, strReq: 13, stealthDis: true, value: 0.075 },
+  shield: { name: 'Clamshell Shield', type: 'shield', acBonus: 2, value: 0.01 },
   
   // Ammunition
-  arrows: { name: 'Spine Arrows', type: 'ammunition', value: 0.05 },
+  arrows: { name: 'Spine Arrows', type: 'ammunition', value: 0.0001 },
   
   // Tools
-  thieves_tools: { name: "Lockpick Set", type: 'tool', value: 25 },
+  thieves_tools: { name: "Lockpick Set", type: 'tool', value: 0.025 },
   
   // Packs (simplified to value)
-  explorers_pack: { name: "Explorer's Pack", type: 'pack', value: 10, contents: 'Backpack, bedroll, mess kit, tinderbox, torches (10), rations (10 days), waterskin, rope' },
-  burglars_pack: { name: "Burglar's Pack", type: 'pack', value: 16, contents: 'Backpack, ball bearings, string, bell, candles (5), crowbar, hammer, pitons (10), lantern, oil (2), rations (5 days), tinderbox, waterskin' },
-  priests_pack: { name: "Priest's Pack", type: 'pack', value: 19, contents: 'Backpack, blanket, candles (10), tinderbox, alms box, incense (2), censer, vestments, rations (2 days), waterskin' },
-  scholars_pack: { name: "Scholar's Pack", type: 'pack', value: 40, contents: 'Backpack, book of lore, ink, ink pen, parchment (10), little bag of sand, small knife' },
+  explorers_pack: { name: "Explorer's Pack", type: 'pack', value: 0.01, contents: 'Backpack, bedroll, mess kit, tinderbox, torches (10), rations (10 days), waterskin, rope' },
+  burglars_pack: { name: "Burglar's Pack", type: 'pack', value: 0.016, contents: 'Backpack, ball bearings, string, bell, candles (5), crowbar, hammer, pitons (10), lantern, oil (2), rations (5 days), tinderbox, waterskin' },
+  priests_pack: { name: "Priest's Pack", type: 'pack', value: 0.019, contents: 'Backpack, blanket, candles (10), tinderbox, alms box, incense (2), censer, vestments, rations (2 days), waterskin' },
+  scholars_pack: { name: "Scholar's Pack", type: 'pack', value: 0.04, contents: 'Backpack, book of lore, ink, ink pen, parchment (10), little bag of sand, small knife' },
   
   // Misc
-  holy_symbol: { name: 'Tide Amulet', type: 'focus', value: 5 },
-  component_pouch: { name: 'Spell Components', type: 'focus', value: 25 },
-  spellbook: { name: 'Etched Shell Spellbook', type: 'spellbook', value: 50 },
+  holy_symbol: { name: 'Tide Amulet', type: 'focus', value: 0.005 },
+  component_pouch: { name: 'Spell Components', type: 'focus', value: 0.025 },
+  spellbook: { name: 'Etched Shell Spellbook', type: 'spellbook', value: 0.05 },
   
   // === POTIONS (Consumables) ===
   potion_healing: { 
@@ -426,7 +426,7 @@ const ITEMS = {
     rarity: 'common',
     description: 'A bubbling red liquid that smells of brine. Heals 2d4+2 HP.',
     effect: { type: 'heal', dice: '2d4+2' },
-    value: 50 
+    value: 0.05 
   },
   potion_greater_healing: { 
     name: 'Potion of Greater Healing', 
@@ -434,7 +434,7 @@ const ITEMS = {
     rarity: 'uncommon',
     description: 'A thick crimson elixir. Heals 4d4+4 HP.',
     effect: { type: 'heal', dice: '4d4+4' },
-    value: 150 
+    value: 0.15 
   },
   potion_superior_healing: { 
     name: 'Potion of Superior Healing', 
@@ -442,7 +442,7 @@ const ITEMS = {
     rarity: 'rare',
     description: 'A glowing red potion with golden flecks. Heals 8d4+8 HP.',
     effect: { type: 'heal', dice: '8d4+8' },
-    value: 500 
+    value: 0.5 
   },
   antitoxin: { 
     name: 'Antitoxin', 
@@ -450,7 +450,7 @@ const ITEMS = {
     rarity: 'common',
     description: 'Grants advantage on saves vs poison for 1 hour.',
     effect: { type: 'buff', condition: 'poison_advantage', duration: '1 hour' },
-    value: 50 
+    value: 0.05 
   },
   oil_of_slipperiness: {
     name: 'Oil of Slipperiness',
@@ -458,7 +458,7 @@ const ITEMS = {
     rarity: 'uncommon',
     description: 'Coat yourself to gain Freedom of Movement for 8 hours.',
     effect: { type: 'buff', condition: 'freedom_of_movement', duration: '8 hours' },
-    value: 200
+    value: 0.2
   },
   potion_land_breathing: {
     name: 'Potion of Land Breathing',
@@ -466,7 +466,7 @@ const ITEMS = {
     rarity: 'uncommon',
     description: 'Survive in the cursed dry air above the waves for 1 hour. Essential for shipwreck exploration.',
     effect: { type: 'buff', condition: 'land_breathing', duration: '1 hour' },
-    value: 180
+    value: 0.18
   },
   
   // === SCROLLS ===
@@ -477,7 +477,7 @@ const ITEMS = {
     spellLevel: 1,
     description: 'A single-use spell scroll. Heals 1d8 + spellcasting mod HP.',
     spell: 'cure_wounds',
-    value: 25
+    value: 0.025
   },
   scroll_shield: {
     name: 'Scroll of Shield',
@@ -486,7 +486,7 @@ const ITEMS = {
     spellLevel: 1,
     description: '+5 AC as a reaction until your next turn.',
     spell: 'shield',
-    value: 25
+    value: 0.025
   },
   scroll_magic_missile: {
     name: 'Scroll of Magic Missile',
@@ -495,7 +495,7 @@ const ITEMS = {
     spellLevel: 1,
     description: 'Three darts of magical force. 1d4+1 damage each, auto-hit.',
     spell: 'magic_missile',
-    value: 25
+    value: 0.025
   },
   scroll_identify: {
     name: 'Scroll of Identify',
@@ -504,7 +504,7 @@ const ITEMS = {
     spellLevel: 1,
     description: 'Learn the properties of a magic item.',
     spell: 'identify',
-    value: 25
+    value: 0.025
   },
   scroll_lesser_restoration: {
     name: 'Scroll of Lesser Restoration',
@@ -513,7 +513,7 @@ const ITEMS = {
     spellLevel: 2,
     description: 'End one disease or condition: blinded, deafened, paralyzed, or poisoned.',
     spell: 'lesser_restoration',
-    value: 75
+    value: 0.075
   },
   scroll_invisibility: {
     name: 'Scroll of Invisibility',
@@ -522,7 +522,7 @@ const ITEMS = {
     spellLevel: 2,
     description: 'Become invisible for up to 1 hour.',
     spell: 'invisibility',
-    value: 120
+    value: 0.12
   },
   scroll_depth_charge: {
     name: 'Scroll of Depth Charge',
@@ -531,7 +531,7 @@ const ITEMS = {
     spellLevel: 3,
     description: '8d6 fire damage in a 20ft radius. The water flash-boils in a devastating explosion.',
     spell: 'depthCharge',
-    value: 300
+    value: 0.3
   },
   
   // === ADVENTURING SUPPLIES ===
@@ -539,50 +539,50 @@ const ITEMS = {
     name: 'Bioluminescent Torch',
     type: 'gear',
     description: 'Glows for 1 hour, 20ft bright light.',
-    value: 1
+    value: 0.001
   },
   rope_50ft: {
     name: 'Kelp Rope (50ft)',
     type: 'gear',
     description: 'Strong woven kelp rope. 50 feet.',
-    value: 1
+    value: 0.001
   },
   rations: {
     name: 'Rations (1 day)',
     type: 'gear',
     description: 'Dried kelp, salted fish, and algae cakes.',
-    value: 0.5
+    value: 0.0005
   },
   healers_kit: {
     name: "Healer's Kit",
     type: 'gear',
     description: '10 uses. Stabilize a creature at 0 HP without a Medicine check.',
     uses: 10,
-    value: 5
+    value: 0.005
   },
   caltrops: {
     name: 'Sea Urchin Caltrops',
     type: 'gear',
     description: 'Cover a 5ft square. Creatures must save or take 1 piercing and stop.',
-    value: 1
+    value: 0.001
   },
   grappling_hook: {
     name: 'Anchor Hook',
     type: 'gear',
     description: 'A sturdy hook for climbing.',
-    value: 2
+    value: 0.002
   },
   lantern: {
     name: 'Angler Lantern',
     type: 'gear',
     description: 'Bright light 30ft, dim 30ft more. Burns oil.',
-    value: 5
+    value: 0.005
   },
   oil_flask: {
     name: 'Oil Flask',
     type: 'gear',
     description: 'Fuel for lanterns, or splash on enemies and ignite.',
-    value: 0.5
+    value: 0.0005
   },
   
   // === SPECIAL ITEMS (from drops/quests) ===
@@ -592,7 +592,7 @@ const ITEMS = {
     rarity: 'common',
     acBonus: 2,
     description: 'A shield carved from a giant crab\'s carapace.',
-    value: 25
+    value: 0.025
   },
   
   // === RESURRECTION & ACHIEVEMENT ITEMS ===
@@ -601,7 +601,7 @@ const ITEMS = {
     type: 'voucher',
     rarity: 'legendary',
     description: 'A golden token blessed by the Ocean Mother. Allows resurrection with no XP penalty. Earned through achievements.',
-    value: 0,
+    value: 0.0001,
     soulbound: true
   }
 };
