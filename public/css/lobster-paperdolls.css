@@ -19,16 +19,41 @@
   display: block;
 }
 
+/* ========== UNIVERSAL IDLE ANIMATION ========== */
+
+/* All lobsters gently bob underwater */
+.lobster-svg svg {
+  animation: idleBob 3.5s ease-in-out infinite;
+}
+
+@keyframes idleBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 /* ========== RACE ANIMATIONS ========== */
 
-/* Ghost — ethereal glow pulse */
+/* Ghost — ethereal float + glow (bigger drift than normal bob) */
 .lobster-svg.race-ghost svg {
   filter: drop-shadow(0 0 6px rgba(150, 255, 255, 0.5));
-  animation: ghostGlow 2.5s ease-in-out infinite;
+  animation: ghostFloat 4s ease-in-out infinite;
 }
-@keyframes ghostGlow {
-  0%, 100% { filter: drop-shadow(0 0 6px rgba(150, 255, 255, 0.4)); opacity: 0.85; }
-  50% { filter: drop-shadow(0 0 12px rgba(150, 255, 255, 0.7)); opacity: 1; }
+@keyframes ghostFloat {
+  0%, 100% { transform: translateY(0) translateX(0); filter: drop-shadow(0 0 6px rgba(150, 255, 255, 0.4)); opacity: 0.8; }
+  25% { transform: translateY(-5px) translateX(2px); }
+  50% { transform: translateY(-2px) translateX(-1px); filter: drop-shadow(0 0 14px rgba(150, 255, 255, 0.7)); opacity: 1; }
+  75% { transform: translateY(-6px) translateX(-2px); }
+}
+
+/* Squat — subtle side-to-side scuttle */
+.lobster-svg.race-squat svg {
+  animation: squatScuttle 2.8s ease-in-out infinite;
+}
+@keyframes squatScuttle {
+  0%, 100% { transform: translateX(0) translateY(0); }
+  25% { transform: translateX(2px) translateY(-1px); }
+  50% { transform: translateX(0) translateY(-2px); }
+  75% { transform: translateX(-2px) translateY(-1px); }
 }
 
 /* European — magical shimmer */
@@ -52,9 +77,18 @@
   100% { filter: hue-rotate(360deg) drop-shadow(0 0 3px rgba(255,100,100,0.3)); }
 }
 
-/* Split — subtle crackle */
+/* Split — unstable energy jitter + crackle */
 .lobster-svg.race-split svg {
   filter: drop-shadow(0 0 3px rgba(200, 100, 200, 0.3));
+  animation: splitJitter 4s ease-in-out infinite;
+}
+@keyframes splitJitter {
+  0%, 88%, 100% { transform: translateY(0) translateX(0); filter: drop-shadow(0 0 3px rgba(200, 100, 200, 0.3)); }
+  50% { transform: translateY(-3px); }
+  90% { transform: translateX(1px) translateY(-1px); filter: drop-shadow(0 0 6px rgba(200, 100, 200, 0.6)); }
+  92% { transform: translateX(-1px) translateY(0); }
+  94% { transform: translateX(1px) translateY(-1px); filter: drop-shadow(0 0 8px rgba(200, 100, 200, 0.8)); }
+  96% { transform: translateX(0) translateY(0); }
 }
 
 /* Pistol — snappy claw */

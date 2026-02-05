@@ -158,30 +158,60 @@ function buildLobster(p, race) {
   const seg2H = 8;
   const fanY = 92;
   
+  // Claw animation speed varies by race
+  const clawDur = bigClawLeft ? '1.5s' : '4s';
+  const clawAngle = bigClawLeft ? 12 : 6;
+  
+  // Antenna sway params
+  const antDur = p.flat ? '3s' : '5s';
+  
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-    <!-- Antennae -->
-    ${antennae}
+    <!-- Antennae (with sway) -->
+    <g>
+      ${antennae}
+      <animateTransform attributeName="transform" type="rotate" 
+        values="0 60 30; -3 60 30; 0 60 30; 3 60 30; 0 60 30" 
+        dur="${antDur}" repeatCount="indefinite"/>
+    </g>
     
-    <!-- Claw Arms -->
-    <rect x="22" y="32" width="6" height="16" rx="3" fill="${p.accent}" transform="rotate(-20 25 40)"/>
-    <rect x="92" y="32" width="6" height="16" rx="3" fill="${p.accent}" transform="rotate(20 95 40)"/>
+    <!-- Left Claw + Arm (with open/close) -->
+    <g>
+      <rect x="22" y="32" width="6" height="16" rx="3" fill="${p.accent}" transform="rotate(-20 25 40)"/>
+      <ellipse cx="${bigClawLeft ? 14 : 16}" cy="26" rx="${lClawRx}" ry="${lClawRy}" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="${strokeW}"/>
+      <path d="M ${bigClawLeft ? 4 : 8} 19 Q ${bigClawLeft ? 14 : 16} ${bigClawLeft ? 13 : 15} ${bigClawLeft ? 24 : 24} 19" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+      ${bigClawLeft ? `<circle cx="14" cy="26" r="3" fill="${p.bodyLight}" opacity="0.3"/>` : ''}
+      <animateTransform attributeName="transform" type="rotate" 
+        values="0 25 35; ${clawAngle} 25 35; 0 25 35; -${clawAngle/2} 25 35; 0 25 35" 
+        dur="${clawDur}" repeatCount="indefinite"/>
+    </g>
     
-    <!-- Left Claw -->
-    <ellipse cx="${bigClawLeft ? 14 : 16}" cy="26" rx="${lClawRx}" ry="${lClawRy}" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="${strokeW}"/>
-    <path d="M ${bigClawLeft ? 4 : 8} 19 Q ${bigClawLeft ? 14 : 16} ${bigClawLeft ? 13 : 15} ${bigClawLeft ? 24 : 24} 19" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
-    ${bigClawLeft ? `<circle cx="14" cy="26" r="3" fill="${p.bodyLight}" opacity="0.3"/>` : ''}
+    <!-- Right Claw + Arm (with open/close) -->
+    <g>
+      <rect x="92" y="32" width="6" height="16" rx="3" fill="${p.accent}" transform="rotate(20 95 40)"/>
+      <ellipse cx="104" cy="26" rx="${rClawRx}" ry="${rClawRy}" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="${strokeW}"/>
+      <path d="M 96 19 Q 104 15 112 19" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate" 
+        values="0 95 35; -${clawAngle} 95 35; 0 95 35; ${clawAngle/2} 95 35; 0 95 35" 
+        dur="${clawDur}" repeatCount="indefinite" begin="0.3s"/>
+    </g>
     
-    <!-- Right Claw -->
-    <ellipse cx="104" cy="26" rx="${rClawRx}" ry="${rClawRy}" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="${strokeW}"/>
-    <path d="M 96 19 Q 104 15 112 19" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
-    
-    <!-- Legs (3 pairs) -->
-    <line x1="42" y1="56" x2="26" y2="50" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="40" y1="64" x2="24" y2="63" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="42" y1="72" x2="26" y2="76" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="78" y1="56" x2="94" y2="50" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="80" y1="64" x2="96" y2="63" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="78" y1="72" x2="94" y2="76" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Legs (3 pairs, with subtle wiggle) -->
+    <g>
+      <line x1="42" y1="56" x2="26" y2="50" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="64" x2="24" y2="63" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="42" y1="72" x2="26" y2="76" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 42 63; 2 42 63; 0 42 63; -2 42 63; 0 42 63"
+        dur="2s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <line x1="78" y1="56" x2="94" y2="50" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="64" x2="96" y2="63" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="78" y1="72" x2="94" y2="76" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 78 63; -2 78 63; 0 78 63; 2 78 63; 0 78 63"
+        dur="2s" repeatCount="indefinite" begin="0.5s"/>
+    </g>
     
     <!-- Body (main carapace) -->
     <ellipse cx="60" cy="62" rx="22" ry="20" fill="${p.body}" stroke="${bodyStroke}" stroke-width="${strokeW}"/>
@@ -221,13 +251,17 @@ function buildLobster(p, race) {
     <rect x="47" y="${tailY}" width="26" height="${tailH}" rx="5" fill="${p.body}" stroke="${bodyStroke}" stroke-width="1"/>
     <rect x="50" y="${seg2Y}" width="20" height="${seg2H}" rx="4" fill="${p.accent}" stroke="${bodyStroke}" stroke-width="0.8"/>
     
-    <!-- Tail fan -->
-    <path d="M 50 ${fanY} Q 42 ${fanY + 14} 36 ${fanY + 16} Q 48 ${fanY + 10} 60 ${fanY + 12} Q 72 ${fanY + 10} 84 ${fanY + 16} Q 78 ${fanY + 14} 70 ${fanY}" 
-          fill="${p.body}" stroke="${bodyStroke}" stroke-width="1"/>
-    <!-- Fan lines -->
-    <line x1="53" y1="${fanY + 2}" x2="46" y2="${fanY + 12}" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
-    <line x1="60" y1="${fanY + 3}" x2="60" y2="${fanY + 12}" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
-    <line x1="67" y1="${fanY + 2}" x2="74" y2="${fanY + 12}" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+    <!-- Tail fan (with wag) -->
+    <g>
+      <path d="M 50 ${fanY} Q 42 ${fanY + 14} 36 ${fanY + 16} Q 48 ${fanY + 10} 60 ${fanY + 12} Q 72 ${fanY + 10} 84 ${fanY + 16} Q 78 ${fanY + 14} 70 ${fanY}" 
+            fill="${p.body}" stroke="${bodyStroke}" stroke-width="1"/>
+      <line x1="53" y1="${fanY + 2}" x2="46" y2="${fanY + 12}" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+      <line x1="60" y1="${fanY + 3}" x2="60" y2="${fanY + 12}" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+      <line x1="67" y1="${fanY + 2}" x2="74" y2="${fanY + 12}" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 60 ${fanY}; -4 60 ${fanY}; 0 60 ${fanY}; 4 60 ${fanY}; 0 60 ${fanY}"
+        dur="3s" repeatCount="indefinite"/>
+    </g>
     
     ${p.ghost ? `
     <!-- Ghost: ethereal wisps -->
@@ -242,31 +276,54 @@ function buildLobster(p, race) {
 // ================================================================
 function buildSquatLobster(p) {
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-    <!-- Short antennae (squats have stubby ones) -->
-    <line x1="48" y1="32" x2="40" y2="18" stroke="${p.accent}" stroke-width="2" stroke-linecap="round"/>
-    <line x1="72" y1="32" x2="80" y2="18" stroke="${p.accent}" stroke-width="2" stroke-linecap="round"/>
+    <!-- Short antennae with wiggle -->
+    <g>
+      <line x1="48" y1="32" x2="40" y2="18" stroke="${p.accent}" stroke-width="2" stroke-linecap="round"/>
+      <line x1="72" y1="32" x2="80" y2="18" stroke="${p.accent}" stroke-width="2" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 60 32; -4 60 32; 0 60 32; 4 60 32; 0 60 32"
+        dur="3s" repeatCount="indefinite"/>
+    </g>
     
-    <!-- Big claw arms (squats have chunky claws) -->
-    <rect x="18" y="30" width="8" height="18" rx="4" fill="${p.accent}" transform="rotate(-25 22 39)"/>
-    <rect x="94" y="30" width="8" height="18" rx="4" fill="${p.accent}" transform="rotate(25 98 39)"/>
+    <!-- Left Claw + arm (snapping animation) -->
+    <g>
+      <rect x="18" y="30" width="8" height="18" rx="4" fill="${p.accent}" transform="rotate(-25 22 39)"/>
+      <ellipse cx="12" cy="24" rx="15" ry="12" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
+      <path d="M 3 17 Q 12 11 21 17" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+      <ellipse cx="12" cy="24" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.2"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 22 35; 8 22 35; 0 22 35; -4 22 35; 0 22 35"
+        dur="2.5s" repeatCount="indefinite"/>
+    </g>
     
-    <!-- Left Claw (BIG — squats are known for oversized claws) -->
-    <ellipse cx="12" cy="24" rx="15" ry="12" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
-    <path d="M 3 17 Q 12 11 21 17" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
-    <ellipse cx="12" cy="24" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.2"/>
+    <!-- Right Claw + arm (snapping, offset timing) -->
+    <g>
+      <rect x="94" y="30" width="8" height="18" rx="4" fill="${p.accent}" transform="rotate(25 98 39)"/>
+      <ellipse cx="108" cy="24" rx="15" ry="12" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
+      <path d="M 99 17 Q 108 11 117 17" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+      <ellipse cx="108" cy="24" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.2"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 98 35; -8 98 35; 0 98 35; 4 98 35; 0 98 35"
+        dur="2.5s" repeatCount="indefinite" begin="0.4s"/>
+    </g>
     
-    <!-- Right Claw (also big) -->
-    <ellipse cx="108" cy="24" rx="15" ry="12" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
-    <path d="M 99 17 Q 108 11 117 17" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
-    <ellipse cx="108" cy="24" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.2"/>
-    
-    <!-- Legs (shorter, crab-like, splayed wide) -->
-    <line x1="38" y1="58" x2="20" y2="52" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
-    <line x1="36" y1="66" x2="18" y2="66" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
-    <line x1="38" y1="74" x2="20" y2="80" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
-    <line x1="82" y1="58" x2="100" y2="52" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
-    <line x1="84" y1="66" x2="102" y2="66" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
-    <line x1="82" y1="74" x2="100" y2="80" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    <!-- Legs (scuttling animation — alternating) -->
+    <g>
+      <line x1="38" y1="58" x2="20" y2="52" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="36" y1="66" x2="18" y2="66" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="38" y1="74" x2="20" y2="80" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 38 66; 3 38 66; 0 38 66; -3 38 66; 0 38 66"
+        dur="1.5s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <line x1="82" y1="58" x2="100" y2="52" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="84" y1="66" x2="102" y2="66" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+      <line x1="82" y1="74" x2="100" y2="80" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 82 66; -3 82 66; 0 82 66; 3 82 66; 0 82 66"
+        dur="1.5s" repeatCount="indefinite" begin="0.4s"/>
+    </g>
     
     <!-- Body (WIDE and ROUND — crab-like) -->
     <ellipse cx="60" cy="62" rx="28" ry="22" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1.5"/>
@@ -308,33 +365,57 @@ function buildSquatLobster(p) {
 // ================================================================
 function buildSpinyLobster(p) {
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
-    <!-- LONG antennae (the defining feature! way longer than others) -->
-    <line x1="48" y1="28" x2="15" y2="2" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="72" y1="28" x2="105" y2="2" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <!-- Antenna barbs/segments -->
-    <circle cx="28" cy="12" r="1.5" fill="${p.bodyLight}"/>
-    <circle cx="92" cy="12" r="1.5" fill="${p.bodyLight}"/>
-    <circle cx="38" cy="20" r="1.2" fill="${p.bodyLight}"/>
-    <circle cx="82" cy="20" r="1.2" fill="${p.bodyLight}"/>
-    <!-- Secondary shorter antennae -->
-    <line x1="50" y1="30" x2="38" y2="14" stroke="${p.bodyLight}" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="70" y1="30" x2="82" y2="14" stroke="${p.bodyLight}" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- LONG antennae (signature sweep animation!) -->
+    <g>
+      <line x1="48" y1="28" x2="15" y2="2" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="28" cy="12" r="1.5" fill="${p.bodyLight}"/>
+      <circle cx="38" cy="20" r="1.2" fill="${p.bodyLight}"/>
+      <line x1="50" y1="30" x2="38" y2="14" stroke="${p.bodyLight}" stroke-width="1.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 48 28; 8 48 28; 0 48 28; -5 48 28; 0 48 28"
+        dur="4s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <line x1="72" y1="28" x2="105" y2="2" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <circle cx="92" cy="12" r="1.5" fill="${p.bodyLight}"/>
+      <circle cx="82" cy="20" r="1.2" fill="${p.bodyLight}"/>
+      <line x1="70" y1="30" x2="82" y2="14" stroke="${p.bodyLight}" stroke-width="1.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 72 28; -8 72 28; 0 72 28; 5 72 28; 0 72 28"
+        dur="4s" repeatCount="indefinite" begin="0.6s"/>
+    </g>
     
-    <!-- Tiny claw arms (spiny lobsters have NO big claws) -->
-    <rect x="28" y="34" width="4" height="12" rx="2" fill="${p.accent}" transform="rotate(-15 30 40)"/>
-    <rect x="88" y="34" width="4" height="12" rx="2" fill="${p.accent}" transform="rotate(15 90 40)"/>
+    <!-- Tiny claw arms (subtle fidget) -->
+    <g>
+      <rect x="28" y="34" width="4" height="12" rx="2" fill="${p.accent}" transform="rotate(-15 30 40)"/>
+      <ellipse cx="24" cy="32" rx="6" ry="5" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 28 38; 3 28 38; 0 28 38" dur="3s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <rect x="88" y="34" width="4" height="12" rx="2" fill="${p.accent}" transform="rotate(15 90 40)"/>
+      <ellipse cx="96" cy="32" rx="6" ry="5" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 92 38; -3 92 38; 0 92 38" dur="3s" repeatCount="indefinite" begin="0.8s"/>
+    </g>
     
-    <!-- Tiny claws (just little nubs) -->
-    <ellipse cx="24" cy="32" rx="6" ry="5" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1"/>
-    <ellipse cx="96" cy="32" rx="6" ry="5" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1"/>
-    
-    <!-- Legs (3 pairs) -->
-    <line x1="44" y1="54" x2="28" y2="48" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="42" y1="62" x2="26" y2="61" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="44" y1="70" x2="28" y2="74" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="76" y1="54" x2="92" y2="48" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="78" y1="62" x2="94" y2="61" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="76" y1="70" x2="92" y2="74" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Legs (3 pairs, gentle walk) -->
+    <g>
+      <line x1="44" y1="54" x2="28" y2="48" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="42" y1="62" x2="26" y2="61" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="44" y1="70" x2="28" y2="74" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 44 62; 2 44 62; 0 44 62; -2 44 62; 0 44 62"
+        dur="2.2s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <line x1="76" y1="54" x2="92" y2="48" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="78" y1="62" x2="94" y2="61" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="76" y1="70" x2="92" y2="74" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 76 62; -2 76 62; 0 76 62; 2 76 62; 0 76 62"
+        dur="2.2s" repeatCount="indefinite" begin="0.5s"/>
+    </g>
     
     <!-- Body (slightly narrower, more elongated) -->
     <ellipse cx="60" cy="62" rx="20" ry="20" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1.5"/>
@@ -383,12 +464,17 @@ function buildSpinyLobster(p) {
     
     <rect x="50" y="86" width="20" height="8" rx="4" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
     
-    <!-- Tail fan -->
-    <path d="M 50 92 Q 42 106 36 108 Q 48 102 60 104 Q 72 102 84 108 Q 78 106 70 92" 
-          fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1"/>
-    <line x1="53" y1="94" x2="46" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
-    <line x1="60" y1="95" x2="60" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
-    <line x1="67" y1="94" x2="74" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+    <!-- Tail fan (with wag) -->
+    <g>
+      <path d="M 50 92 Q 42 106 36 108 Q 48 102 60 104 Q 72 102 84 108 Q 78 106 70 92" 
+            fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1"/>
+      <line x1="53" y1="94" x2="46" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+      <line x1="60" y1="95" x2="60" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+      <line x1="67" y1="94" x2="74" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 60 92; -3 60 92; 0 60 92; 3 60 92; 0 60 92"
+        dur="3.5s" repeatCount="indefinite"/>
+    </g>
   </svg>`;
 }
 
@@ -400,29 +486,52 @@ function buildSplitLobster(p) {
       <clipPath id="rightHalf"><rect x="60" y="0" width="60" height="120"/></clipPath>
     </defs>
     
-    <!-- Antennae -->
-    <line x1="47" y1="30" x2="32" y2="6" stroke="${p.bodyDarkL}" stroke-width="2" stroke-linecap="round"/>
-    <line x1="73" y1="30" x2="88" y2="6" stroke="${p.bodyDarkR}" stroke-width="2" stroke-linecap="round"/>
+    <!-- Antennae (with sway) -->
+    <g>
+      <line x1="47" y1="30" x2="32" y2="6" stroke="${p.bodyDarkL}" stroke-width="2" stroke-linecap="round"/>
+      <line x1="73" y1="30" x2="88" y2="6" stroke="${p.bodyDarkR}" stroke-width="2" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 60 30; -3 60 30; 0 60 30; 3 60 30; 0 60 30"
+        dur="4.5s" repeatCount="indefinite"/>
+    </g>
     
-    <!-- Claw Arms -->
-    <rect x="22" y="32" width="6" height="16" rx="3" fill="${p.bodyDarkL}" transform="rotate(-20 25 40)"/>
-    <rect x="92" y="32" width="6" height="16" rx="3" fill="${p.bodyDarkR}" transform="rotate(20 95 40)"/>
+    <!-- Left Claw (red, animated) -->
+    <g>
+      <rect x="22" y="32" width="6" height="16" rx="3" fill="${p.bodyDarkL}" transform="rotate(-20 25 40)"/>
+      <ellipse cx="16" cy="26" rx="13" ry="10" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
+      <path d="M 8 19 Q 16 15 24 19" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 25 35; 6 25 35; 0 25 35; -3 25 35; 0 25 35"
+        dur="3.5s" repeatCount="indefinite"/>
+    </g>
     
-    <!-- Left Claw (red) -->
-    <ellipse cx="16" cy="26" rx="13" ry="10" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
-    <path d="M 8 19 Q 16 15 24 19" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Right Claw (blue, animated) -->
+    <g>
+      <rect x="92" y="32" width="6" height="16" rx="3" fill="${p.bodyDarkR}" transform="rotate(20 95 40)"/>
+      <ellipse cx="104" cy="26" rx="13" ry="10" fill="${p.clawR}" stroke="${p.clawDarkR}" stroke-width="1.5"/>
+      <path d="M 96 19 Q 104 15 112 19" fill="none" stroke="${p.clawDarkR}" stroke-width="1.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 95 35; -6 95 35; 0 95 35; 3 95 35; 0 95 35"
+        dur="3.5s" repeatCount="indefinite" begin="0.5s"/>
+    </g>
     
-    <!-- Right Claw (blue) -->
-    <ellipse cx="104" cy="26" rx="13" ry="10" fill="${p.clawR}" stroke="${p.clawDarkR}" stroke-width="1.5"/>
-    <path d="M 96 19 Q 104 15 112 19" fill="none" stroke="${p.clawDarkR}" stroke-width="1.5" stroke-linecap="round"/>
-    
-    <!-- Legs -->
-    <line x1="42" y1="56" x2="26" y2="50" stroke="${p.bodyDarkL}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="40" y1="64" x2="24" y2="63" stroke="${p.bodyDarkL}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="42" y1="72" x2="26" y2="76" stroke="${p.bodyDarkL}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="78" y1="56" x2="94" y2="50" stroke="${p.bodyDarkR}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="80" y1="64" x2="96" y2="63" stroke="${p.bodyDarkR}" stroke-width="2.5" stroke-linecap="round"/>
-    <line x1="78" y1="72" x2="94" y2="76" stroke="${p.bodyDarkR}" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Legs (animated) -->
+    <g>
+      <line x1="42" y1="56" x2="26" y2="50" stroke="${p.bodyDarkL}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="40" y1="64" x2="24" y2="63" stroke="${p.bodyDarkL}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="42" y1="72" x2="26" y2="76" stroke="${p.bodyDarkL}" stroke-width="2.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 42 63; 2 42 63; 0 42 63; -2 42 63; 0 42 63"
+        dur="2s" repeatCount="indefinite"/>
+    </g>
+    <g>
+      <line x1="78" y1="56" x2="94" y2="50" stroke="${p.bodyDarkR}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="80" y1="64" x2="96" y2="63" stroke="${p.bodyDarkR}" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="78" y1="72" x2="94" y2="76" stroke="${p.bodyDarkR}" stroke-width="2.5" stroke-linecap="round"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 78 63; -2 78 63; 0 78 63; 2 78 63; 0 78 63"
+        dur="2s" repeatCount="indefinite" begin="0.5s"/>
+    </g>
     
     <!-- Body LEFT (red) -->
     <ellipse cx="60" cy="62" rx="22" ry="20" fill="${p.bodyL}" stroke="${p.bodyDarkL}" stroke-width="1.5" clip-path="url(#leftHalf)"/>
@@ -458,9 +567,14 @@ function buildSplitLobster(p) {
     <rect x="50" y="86" width="10" height="8" rx="4" fill="${p.bodyDarkL}" stroke="${p.bodyDarkL}" stroke-width="0.8"/>
     <rect x="60" y="86" width="10" height="8" rx="4" fill="${p.bodyDarkR}" stroke="${p.bodyDarkR}" stroke-width="0.8"/>
     
-    <!-- Tail fan -->
-    <path d="M 50 92 Q 42 106 36 108 Q 48 102 60 104 Q 72 102 84 108 Q 78 106 70 92" 
-          fill="${p.belly}" stroke="${p.accent}" stroke-width="1" opacity="0.7"/>
+    <!-- Tail fan (animated) -->
+    <g>
+      <path d="M 50 92 Q 42 106 36 108 Q 48 102 60 104 Q 72 102 84 108 Q 78 106 70 92" 
+            fill="${p.belly}" stroke="${p.accent}" stroke-width="1" opacity="0.7"/>
+      <animateTransform attributeName="transform" type="rotate"
+        values="0 60 92; -3 60 92; 0 60 92; 3 60 92; 0 60 92"
+        dur="3s" repeatCount="indefinite"/>
+    </g>
   </svg>`;
 }
 
