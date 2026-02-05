@@ -48,6 +48,21 @@ function createEconomyRoutes(db, authenticateAgent) {
       VALUES (?, ?, ?, ?, ?, ?, ?)
     `).run(crypto.randomUUID(), type, fromWallet, toWallet, amount, signature, description);
   }
+
+  // 1% treasury tax on all sales — accumulates in treasury balance_cache
+  // Withdrawn to Kamino yield contract weekly
+  const TREASURY_TAX_RATE = 0.01; // 1%
+  
+  function applyTreasuryTax(saleAmount, description) {
+    const tax = parseFloat((saleAmount * TREASURY_TAX_RATE).toFixed(4));
+    if (tax > 0) {
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+        .run(tax, 'treasury');
+      logTransaction('treasury_tax', 'economy', 'treasury', tax, 'tax', 
+        `1% tax: ${description}`);
+    }
+    return tax;
+  }
   
   // ============================================================================
   // WALLET MANAGEMENT
@@ -287,6 +302,9 @@ function createEconomyRoutes(db, authenticateAgent) {
         ON CONFLICT(npc_id, material_id) DO UPDATE SET quantity = quantity + ?
       `).run(crypto.randomUUID(), npcId, materialId, quantity, quantity);
       
+      // 1% treasury tax on sale
+      const tax = applyTreasuryTax(totalPrice, `material sale: ${quantity}x ${material.name}`);
+
       // Log transaction
       logTransaction('sale', npc.public_key, char.wallet_public_key, totalPrice, 
         transfer.signature || 'simulated', `Sold ${quantity}x ${material.name}`);

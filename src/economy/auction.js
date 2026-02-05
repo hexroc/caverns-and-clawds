@@ -259,12 +259,22 @@ async function buyout(db, buyerId, auctionId) {
       console.log(`⚠️ Auction buyout transfer failed (simulating): ${transfer.error}`);
     }
     
+    // 1% treasury tax on auction buyout
+    const tax = parseFloat((auction.buyout_price * 0.01).toFixed(4));
+    const sellerReceives = parseFloat((auction.buyout_price - tax).toFixed(4));
+
     // ALWAYS update database balances
     db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
       .run(auction.buyout_price, buyerId);
     db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
-      .run(auction.buyout_price, auction.seller_id);
+      .run(sellerReceives, auction.seller_id);
     
+    // Tax to treasury
+    if (tax > 0) {
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+        .run(tax, 'treasury');
+    }
+
     // Log transaction
     db.prepare(`
       INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, signature, description)
@@ -353,11 +363,21 @@ async function finalizeAuction(db, auctionId) {
       console.log(`⚠️ Auction finalize transfer failed (simulating): ${transfer.error}`);
     }
     
+    // 1% treasury tax on auction finalize
+    const finalizeTax = parseFloat((auction.current_bid * 0.01).toFixed(4));
+    const finalSellerReceives = parseFloat((auction.current_bid - finalizeTax).toFixed(4));
+
     // ALWAYS update database balances
     db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
       .run(auction.current_bid, auction.current_bidder_id);
     db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
-      .run(auction.current_bid, auction.seller_id);
+      .run(finalSellerReceives, auction.seller_id);
+    
+    // Tax to treasury
+    if (finalizeTax > 0) {
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+        .run(finalizeTax, 'treasury');
+    }
     
     db.prepare(`
       INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, signature, description)

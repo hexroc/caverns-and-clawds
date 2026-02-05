@@ -5,7 +5,7 @@
 
 const express = require('express');
 const router = express.Router();
-const { getTreasuryBalance, getVaultInfo, calculateDailyYield, simulateEmission, getEconomyStatus } = require('./kamino-vault');
+const { getTreasuryBalance, getVaultInfo, calculateDailyYield, simulateEmission, getEconomyStatus, weeklyTreasurySweep } = require('./kamino-vault');
 
 let db;
 
@@ -93,6 +93,55 @@ router.post('/emit', async (req, res) => {
     });
   } catch (err) {
     console.error('Emission error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * POST /api/defi/sweep - Weekly treasury sweep to yield contract
+ * Takes accumulated 1% tax from all sales and deposits to Kamino vault
+ */
+router.post('/sweep', async (req, res) => {
+  try {
+    if (!db) return res.status(500).json({ success: false, error: 'Database not initialized' });
+    
+    const result = await weeklyTreasurySweep(db);
+    res.json(result);
+  } catch (err) {
+    console.error('Treasury sweep error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
+ * GET /api/defi/tax-pool - Check accumulated treasury tax
+ */
+router.get('/tax-pool', (req, res) => {
+  try {
+    if (!db) return res.status(500).json({ success: false, error: 'Database not initialized' });
+    
+    const treasury = db.prepare('SELECT balance_cache FROM system_wallets WHERE id = ?').get('treasury');
+    const accumulated = treasury ? (treasury.balance_cache || 0) : 0;
+    
+    // Get recent tax transactions
+    const recentTax = db.prepare(`
+      SELECT amount, description, created_at FROM economy_transactions 
+      WHERE type = 'treasury_tax' ORDER BY created_at DESC LIMIT 20
+    `).all();
+    
+    const lastSweep = db.prepare(`
+      SELECT amount, created_at FROM economy_transactions 
+      WHERE type = 'treasury_sweep' ORDER BY created_at DESC LIMIT 1
+    `).get();
+    
+    res.json({
+      success: true,
+      taxPool: parseFloat(accumulated.toFixed(4)),
+      taxRate: '1%',
+      lastSweep: lastSweep || null,
+      recentTaxes: recentTax
+    });
+  } catch (err) {
     res.status(500).json({ success: false, error: err.message });
   }
 });

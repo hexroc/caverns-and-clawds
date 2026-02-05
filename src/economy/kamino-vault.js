@@ -138,12 +138,55 @@ async function getEconomyStatus(db) {
   };
 }
 
+/**
+ * Weekly treasury sweep — withdraw accumulated 1% tax to yield contract
+ * Called once per week (via cron or manual endpoint)
+ */
+async function weeklyTreasurySweep(db) {
+  // Get accumulated treasury tax balance
+  const treasury = db.prepare('SELECT balance_cache FROM system_wallets WHERE id = ?').get('treasury');
+  const accumulated = treasury ? (treasury.balance_cache || 0) : 0;
+  
+  if (accumulated <= 0) {
+    return { success: true, swept: 0, message: 'No accumulated tax to sweep' };
+  }
+
+  // In production: this would do an on-chain transfer to the Kamino vault
+  // For now: log the sweep and reset treasury balance_cache
+  // The funds effectively move from in-game treasury → on-chain yield contract
+  
+  const sweepAmount = parseFloat(accumulated.toFixed(4));
+  
+  // Reset treasury balance_cache (funds are now "on-chain" in the yield contract)
+  db.prepare('UPDATE system_wallets SET balance_cache = 0 WHERE id = ?').run('treasury');
+  
+  // Log the sweep
+  db.prepare(`
+    INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, signature, description)
+    VALUES (?, 'treasury_sweep', 'treasury', 'kamino_vault', ?, 'weekly_sweep', ?)
+  `).run(
+    require('crypto').randomUUID(),
+    sweepAmount,
+    `Weekly treasury sweep: ${sweepAmount} USDC → Kamino yield vault`
+  );
+
+  console.log(`💰 Weekly treasury sweep: ${sweepAmount} USDC → yield contract`);
+
+  return {
+    success: true,
+    swept: sweepAmount,
+    message: `Swept ${sweepAmount} USDC from treasury to Kamino yield vault`,
+    timestamp: new Date().toISOString()
+  };
+}
+
 module.exports = {
   getTreasuryBalance,
   calculateDailyYield,
   getVaultInfo,
   simulateEmission,
   getEconomyStatus,
+  weeklyTreasurySweep,
   TREASURY_WALLET,
   USDC_MINT: USDC_MINT.toString()
 };

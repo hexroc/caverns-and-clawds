@@ -232,7 +232,14 @@ function createShopRoutes(db, authenticateAgent) {
       // 2. Credit NPC wallet (closed loop — money goes TO the NPC)
       adjustNpcBalance(npcId, totalCost);
 
-      // 3. Add item to inventory
+      // 3. 1% treasury tax on purchase
+      const tax = parseFloat((totalCost * 0.01).toFixed(4));
+      if (tax > 0) {
+        db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+          .run(tax, 'treasury');
+      }
+
+      // 4. Add item to inventory
       const existingItem = db.prepare(
         'SELECT * FROM character_inventory WHERE character_id = ? AND item_id = ?'
       ).get(char.id, itemId);
@@ -347,7 +354,14 @@ function createShopRoutes(db, authenticateAgent) {
       // 2. Deduct from NPC wallet (closed loop — money comes FROM the NPC)
       adjustNpcBalance(npcId, -totalValue);
 
-      // 3. Remove item from inventory
+      // 3. 1% treasury tax on sale
+      const tax = parseFloat((totalValue * 0.01).toFixed(4));
+      if (tax > 0) {
+        db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+          .run(tax, 'treasury');
+      }
+
+      // 4. Remove item from inventory
       if (ownedItem.quantity > quantity) {
         db.prepare(
           'UPDATE character_inventory SET quantity = quantity - ? WHERE id = ?'

@@ -55,11 +55,21 @@ async function sendUSDC(db, fromCharId, toCharId, amount) {
     console.log(`⚠️ P2P USDC transfer failed (simulating): ${transfer.error}`);
   }
   
+  // 1% treasury tax on P2P transfers
+  const p2pTax = parseFloat((amount * 0.01).toFixed(4));
+  const receiverGets = parseFloat((amount - p2pTax).toFixed(4));
+
   // ALWAYS update database balances
   db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
     .run(amount, fromChar.id);
   db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
-    .run(amount, toChar.id);
+    .run(receiverGets, toChar.id);
+  
+  // Tax to treasury
+  if (p2pTax > 0) {
+    db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
+      .run(p2pTax, 'treasury');
+  }
   
   // Log transaction (use 'transfer' type for p2p)
   db.prepare(`
