@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Lobster Paperdoll Test — Caverns & Clawds</title>
   <link rel="stylesheet" href="/css/lobster-paperdolls.css">
+  <script src="/js/lobster-svg.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -16,19 +17,10 @@
       padding: 2rem;
     }
     
-    h1 {
-      text-align: center;
-      color: #ff6b4a;
-      font-size: 2rem;
-      margin-bottom: 0.5rem;
-    }
+    h1 { text-align: center; color: #ff6b4a; font-size: 2rem; margin-bottom: 0.5rem; }
     h1 span { color: #4ecdc4; }
     
-    .subtitle {
-      text-align: center;
-      color: #888;
-      margin-bottom: 2rem;
-    }
+    .subtitle { text-align: center; color: #888; margin-bottom: 2rem; }
     
     .gallery {
       display: flex;
@@ -48,10 +40,7 @@
       width: 200px;
       transition: transform 0.2s, border-color 0.2s;
     }
-    .card:hover {
-      transform: translateY(-4px);
-      border-color: #ff6b4a;
-    }
+    .card:hover { transform: translateY(-4px); border-color: #ff6b4a; }
     
     .card .lobster-container {
       display: flex;
@@ -61,63 +50,30 @@
       margin-bottom: 1rem;
     }
     
-    .card .race-name {
-      font-size: 1.1rem;
-      font-weight: bold;
-      color: #4ecdc4;
-      margin-bottom: 0.25rem;
-    }
-    
-    .card .race-desc {
-      font-size: 0.8rem;
-      color: #888;
-      line-height: 1.3;
-    }
+    .card .race-name { font-size: 1.1rem; font-weight: bold; color: #4ecdc4; margin-bottom: 0.25rem; }
+    .card .race-desc { font-size: 0.8rem; color: #888; line-height: 1.3; }
     
     .card .race-color {
       display: inline-block;
-      width: 14px;
-      height: 14px;
+      width: 14px; height: 14px;
       border-radius: 3px;
       vertical-align: middle;
       margin-right: 4px;
       border: 1px solid rgba(255,255,255,0.3);
     }
     
-    /* Size variants section */
-    .size-section {
-      margin-top: 3rem;
-      text-align: center;
-    }
-    .size-section h2 {
-      color: #ff6b4a;
-      margin-bottom: 1rem;
-    }
-    .size-row {
-      display: flex;
-      justify-content: center;
-      align-items: flex-end;
-      gap: 2rem;
-      flex-wrap: wrap;
-    }
-    .size-demo {
-      text-align: center;
-    }
-    .size-demo .label {
-      color: #888;
-      font-size: 0.8rem;
-      margin-top: 0.5rem;
-    }
+    .card.ghost-card { background: rgba(10, 15, 30, 0.8); }
     
-    /* Dark background variant for ghost */
-    .card.ghost-card {
-      background: rgba(10, 15, 30, 0.8);
-    }
+    .size-section { margin-top: 3rem; text-align: center; }
+    .size-section h2 { color: #ff6b4a; margin-bottom: 1rem; }
+    .size-row { display: flex; justify-content: center; align-items: flex-end; gap: 2rem; flex-wrap: wrap; }
+    .size-demo { text-align: center; }
+    .size-demo .label { color: #888; font-size: 0.8rem; margin-top: 0.5rem; }
   </style>
 </head>
 <body>
   <h1>🦞 <span>Caverns</span> & <span>Clawds</span> — Lobster Paperdolls</h1>
-  <p class="subtitle">All 10 races — Pure CSS art, 120×120px</p>
+  <p class="subtitle">All 10 races — SVG art, 120×120px</p>
   
   <div class="gallery" id="gallery"></div>
   
@@ -127,84 +83,51 @@
   </div>
 
   <script>
-    // Lobster HTML generator
-    function createLobsterHTML(raceClass) {
-      return `<div class="lobster ${raceClass}">
-        <div class="lb-antenna-l"></div>
-        <div class="lb-antenna-r"></div>
-        <div class="lb-claw-l"></div>
-        <div class="lb-claw-r"></div>
-        <div class="lb-arm-l"></div>
-        <div class="lb-arm-r"></div>
-        <div class="lb-head"></div>
-        <div class="lb-eye-l"></div>
-        <div class="lb-eye-r"></div>
-        <div class="lb-body"></div>
-        <div class="lb-segment-1"></div>
-        <div class="lb-segment-2"></div>
-        <div class="lb-tail"></div>
-        <div class="lb-leg-l1"></div>
-        <div class="lb-leg-l2"></div>
-        <div class="lb-leg-l3"></div>
-        <div class="lb-leg-r1"></div>
-        <div class="lb-leg-r2"></div>
-        <div class="lb-leg-r3"></div>
-      </div>`;
-    }
-
     const races = [
-      { cls: 'lobster-american',  name: 'American',  color: '#8B2500', desc: 'Classic red-brown. Big symmetrical claws, thick shell.' },
-      { cls: 'lobster-european',  name: 'European',  color: '#2E4B8F', desc: 'Sleek blue-purple. Magical shimmer effect.' },
-      { cls: 'lobster-slipper',   name: 'Slipper',   color: '#C2A366', desc: 'Sandy flat body. Plate-like shell, no claws.' },
-      { cls: 'lobster-squat',     name: 'Squat',     color: '#FF8C00', desc: 'Compact round body. Big cute eyes, curled tail.' },
-      { cls: 'lobster-spiny',     name: 'Spiny',     color: '#D2691E', desc: 'Long antennae, body spines, no big claws.' },
-      { cls: 'lobster-reef',      name: 'Reef',      color: 'linear-gradient(90deg, #ff6b6b, #ffd93d, #6bcb77, #4ecdc4)', desc: 'Rainbow tropical. Vibrant coral shimmer.' },
-      { cls: 'lobster-pistol',    name: 'Pistol',    color: '#4A6741', desc: 'One MASSIVE claw, one tiny. Green-brown.' },
-      { cls: 'lobster-calico',    name: 'Calico',    color: '#D4702A', desc: 'Mottled orange/black/white patchwork.' },
-      { cls: 'lobster-ghost',     name: 'Ghost',     color: 'rgba(200,230,240,0.7)', desc: 'Translucent ethereal. Cyan glow pulse.' },
-      { cls: 'lobster-split',     name: 'Split',     color: 'linear-gradient(90deg, #C41E3A 50%, #1E90FF 50%)', desc: 'Two-toned chimeric. Energy crackle split.' },
+      { race: 'american',  name: 'American',  color: '#B83220', desc: 'Classic red-brown. Big symmetrical claws, thick shell.' },
+      { race: 'european',  name: 'European',  color: '#3B5FB8', desc: 'Sleek blue-purple. Magical shimmer effect.' },
+      { race: 'slipper',   name: 'Slipper',   color: '#C4A060', desc: 'Sandy flat body. Paddle antennae, no big claws.' },
+      { race: 'squat',     name: 'Squat',     color: '#E88020', desc: 'Compact round body. Short tail, bright orange.' },
+      { race: 'spiny',     name: 'Spiny',     color: '#D07028', desc: 'Thorny body, orange-brown. Tough and armored.' },
+      { race: 'reef',      name: 'Reef',      color: 'linear-gradient(90deg, #ff6b6b, #ffd93d, #4ecdc4)', desc: 'Rainbow tropical. Vibrant coral shimmer.' },
+      { race: 'pistol',    name: 'Pistol',    color: '#5A7850', desc: 'One MASSIVE claw, one tiny. Green-brown snapper.' },
+      { race: 'calico',    name: 'Calico',    color: '#D8B888', desc: 'Spotted pattern. Sandy with brown patches.' },
+      { race: 'ghost',     name: 'Ghost',     color: 'rgba(200,240,255,0.7)', desc: 'Translucent ethereal. Cyan glow pulse.' },
+      { race: 'split',     name: 'Split',     color: 'linear-gradient(90deg, #CC3828 50%, #3B5FB8 50%)', desc: 'Half red, half blue. Rare chimeric lobster.' },
     ];
 
     const gallery = document.getElementById('gallery');
     
-    races.forEach(race => {
-      const isGhost = race.name === 'Ghost';
+    races.forEach(r => {
+      const isGhost = r.race === 'ghost';
       const card = document.createElement('div');
       card.className = 'card' + (isGhost ? ' ghost-card' : '');
       
-      const colorStyle = race.color.includes('gradient') || race.color.includes('rgba')
-        ? `background: ${race.color};`
-        : `background: ${race.color};`;
-      
       card.innerHTML = `
         <div class="lobster-container">
-          ${createLobsterHTML(race.cls)}
+          ${createLobsterSVG(r.race)}
         </div>
         <div class="race-name">
-          <span class="race-color" style="${colorStyle}"></span>
-          ${race.name}
+          <span class="race-color" style="background: ${r.color};"></span>
+          ${r.name}
         </div>
-        <div class="race-desc">${race.desc}</div>
+        <div class="race-desc">${r.desc}</div>
       `;
       gallery.appendChild(card);
     });
 
-    // Size demos with American lobster
+    // Size demos
     const sizeRow = document.getElementById('sizeRow');
-    const sizes = [
-      { scale: 0.5, label: '60×60 (mini)' },
-      { scale: 0.75, label: '90×90 (small)' },
-      { scale: 1, label: '120×120 (base)' },
-      { scale: 1.5, label: '180×180 (large)' },
-    ];
-    
-    sizes.forEach(s => {
+    [
+      { w: 60,  label: '60px (mini)' },
+      { w: 90,  label: '90px (small)' },
+      { w: 120, label: '120px (base)' },
+      { w: 180, label: '180px (large)' },
+    ].forEach(s => {
       const div = document.createElement('div');
       div.className = 'size-demo';
       div.innerHTML = `
-        <div style="transform: scale(${s.scale}); transform-origin: bottom center;">
-          ${createLobsterHTML('lobster-american')}
-        </div>
+        <div style="width:${s.w}px; height:${s.w}px;">${createLobsterSVG('american').replace('width: 120px; height: 120px', `width: ${s.w}px; height: ${s.w}px`)}</div>
         <div class="label">${s.label}</div>
       `;
       sizeRow.appendChild(div);

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Spectate - Caverns & Clawds</title>
   <link rel="stylesheet" href="/css/lobster-paperdolls.css">
+  <script src="/js/lobster-svg.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     
@@ -114,9 +115,10 @@
       align-items: center;
       justify-content: center;
     }
-
-    .char-avatar .lobster {
-      transform: scale(0.85);
+    
+    .char-avatar .lobster-svg {
+      width: 100px;
+      height: 100px;
     }
     
     .char-name {
@@ -686,39 +688,14 @@
     let seenCombatEventIds = new Set();
     
     // ================================================================
-    // LOBSTER PAPERDOLL
+    // LOBSTER PAPERDOLL (SVG-based — see /js/lobster-svg.js)
     // ================================================================
     
-    function createLobsterHTML(raceClass) {
-      return `<div class="lobster ${raceClass}">
-        <div class="lb-antenna-l"></div><div class="lb-antenna-r"></div>
-        <div class="lb-claw-l"></div><div class="lb-claw-r"></div>
-        <div class="lb-arm-l"></div><div class="lb-arm-r"></div>
-        <div class="lb-head"></div>
-        <div class="lb-eye-l"></div><div class="lb-eye-r"></div>
-        <div class="lb-body"></div>
-        <div class="lb-segment-1"></div><div class="lb-segment-2"></div>
-        <div class="lb-tail"></div>
-        <div class="lb-leg-l1"></div><div class="lb-leg-l2"></div><div class="lb-leg-l3"></div>
-        <div class="lb-leg-r1"></div><div class="lb-leg-r2"></div><div class="lb-leg-r3"></div>
-      </div>`;
-    }
-    
-    function getRaceCSSClass(raceName) {
-      if (!raceName) return 'lobster-american';
-      const raceMap = {
-        'american': 'lobster-american', 'american lobster': 'lobster-american',
-        'european': 'lobster-european', 'european lobster': 'lobster-european',
-        'slipper': 'lobster-slipper', 'slipper lobster': 'lobster-slipper',
-        'squat': 'lobster-squat', 'squat lobster': 'lobster-squat',
-        'spiny': 'lobster-spiny', 'spiny lobster': 'lobster-spiny',
-        'reef': 'lobster-reef', 'reef lobster': 'lobster-reef',
-        'pistol': 'lobster-pistol', 'pistol lobster': 'lobster-pistol', 'pistol shrimp': 'lobster-pistol',
-        'calico': 'lobster-calico', 'calico lobster': 'lobster-calico',
-        'ghost': 'lobster-ghost', 'ghost lobster': 'lobster-ghost',
-        'split': 'lobster-split', 'split lobster': 'lobster-split',
-      };
-      return raceMap[raceName.toLowerCase()] || 'lobster-american';
+    // createLobsterSVG(race) is loaded from lobster-svg.js
+    // Helper to extract race name from various formats
+    function getRaceName(raceName) {
+      if (!raceName) return 'american';
+      return raceName.toLowerCase().replace(' lobster', '').replace('pistol shrimp', 'pistol');
     }
     
     // ================================================================
@@ -764,7 +741,7 @@
         selectedAgent = null;
         exitCombatMode();
         document.getElementById('agentNameHeader').textContent = 'No Agent Selected';
-        document.getElementById('charSheet').innerHTML = '<div class="no-agent"><div class="icon" style="display:flex;justify-content:center;">' + createLobsterHTML('lobster-american') + '</div><p>Select an agent to view their character sheet</p></div>';
+        document.getElementById('charSheet').innerHTML = '<div class="no-agent"><div class="icon" style="display:flex;justify-content:center;">' + createLobsterSVG('american') + '</div><p>Select an agent to view their character sheet</p></div>';
         document.getElementById('activityFeed').innerHTML = '<div class="no-agent"><div class="icon">👀</div><p>Select an agent to watch their adventures</p></div>';
         return;
       }
@@ -790,11 +767,11 @@
         document.getElementById('agentNameHeader').textContent = c.name;
         
         const hpPct = Math.round((c.hp / c.max_hp) * 100);
-        const raceClass = getRaceCSSClass(c.race);
+        const raceName = getRaceName(c.race);
         
         let html = `
           <div class="char-portrait">
-            <div class="char-avatar">${createLobsterHTML(raceClass)}</div>
+            <div class="char-avatar">${createLobsterSVG(raceName)}</div>
             <div class="char-name">${c.name}</div>
             <div class="char-class">Level ${c.level} ${c.race} ${c.class}</div>
           </div>
