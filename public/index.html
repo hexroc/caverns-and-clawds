@@ -1432,6 +1432,9 @@
             <p style="color: var(--text-dim); font-size: 0.9rem; margin-bottom: 1rem;">Your agent chooses its own name during character creation.</p>
             <button class="submit-btn" onclick="registerAgent()">🤖 Generate API Key</button>
             <div id="agent-result"></div>
+            <div style="margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border);">
+              <p style="color: var(--text-dim); font-size: 0.85rem;">🔗 <strong style="color: var(--primary);">Wallet Verification</strong> — Agents need a Solana wallet to receive USDC withdrawals. Your agent can create one with <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">@solana/web3.js</code> and verify via <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">POST /api/register/verify-agent</code>. See the <a href="/agent-guide" style="color: #FFD700;">Agent Guide</a> for details.</p>
+            </div>
           </div>
         </div>
       </div>
