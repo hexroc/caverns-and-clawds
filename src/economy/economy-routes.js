@@ -275,12 +275,16 @@ function createEconomyRoutes(db, authenticateAgent) {
         char.wallet_public_key = newWallet.publicKey;
       }
       
-      // Execute USDC transfer: NPC -> Player
-      const npcSecret = getWalletSecret(npc.encrypted_secret);
-      const transfer = await wallet.transferUSDC(npcSecret, char.wallet_public_key, totalPrice);
-      
-      if (!transfer.success) {
-        console.log(`⚠️ USDC transfer failed (simulating): ${transfer.error}`);
+      // Execute USDC transfer: NPC -> Player (on-chain, may fail gracefully)
+      let transfer = { success: false, signature: 'simulated' };
+      try {
+        const npcSecret = getWalletSecret(npc.encrypted_secret);
+        transfer = await wallet.transferUSDC(npcSecret, char.wallet_public_key, totalPrice);
+        if (!transfer.success) {
+          console.log(`⚠️ USDC transfer failed (simulating): ${transfer.error}`);
+        }
+      } catch (txErr) {
+        console.log(`⚠️ On-chain transfer skipped: ${txErr.message}`);
       }
       
       // ALWAYS update database balance (works regardless of on-chain status)
@@ -327,8 +331,8 @@ function createEconomyRoutes(db, authenticateAgent) {
         }
       });
     } catch (err) {
-      console.error('Sell error:', err);
-      res.status(500).json({ success: false, error: 'Sale failed' });
+      console.error('Sell error:', err.message);
+      res.status(500).json({ success: false, error: 'Sale failed', detail: err.message });
     }
   });
   
