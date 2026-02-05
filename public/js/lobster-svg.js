@@ -26,18 +26,18 @@ const LOBSTER_PALETTES = {
     flat: true // slipper lobsters have flat shovel-like antennae
   },
   squat: {
-    body: '#E88020', bodyDark: '#C06010', bodyLight: '#FFA040',
-    claw: '#F09030', clawDark: '#C06010',
-    belly: '#FFD0A0', accent: '#D87020',
-    eye: '#111', eyeRing: '#F09030',
-    compact: true // squats are rounder, shorter tail
+    body: '#E86898', bodyDark: '#C04878', bodyLight: '#FF88B8',
+    claw: '#F078A0', clawDark: '#C04878',
+    belly: '#FFD0E0', accent: '#D85888',
+    eye: '#111', eyeRing: '#F078A0',
+    compact: true // squats are crab-like: wide round body, big claws, stubby tail
   },
   spiny: {
-    body: '#D07028', bodyDark: '#A05018', bodyLight: '#E89048',
-    claw: '#C08038', clawDark: '#A05018',
-    belly: '#F0C090', accent: '#E08838',
-    eye: '#111', eyeRing: '#D07028',
-    spiny: true // has spines/thorns on body
+    body: '#8B6840', bodyDark: '#6B4820', bodyLight: '#AB8860',
+    claw: '#9B7848', clawDark: '#6B4820',
+    belly: '#D0B890', accent: '#7B5830',
+    eye: '#111', eyeRing: '#8B6840',
+    spiny: true // long antennae, tiny claws, thorns everywhere, elongated
   },
   reef: {
     body: '#E06050', bodyDark: '#B04040', bodyLight: '#FF8070',
@@ -89,6 +89,10 @@ function createLobsterSVG(race) {
   
   if (p.split) {
     svg = buildSplitLobster(p);
+  } else if (p.compact) {
+    svg = buildSquatLobster(p);
+  } else if (p.spiny) {
+    svg = buildSpinyLobster(p);
   } else {
     svg = buildLobster(p, r);
   }
@@ -106,18 +110,6 @@ function buildLobster(p, race) {
   const rClawRy = 10;
   
   let extras = '';
-  
-  // Spiny: add thorns on body
-  if (p.spiny) {
-    extras += `
-      <circle cx="38" cy="52" r="2.5" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
-      <circle cx="82" cy="52" r="2.5" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
-      <circle cx="36" cy="62" r="2" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
-      <circle cx="84" cy="62" r="2" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
-      <circle cx="40" cy="72" r="2" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
-      <circle cx="80" cy="72" r="2" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
-    `;
-  }
   
   // Calico: add spots
   if (p.spotted) {
@@ -159,12 +151,12 @@ function buildLobster(p, race) {
     `;
   }
   
-  // Tail length (squat = shorter)
-  const tailY = p.compact ? 82 : 78;
-  const tailH = p.compact ? 7 : 10;
-  const seg2Y = p.compact ? 87 : 86;
-  const seg2H = p.compact ? 6 : 8;
-  const fanY = p.compact ? 91 : 92;
+  // Tail positioning
+  const tailY = 78;
+  const tailH = 10;
+  const seg2Y = 86;
+  const seg2H = 8;
+  const fanY = 92;
   
   return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
     <!-- Antennae -->
@@ -242,6 +234,161 @@ function buildLobster(p, race) {
     <path d="M 38 75 Q 30 85 35 95" fill="none" stroke="rgba(180,240,255,0.3)" stroke-width="1.5"/>
     <path d="M 82 75 Q 90 85 85 95" fill="none" stroke="rgba(180,240,255,0.3)" stroke-width="1.5"/>
     ` : ''}
+  </svg>`;
+}
+
+// ================================================================
+// SQUAT LOBSTER — compact crab-like body, big claws, tiny tail
+// ================================================================
+function buildSquatLobster(p) {
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <!-- Short antennae (squats have stubby ones) -->
+    <line x1="48" y1="32" x2="40" y2="18" stroke="${p.accent}" stroke-width="2" stroke-linecap="round"/>
+    <line x1="72" y1="32" x2="80" y2="18" stroke="${p.accent}" stroke-width="2" stroke-linecap="round"/>
+    
+    <!-- Big claw arms (squats have chunky claws) -->
+    <rect x="18" y="30" width="8" height="18" rx="4" fill="${p.accent}" transform="rotate(-25 22 39)"/>
+    <rect x="94" y="30" width="8" height="18" rx="4" fill="${p.accent}" transform="rotate(25 98 39)"/>
+    
+    <!-- Left Claw (BIG — squats are known for oversized claws) -->
+    <ellipse cx="12" cy="24" rx="15" ry="12" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
+    <path d="M 3 17 Q 12 11 21 17" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+    <ellipse cx="12" cy="24" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.2"/>
+    
+    <!-- Right Claw (also big) -->
+    <ellipse cx="108" cy="24" rx="15" ry="12" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1.5"/>
+    <path d="M 99 17 Q 108 11 117 17" fill="none" stroke="${p.clawDark}" stroke-width="1.5" stroke-linecap="round"/>
+    <ellipse cx="108" cy="24" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.2"/>
+    
+    <!-- Legs (shorter, crab-like, splayed wide) -->
+    <line x1="38" y1="58" x2="20" y2="52" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="36" y1="66" x2="18" y2="66" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="38" y1="74" x2="20" y2="80" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="82" y1="58" x2="100" y2="52" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="84" y1="66" x2="102" y2="66" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    <line x1="82" y1="74" x2="100" y2="80" stroke="${p.accent}" stroke-width="3" stroke-linecap="round"/>
+    
+    <!-- Body (WIDE and ROUND — crab-like) -->
+    <ellipse cx="60" cy="62" rx="28" ry="22" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1.5"/>
+    
+    <!-- Shell pattern (concentric) -->
+    <ellipse cx="60" cy="62" rx="20" ry="15" fill="none" stroke="${p.bodyLight}" stroke-width="0.8" opacity="0.3"/>
+    <ellipse cx="60" cy="62" rx="12" ry="9" fill="none" stroke="${p.bodyLight}" stroke-width="0.6" opacity="0.2"/>
+    
+    <!-- Belly highlight -->
+    <ellipse cx="60" cy="65" rx="16" ry="12" fill="${p.belly}" opacity="0.3"/>
+    
+    <!-- Head (small relative to body — crab proportions) -->
+    <ellipse cx="60" cy="38" rx="17" ry="12" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1.5"/>
+    <ellipse cx="58" cy="35" rx="6" ry="4" fill="${p.bodyLight}" opacity="0.25"/>
+    
+    <!-- Eyes (big, cute, on short stalks) -->
+    <ellipse cx="47" cy="30" rx="3" ry="5" fill="${p.accent}" transform="rotate(-10 47 30)"/>
+    <ellipse cx="73" cy="30" rx="3" ry="5" fill="${p.accent}" transform="rotate(10 73 30)"/>
+    <circle cx="46" cy="26" r="7" fill="white" stroke="${p.bodyDark}" stroke-width="1"/>
+    <circle cx="74" cy="26" r="7" fill="white" stroke="${p.bodyDark}" stroke-width="1"/>
+    <circle cx="47" cy="27" r="4.5" fill="${p.eye}"/>
+    <circle cx="75" cy="27" r="4.5" fill="${p.eye}"/>
+    <circle cx="44.5" cy="24.5" r="2" fill="#fff"/>
+    <circle cx="72.5" cy="24.5" r="2" fill="#fff"/>
+    <circle cx="48" cy="29" r="1" fill="#fff" opacity="0.5"/>
+    <circle cx="76" cy="29" r="1" fill="#fff" opacity="0.5"/>
+    
+    <!-- Mouth -->
+    <path d="M 56 43 Q 60 46 64 43" fill="none" stroke="${p.bodyDark}" stroke-width="1" stroke-linecap="round" opacity="0.6"/>
+    
+    <!-- Tiny tucked tail (squats curl their tail under) -->
+    <ellipse cx="60" cy="84" rx="10" ry="5" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <path d="M 54 88 Q 60 93 66 88" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+  </svg>`;
+}
+
+// ================================================================
+// SPINY LOBSTER — long antennae, tiny claws, spikes, elongated
+// ================================================================
+function buildSpinyLobster(p) {
+  return `<svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+    <!-- LONG antennae (the defining feature! way longer than others) -->
+    <line x1="48" y1="28" x2="15" y2="2" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="72" y1="28" x2="105" y2="2" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <!-- Antenna barbs/segments -->
+    <circle cx="28" cy="12" r="1.5" fill="${p.bodyLight}"/>
+    <circle cx="92" cy="12" r="1.5" fill="${p.bodyLight}"/>
+    <circle cx="38" cy="20" r="1.2" fill="${p.bodyLight}"/>
+    <circle cx="82" cy="20" r="1.2" fill="${p.bodyLight}"/>
+    <!-- Secondary shorter antennae -->
+    <line x1="50" y1="30" x2="38" y2="14" stroke="${p.bodyLight}" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="70" y1="30" x2="82" y2="14" stroke="${p.bodyLight}" stroke-width="1.5" stroke-linecap="round"/>
+    
+    <!-- Tiny claw arms (spiny lobsters have NO big claws) -->
+    <rect x="28" y="34" width="4" height="12" rx="2" fill="${p.accent}" transform="rotate(-15 30 40)"/>
+    <rect x="88" y="34" width="4" height="12" rx="2" fill="${p.accent}" transform="rotate(15 90 40)"/>
+    
+    <!-- Tiny claws (just little nubs) -->
+    <ellipse cx="24" cy="32" rx="6" ry="5" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1"/>
+    <ellipse cx="96" cy="32" rx="6" ry="5" fill="${p.claw}" stroke="${p.clawDark}" stroke-width="1"/>
+    
+    <!-- Legs (3 pairs) -->
+    <line x1="44" y1="54" x2="28" y2="48" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="42" y1="62" x2="26" y2="61" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="44" y1="70" x2="28" y2="74" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="76" y1="54" x2="92" y2="48" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="78" y1="62" x2="94" y2="61" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    <line x1="76" y1="70" x2="92" y2="74" stroke="${p.accent}" stroke-width="2.5" stroke-linecap="round"/>
+    
+    <!-- Body (slightly narrower, more elongated) -->
+    <ellipse cx="60" cy="62" rx="20" ry="20" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1.5"/>
+    
+    <!-- SPINES on body edges (the whole point!) -->
+    <polygon points="37,52 34,48 40,50" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="83,52 86,48 80,50" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="36,60 32,58 38,59" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="84,60 88,58 82,59" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="37,68 33,68 38,66" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="83,68 87,68 82,66" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="40,75 36,76 40,73" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="80,75 84,76 80,73" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    
+    <!-- Belly highlight -->
+    <ellipse cx="60" cy="64" rx="12" ry="12" fill="${p.belly}" opacity="0.3"/>
+    
+    <!-- Armored shell lines -->
+    <path d="M 44 56 Q 60 51 76 56" fill="none" stroke="${p.bodyLight}" stroke-width="0.8" opacity="0.35"/>
+    <path d="M 44 64 Q 60 60 76 64" fill="none" stroke="${p.bodyLight}" stroke-width="0.6" opacity="0.25"/>
+    <path d="M 46 72 Q 60 69 74 72" fill="none" stroke="${p.bodyLight}" stroke-width="0.6" opacity="0.25"/>
+    
+    <!-- Head (armored, angular, spines on top) -->
+    <ellipse cx="60" cy="38" rx="18" ry="13" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1.5"/>
+    <!-- Head spines -->
+    <polygon points="50,26 48,20 53,25" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="60,24 60,17 62,24" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    <polygon points="70,26 72,20 67,25" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    
+    <!-- Eyes (slightly smaller, more fierce) -->
+    <circle cx="50" cy="36" r="6" fill="white" stroke="${p.bodyDark}" stroke-width="1"/>
+    <circle cx="70" cy="36" r="6" fill="white" stroke="${p.bodyDark}" stroke-width="1"/>
+    <circle cx="51" cy="37" r="4" fill="${p.eye}"/>
+    <circle cx="71" cy="37" r="4" fill="${p.eye}"/>
+    <circle cx="49" cy="34.5" r="1.8" fill="#fff"/>
+    <circle cx="69" cy="34.5" r="1.8" fill="#fff"/>
+    
+    <!-- Mouth (slight frown — tough guy) -->
+    <path d="M 56 44 Q 60 43 64 44" fill="none" stroke="${p.bodyDark}" stroke-width="1" stroke-linecap="round" opacity="0.5"/>
+    
+    <!-- Tail segments (normal length) -->
+    <rect x="47" y="78" width="26" height="10" rx="5" fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1"/>
+    <!-- Tail spines -->
+    <circle cx="44" cy="82" r="2" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.6"/>
+    <circle cx="76" cy="82" r="2" fill="${p.bodyLight}" stroke="${p.bodyDark}" stroke-width="0.6"/>
+    
+    <rect x="50" y="86" width="20" height="8" rx="4" fill="${p.accent}" stroke="${p.bodyDark}" stroke-width="0.8"/>
+    
+    <!-- Tail fan -->
+    <path d="M 50 92 Q 42 106 36 108 Q 48 102 60 104 Q 72 102 84 108 Q 78 106 70 92" 
+          fill="${p.body}" stroke="${p.bodyDark}" stroke-width="1"/>
+    <line x1="53" y1="94" x2="46" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+    <line x1="60" y1="95" x2="60" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
+    <line x1="67" y1="94" x2="74" y2="104" stroke="${p.bodyDark}" stroke-width="0.6" opacity="0.4"/>
   </svg>`;
 }
 
