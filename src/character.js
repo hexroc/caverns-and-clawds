@@ -1020,8 +1020,8 @@ class CharacterManager {
           id, agent_id, name, race, class,
           str, dex, con, int, wis, cha,
           hp_current, hp_max, ac, speed, religion,
-          personality, speaking_style
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          personality, speaking_style, usdc_balance
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)
       `).run(
         characterId, agentId, name, race, characterClass,
         finalStats.str, finalStats.dex, finalStats.con, 

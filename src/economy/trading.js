@@ -43,12 +43,23 @@ async function sendUSDC(db, fromCharId, toCharId, amount) {
   // Decrypt sender's secret key
   const senderSecret = wallet.decryptSecretKey(fromChar.wallet_encrypted_secret, ENCRYPTION_KEY);
   
+  // Check sender has enough USDC
+  if ((fromChar.usdc_balance || 0) < amount) {
+    return { success: false, error: 'Insufficient USDC', balance: fromChar.usdc_balance || 0 };
+  }
+  
   // Transfer USDC
   const transfer = await wallet.transferUSDC(senderSecret, toChar.wallet_public_key, amount);
   
   if (!transfer.success) {
     console.log(`⚠️ P2P USDC transfer failed (simulating): ${transfer.error}`);
   }
+  
+  // ALWAYS update database balances
+  db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+    .run(amount, fromChar.id);
+  db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+    .run(amount, toChar.id);
   
   // Log transaction (use 'transfer' type for p2p)
   db.prepare(`

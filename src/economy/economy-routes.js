@@ -265,10 +265,15 @@ function createEconomyRoutes(db, authenticateAgent) {
       const transfer = await wallet.transferUSDC(npcSecret, char.wallet_public_key, totalPrice);
       
       if (!transfer.success) {
-        // If transfer fails, might be insufficient funds - for demo, we'll simulate
-        console.log(`⚠️ USDC transfer failed (simulating for demo): ${transfer.error}`);
-        // Continue anyway for demo purposes
+        console.log(`⚠️ USDC transfer failed (simulating): ${transfer.error}`);
       }
+      
+      // ALWAYS update database balance (works regardless of on-chain status)
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+        .run(totalPrice, char.id);
+      // Update NPC balance cache
+      db.prepare('UPDATE system_wallets SET balance_cache = balance_cache - ? WHERE id = ?')
+        .run(totalPrice, npcId);
       
       // Update inventories
       db.prepare(`
@@ -376,6 +381,11 @@ function createEconomyRoutes(db, authenticateAgent) {
       // Get bank wallet
       const bank = getSystemWallet('bank');
       
+      // Check player has enough USDC
+      if ((char.usdc_balance || 0) < amount) {
+        return res.status(400).json({ success: false, error: 'Insufficient USDC', balance: char.usdc_balance || 0 });
+      }
+      
       // Transfer USDC: Player -> Bank
       const playerSecret = getWalletSecret(char.wallet_encrypted_secret);
       const transfer = await wallet.transferUSDC(playerSecret, bank.public_key, amount);
@@ -383,6 +393,10 @@ function createEconomyRoutes(db, authenticateAgent) {
       if (!transfer.success) {
         console.log(`⚠️ Deposit transfer failed (simulating): ${transfer.error}`);
       }
+      
+      // ALWAYS update database balance
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+        .run(amount, char.id);
       
       // Update bank account
       db.prepare(`
@@ -462,6 +476,10 @@ function createEconomyRoutes(db, authenticateAgent) {
         console.log(`⚠️ Withdraw transfer failed (simulating): ${transfer.error}`);
       }
       
+      // ALWAYS update database balances
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+        .run(amount, char.id);
+      
       // Update bank account
       db.prepare(`
         UPDATE bank_accounts SET deposited_balance = deposited_balance - ? 
@@ -538,6 +556,10 @@ function createEconomyRoutes(db, authenticateAgent) {
         console.log(`⚠️ Loan transfer failed (simulating): ${transfer.error}`);
       }
       
+      // ALWAYS update database balance
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+        .run(amount, char.id);
+      
       // Set due date (7 days from now)
       const dueDate = new Date();
       dueDate.setDate(dueDate.getDate() + 7);
@@ -611,6 +633,11 @@ function createEconomyRoutes(db, authenticateAgent) {
       // Get bank wallet
       const bank = getSystemWallet('bank');
       
+      // Check player has enough USDC
+      if ((char.usdc_balance || 0) < payAmount) {
+        return res.status(400).json({ success: false, error: 'Insufficient USDC to repay', balance: char.usdc_balance || 0, owed: totalOwed });
+      }
+      
       // Transfer USDC: Player -> Bank
       const playerSecret = getWalletSecret(char.wallet_encrypted_secret);
       const transfer = await wallet.transferUSDC(playerSecret, bank.public_key, payAmount);
@@ -618,6 +645,10 @@ function createEconomyRoutes(db, authenticateAgent) {
       if (!transfer.success) {
         console.log(`⚠️ Repay transfer failed (simulating): ${transfer.error}`);
       }
+      
+      // ALWAYS update database balance
+      db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+        .run(payAmount, char.id);
       
       // Update loan balance
       const remainingLoan = Math.max(0, totalOwed - payAmount);

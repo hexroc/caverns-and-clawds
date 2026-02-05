@@ -13,6 +13,7 @@ const { QuestEngine } = require('./quest-engine');
 const { HenchmanManager } = require('./henchmen');
 const { generateZoneLoot, getZoneTier } = require('./loot-tables');
 const { generateMaterialDrops, addMaterialsToPlayer } = require('./economy/material-drops');
+const { activityTracker } = require('./activity-tracker');
 
 // ============================================================================
 // SPELLS (5e, Sea-themed names)
@@ -601,6 +602,28 @@ class EncounterManager {
       description = `You're ambushed by ${monsterNames.join(' and ')}!`;
     }
     
+    // Emit combat start event for spectator play-by-play
+    activityTracker.addCombatEvent(char.name, {
+      type: 'combat_start',
+      player: char.name,
+      zone: table.name,
+      monsters: monsters.map(m => ({ name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac })),
+      round: 1,
+      description
+    });
+    
+    // Set active combat state for spectators
+    activityTracker.setCombatState(char.name, {
+      inCombat: true,
+      encounterId,
+      round: 1,
+      zone: table.name,
+      monsters: monsters.map(m => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac })),
+      playerHp: char.hp_current,
+      playerMaxHp: char.hp_max,
+      playerAc: char.ac
+    });
+    
     return {
       success: true,
       encounter: true,
@@ -862,6 +885,17 @@ class EncounterManager {
     
     if (attackRoll === 1) {
       messages.push(`🎲 Critical miss! Your attack goes wide.`);
+      // Emit miss event
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_miss',
+        player: char.name,
+        target: target.name,
+        roll: attackRoll,
+        totalRoll: totalAttack,
+        ac: target.ac,
+        critMiss: true,
+        weapon: 'melee attack'
+      });
     } else if (crit || totalAttack >= target.ac) {
       hit = true;
       // Roll damage (assume 1d8 + STR for simplicity)
@@ -877,19 +911,75 @@ class EncounterManager {
       
       if (crit) {
         messages.push(`💥 **CRITICAL HIT!** You strike ${target.name} for ${damage} damage!`);
+        // Emit critical hit event
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_critical',
+          player: char.name,
+          target: target.name,
+          roll: attackRoll,
+          totalRoll: totalAttack,
+          ac: target.ac,
+          damage,
+          damageType: 'slashing',
+          weapon: 'melee attack'
+        });
       } else {
         messages.push(`⚔️ You hit ${target.name} for ${damage} damage! (${attackRoll}+${strMod+profBonus}=${totalAttack} vs AC ${target.ac})`);
+        // Emit attack hit event
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_attack',
+          player: char.name,
+          target: target.name,
+          roll: attackRoll,
+          totalRoll: totalAttack,
+          ac: target.ac,
+          hit: true,
+          damage,
+          damageType: 'slashing',
+          weapon: 'melee attack',
+          critical: false
+        });
       }
       
       if (target.hp <= 0) {
         target.alive = false;
         messages.push(`💀 ${target.name} is slain!`);
+        // Emit death event
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_death',
+          target: target.name,
+          killer: char.name,
+          targetHp: 0,
+          targetMaxHp: target.maxHp
+        });
       } else {
         messages.push(`${target.name} has ${target.hp}/${target.maxHp} HP remaining.`);
       }
     } else {
       messages.push(`🛡️ Your attack misses ${target.name}. (${attackRoll}+${strMod+profBonus}=${totalAttack} vs AC ${target.ac})`);
+      // Emit miss event
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_miss',
+        player: char.name,
+        target: target.name,
+        roll: attackRoll,
+        totalRoll: totalAttack,
+        ac: target.ac,
+        weapon: 'melee attack'
+      });
     }
+    
+    // Update combat state for spectators
+    activityTracker.setCombatState(char.name, {
+      inCombat: true,
+      encounterId: encounter.id,
+      round: encounter.round,
+      zone: encounter.zone,
+      monsters: monsters.filter(m => m.alive).map(m => ({ id: m.id, name: m.name, hp: m.hp, maxHp: m.maxHp, ac: m.ac })),
+      playerHp: char.hp_current,
+      playerMaxHp: char.hp_max,
+      playerAc: char.ac
+    });
     
     // Update combat data in DB
     this.db.prepare('UPDATE active_encounters SET monsters = ? WHERE id = ?')
@@ -953,6 +1043,17 @@ class EncounterManager {
       this.db.prepare('UPDATE active_encounters SET status = ? WHERE id = ?')
         .run('fled', encounter.id);
       
+      // Get character name for spectator event
+      const charRow = this.db.prepare('SELECT name FROM clawds WHERE id = ?').get(encounter.characterId);
+      if (charRow) {
+        activityTracker.addCombatEvent(charRow.name, {
+          type: 'combat_flee',
+          player: charRow.name,
+          success: true
+        });
+        activityTracker.clearCombatState(charRow.name);
+      }
+      
       return {
         success: true,
         action: 'flee',
@@ -963,6 +1064,15 @@ class EncounterManager {
       };
     } else {
       // Failed flee - lose turn
+      const charRow = this.db.prepare('SELECT name FROM clawds WHERE id = ?').get(encounter.characterId);
+      if (charRow) {
+        activityTracker.addCombatEvent(charRow.name, {
+          type: 'combat_flee',
+          player: charRow.name,
+          success: false
+        });
+      }
+      
       return {
         success: true,
         action: 'flee',
@@ -1038,6 +1148,17 @@ class EncounterManager {
         
         messages.push(`🧪 You drink the ${item.name}!`);
         messages.push(`💚 Healed ${actualHeal} HP! (${oldHP} → ${newHP}/${char.hp_max})`);
+        
+        // Emit heal event for spectators
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_spell',
+          player: char.name,
+          spell: item.name,
+          target: 'self',
+          healing: actualHeal,
+          newHp: newHP,
+          maxHp: char.hp_max
+        });
       } else if (item.effect?.type === 'buff') {
         // TODO: Implement buff tracking
         messages.push(`🧪 You drink the ${item.name}!`);
@@ -1497,6 +1618,16 @@ class EncounterManager {
         const newHP = Math.min(char.hp_max, char.hp_current + healing);
         this.db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHP, char.id);
         messages.push(`💚 Healed ${healing} HP! (${char.hp_current} → ${newHP}/${char.hp_max})`);
+        // Emit heal event for spectators
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_spell',
+          player: char.name,
+          spell: spell.seaName || spell.name,
+          target: 'self',
+          healing,
+          newHp: newHP,
+          maxHp: char.hp_max
+        });
         break;
       }
       
@@ -1505,6 +1636,15 @@ class EncounterManager {
         const newHP = Math.min(char.hp_max, char.hp_current + healing);
         this.db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHP, char.id);
         messages.push(`💚 Healed ${healing} HP! (Bonus action)`);
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_spell',
+          player: char.name,
+          spell: spell.seaName || spell.name,
+          target: 'self',
+          healing,
+          newHp: newHP,
+          maxHp: char.hp_max
+        });
         break;
       }
       
@@ -1517,9 +1657,25 @@ class EncounterManager {
           }
           target.hp -= totalDamage;
           messages.push(`✨ Three bolts strike ${target.name} for ${totalDamage} damage!`);
+          activityTracker.addCombatEvent(char.name, {
+            type: 'combat_spell',
+            player: char.name,
+            spell: spell.seaName || spell.name,
+            target: target.name,
+            damage: totalDamage,
+            damageType: 'force',
+            autoHit: true
+          });
           if (target.hp <= 0) {
             target.alive = false;
             messages.push(`💀 ${target.name} is slain!`);
+            activityTracker.addCombatEvent(char.name, {
+              type: 'combat_death',
+              target: target.name,
+              killer: char.name,
+              targetHp: 0,
+              targetMaxHp: target.maxHp
+            });
           }
           updateMonsters = true;
         }
@@ -1535,12 +1691,36 @@ class EncounterManager {
             target.hp -= damage;
             messages.push(`☀️ Radiant energy strikes ${target.name} for ${damage} damage!`);
             messages.push(`Next attack against ${target.name} has advantage!`);
+            activityTracker.addCombatEvent(char.name, {
+              type: 'combat_spell',
+              player: char.name,
+              spell: spell.seaName || spell.name,
+              target: target.name,
+              damage,
+              damageType: 'radiant',
+              roll: attackRoll,
+              ac: target.ac,
+              hit: true
+            });
             if (target.hp <= 0) {
               target.alive = false;
               messages.push(`💀 ${target.name} is slain!`);
+              activityTracker.addCombatEvent(char.name, {
+                type: 'combat_death',
+                target: target.name,
+                killer: char.name
+              });
             }
           } else {
             messages.push(`The bolt of light misses ${target.name}!`);
+            activityTracker.addCombatEvent(char.name, {
+              type: 'combat_miss',
+              player: char.name,
+              target: target.name,
+              roll: attackRoll,
+              ac: target.ac,
+              weapon: spell.seaName || spell.name
+            });
           }
           updateMonsters = true;
         }
@@ -1555,7 +1735,23 @@ class EncounterManager {
           const finalDamage = saved ? Math.floor(damage / 2) : damage;
           monster.hp -= finalDamage;
           hits++;
-          if (monster.hp <= 0) monster.alive = false;
+          activityTracker.addCombatEvent(char.name, {
+            type: 'combat_spell',
+            player: char.name,
+            spell: spell.seaName || spell.name,
+            target: monster.name,
+            damage: finalDamage,
+            damageType: 'fire',
+            saved
+          });
+          if (monster.hp <= 0) {
+            monster.alive = false;
+            activityTracker.addCombatEvent(char.name, {
+              type: 'combat_death',
+              target: monster.name,
+              killer: char.name
+            });
+          }
         }
         messages.push(`🔥 Flames engulf ${hits} enemies for ${damage} damage!`);
         updateMonsters = true;
@@ -1571,9 +1767,22 @@ class EncounterManager {
           // Cantrip - no save, just hits
           target.hp -= damage;
           messages.push(`🔥 ${spell.name} hits ${target.name} for ${damage} damage!`);
+          activityTracker.addCombatEvent(char.name, {
+            type: 'combat_spell',
+            player: char.name,
+            spell: spell.seaName || spell.name,
+            target: target.name,
+            damage,
+            damageType: spell.damageType || 'fire'
+          });
           if (target.hp <= 0) {
             target.alive = false;
             messages.push(`💀 ${target.name} is slain!`);
+            activityTracker.addCombatEvent(char.name, {
+              type: 'combat_death',
+              target: target.name,
+              killer: char.name
+            });
           }
           updateMonsters = true;
         }
@@ -1690,6 +1899,20 @@ class EncounterManager {
     // Mark encounter complete
     this.db.prepare('UPDATE active_encounters SET status = ? WHERE id = ?')
       .run('victory', encounter.id);
+    
+    // Emit victory event for spectators
+    const monsterNames = monsters.map(m => m.name);
+    activityTracker.addCombatEvent(char.name, {
+      type: 'combat_victory',
+      player: char.name,
+      monsters: monsterNames,
+      xpGained: totalXP,
+      materials: allMaterials.map(m => m.name),
+      loot: allLoot.map(l => ITEMS[l.itemId]?.name || l.itemId)
+    });
+    
+    // Clear combat state for spectators
+    activityTracker.clearCombatState(char.name);
     
     // Track kills for quests (both old and new quest systems)
     const questManager = new QuestManager(this.db);
@@ -1862,6 +2085,17 @@ class EncounterManager {
     const totalAttack = attackRoll + attack.hit;
     
     if (attackRoll === 1) {
+      // Emit miss event for spectators
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_miss',
+        player: monster.name,
+        target: char.name,
+        roll: attackRoll,
+        totalRoll: totalAttack,
+        ac: char.ac,
+        critMiss: true,
+        weapon: attack.name
+      });
       return { message: `🎲 ${monster.name}'s attack misses wildly!`, playerDied: false };
     }
     
@@ -1903,12 +2137,74 @@ class EncounterManager {
       
       this.db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHP, char.id);
       
+      // Emit combat events for spectators
+      if (crit) {
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_critical',
+          player: monster.name,
+          target: char.name,
+          roll: attackRoll,
+          totalRoll: totalAttack,
+          ac: char.ac,
+          damage,
+          damageType: attack.damageType || 'bludgeoning',
+          weapon: attack.name
+        });
+      } else {
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_attack',
+          player: monster.name,
+          target: char.name,
+          roll: attackRoll,
+          totalRoll: totalAttack,
+          ac: char.ac,
+          hit: true,
+          damage,
+          damageType: attack.damageType || 'bludgeoning',
+          weapon: attack.name,
+          critical: false
+        });
+      }
+      
+      if (playerDied) {
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_defeat',
+          player: char.name,
+          killer: monster.name,
+          playerHp: 0,
+          playerMaxHp: char.hp_max
+        });
+      }
+      
+      // Update spectator combat state
+      activityTracker.setCombatState(char.name, {
+        inCombat: true,
+        encounterId: encounter.id,
+        round: encounter.round || 1,
+        zone: encounter.zone,
+        monsters: [], // Will be updated by caller
+        playerHp: newHP,
+        playerMaxHp: char.hp_max,
+        playerAc: char.ac
+      });
+      
       const prefix = crit ? '💥 **CRITICAL!** ' : '';
       let message = `${prefix}${monster.name} hits you with ${attack.name} for ${damage} damage! (${newHP}/${char.hp_max} HP)`;
       message += extraMessage;
       
       return { message, playerDied, damage };
     }
+    
+    // Miss
+    activityTracker.addCombatEvent(char.name, {
+      type: 'combat_miss',
+      player: monster.name,
+      target: char.name,
+      roll: attackRoll,
+      totalRoll: totalAttack,
+      ac: char.ac,
+      weapon: attack.name
+    });
     
     return { message: `🛡️ ${monster.name}'s ${attack.name} misses you!`, playerDied: false };
   }
@@ -1921,6 +2217,17 @@ class EncounterManager {
       this.db.prepare('SELECT character_id FROM active_encounters WHERE id = ?').get(encounter.id)?.character_id;
     
     if (!charId) return;
+    
+    // Get character name for spectator events
+    const char = this.db.prepare('SELECT name FROM clawds WHERE id = ?').get(charId);
+    if (char) {
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_end',
+        player: char.name,
+        result: 'defeat'
+      });
+      activityTracker.clearCombatState(char.name);
+    }
     
     // Mark character as dead (needs to choose resurrection option)
     this.db.prepare(`

@@ -259,6 +259,12 @@ async function buyout(db, buyerId, auctionId) {
       console.log(`⚠️ Auction buyout transfer failed (simulating): ${transfer.error}`);
     }
     
+    // ALWAYS update database balances
+    db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+      .run(auction.buyout_price, buyerId);
+    db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+      .run(auction.buyout_price, auction.seller_id);
+    
     // Log transaction
     db.prepare(`
       INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, signature, description)
@@ -346,6 +352,12 @@ async function finalizeAuction(db, auctionId) {
     if (!transfer.success) {
       console.log(`⚠️ Auction finalize transfer failed (simulating): ${transfer.error}`);
     }
+    
+    // ALWAYS update database balances
+    db.prepare('UPDATE clawds SET usdc_balance = usdc_balance - ? WHERE id = ?')
+      .run(auction.current_bid, auction.current_bidder_id);
+    db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+      .run(auction.current_bid, auction.seller_id);
     
     db.prepare(`
       INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, signature, description)
