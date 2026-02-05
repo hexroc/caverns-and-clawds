@@ -427,8 +427,8 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         });
       }
       
-      const previousHP = char.hp_current;
-      const maxHP = char.hp_max;
+      const previousHP = char.hp_current ?? char.hp?.current ?? 0;
+      const maxHP = char.hp_max ?? char.hp?.max ?? 1;
       const healAmount = Math.floor((maxHP - previousHP) * restOption.healPercent);
       
       // Already full HP?
@@ -442,7 +442,7 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
       }
 
       // Check and deduct USDC
-      const balance = char.usdc_balance || 0;
+      const balance = char.usdc_balance ?? char.currency?.usdc ?? 0;
       if (balance < restOption.cost) {
         return res.status(400).json({ 
           success: false, 
@@ -469,12 +469,8 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
       }
       
       // Track activity
-      if (activityTracker) {
-        activityTracker.track(char.name || char.id, 'rest', {
-          location: restOption.name,
-          healed: healAmount,
-          cost: restOption.cost
-        });
+      if (activityTracker && activityTracker.playerTrade) {
+        activityTracker.playerTrade(char.name || char.id, 'rested at', restOption.name, restOption.cost, char.location);
       }
 
       res.json({
@@ -489,8 +485,8 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         location: restOption.name
       });
     } catch (err) {
-      console.error('Rest error:', err);
-      res.status(500).json({ success: false, error: 'Failed to rest' });
+      console.error('Rest error:', err.message, err.stack);
+      res.status(500).json({ success: false, error: 'Failed to rest', detail: err.message });
     }
   });
 
