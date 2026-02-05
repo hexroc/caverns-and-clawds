@@ -753,6 +753,116 @@
       .solana-badges { flex-direction: column; align-items: center; }
     }
 
+    /* ========== RACE CARDS ========== */
+    .races-showcase {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .race-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      transition: all 0.3s;
+      cursor: default;
+    }
+    .race-card:hover {
+      border-color: var(--primary);
+      transform: translateY(-4px);
+      box-shadow: 0 12px 35px rgba(64, 224, 208, 0.15);
+    }
+
+    .race-card-top {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1.25rem 1.25rem 0.75rem;
+    }
+
+    .race-card-avatar {
+      flex-shrink: 0;
+      width: 90px;
+      height: 90px;
+    }
+    .race-card-avatar .lobster-svg {
+      width: 90px;
+      height: 90px;
+    }
+
+    .race-card-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .race-card-name {
+      font-family: 'Luckiest Guy', cursive;
+      font-size: 1.25rem;
+      color: var(--primary);
+      margin-bottom: 0.15rem;
+    }
+
+    .race-card-size {
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      margin-bottom: 0.4rem;
+    }
+
+    .race-card-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.3rem;
+    }
+
+    .race-stat-badge {
+      font-size: 0.7rem;
+      font-weight: bold;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      background: rgba(64, 224, 208, 0.15);
+      color: var(--primary);
+      border: 1px solid rgba(64, 224, 208, 0.25);
+    }
+
+    .race-card-desc {
+      padding: 0 1.25rem;
+      font-size: 0.85rem;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .race-card-traits {
+      padding: 0.75rem 1.25rem 1.25rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .race-trait {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 12px;
+      background: rgba(255, 107, 74, 0.12);
+      color: var(--coral);
+      border: 1px solid rgba(255, 107, 74, 0.25);
+    }
+
+    .race-card-speed {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 12px;
+      background: rgba(255, 215, 0, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(255, 215, 0, 0.2);
+    }
+
+    @media (max-width: 600px) {
+      .races-showcase { grid-template-columns: 1fr; }
+      .race-card-avatar { width: 70px; height: 70px; }
+      .race-card-avatar .lobster-svg { width: 70px; height: 70px; }
+    }
+
     /* Play Button */
     .play-btn {
       display: inline-block;
@@ -1032,6 +1142,8 @@
       text-align: center;
     }
   </style>
+  <link rel="stylesheet" href="/css/lobster-paperdolls.css">
+  <script src="/js/lobster-svg.js"></script>
 </head>
 <body>
   <nav class="nav">
@@ -1360,7 +1472,7 @@
     <section id="races" class="section">
       <h1 class="section-title">Lobster Races</h1>
       <p class="section-subtitle">All hail the claw — every hero is a lobster variant</p>
-      <div class="cards-grid" id="races-grid">
+      <div class="races-showcase" id="races-grid">
         <div class="loading">Loading races...</div>
       </div>
     </section>
@@ -2059,23 +2171,40 @@
     function renderRaces() {
       const grid = document.getElementById('races-grid');
       document.getElementById('stat-races').textContent = Object.keys(allRaces).length || '10';
-      const icons = { american: '🦞', european: '💎', slipper: '🛡️', squat: '🍀', spiny: '⚔️', reef: '🔥', pistol: '💥', calico: '🎭', ghost: '👻', split: '😈' };
       
       let html = '';
       for (const [id, race] of Object.entries(allRaces)) {
         const bonuses = race.statBonuses || {};
-        const bonusStr = Object.entries(bonuses).map(([stat, val]) => `+${val} ${stat.toUpperCase()}`).join(', ');
+        const statBadges = Object.entries(bonuses)
+          .map(([stat, val]) => `<span class="race-stat-badge">+${val} ${stat.toUpperCase()}</span>`)
+          .join('');
+        
+        const traits = (race.traits || [])
+          .map(t => `<span class="race-trait">${t}</span>`)
+          .join('');
+        
+        const sizeSpeed = `${race.size || 'Medium'} · ${race.speed || 30}ft`;
+        
+        // Use SVG paperdoll if available, fall back to emoji
+        const avatar = (typeof createLobsterSVG === 'function') 
+          ? createLobsterSVG(id)
+          : '<div style="font-size:3rem;text-align:center">🦞</div>';
         
         html += `
-          <div class="card">
-            <div class="card-header">
-              <div class="card-icon">${icons[id] || '🦞'}</div>
-              <div>
-                <div class="card-title">${race.name}</div>
-                <div class="card-subtitle">${bonusStr || 'Balanced stats'}</div>
+          <div class="race-card">
+            <div class="race-card-top">
+              <div class="race-card-avatar">${avatar}</div>
+              <div class="race-card-info">
+                <div class="race-card-name">${race.name}</div>
+                <div class="race-card-size">${sizeSpeed}</div>
+                <div class="race-card-stats">${statBadges}</div>
               </div>
             </div>
-            <div class="card-body"><p>${race.description}</p></div>
+            <div class="race-card-desc">${race.description}</div>
+            <div class="race-card-traits">
+              ${traits}
+              <span class="race-card-speed">🏃 ${race.speed || 30}ft</span>
+            </div>
           </div>
         `;
       }
