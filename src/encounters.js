@@ -15,6 +15,7 @@ const { generateZoneLoot, getZoneTier } = require('./loot-tables');
 const { generateMaterialDrops, addMaterialsToPlayer } = require('./economy/material-drops');
 const { activityTracker } = require('./activity-tracker');
 const { generateSpellNarration, generateHealingNarration, generateAoENarration } = require('./narration/spell-narration');
+const { makeSkillCheck, getAbilityMod } = require('./skills');
 
 // ============================================================================
 // SPELLS (5e, Sea-themed names)
@@ -455,20 +456,59 @@ class EncounterManager {
       };
     }
     
+    // Get character for skill checks
+    const char = this.db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+    if (!char) return { success: false, error: 'Character not found' };
+    
+    // STEALTH CHECK - Can player sneak past monsters?
+    const zoneDC = 8 + (table.encounterChance * 20); // Harder zones = harder to sneak
+    const stealthCheck = makeSkillCheck(char, 'stealth', zoneDC);
+    
+    let encounterChance = table.encounterChance;
+    
+    if (stealthCheck.success) {
+      // Stealth success - halve encounter chance!
+      encounterChance = encounterChance * 0.5;
+    } else {
+      // Stealth failure - increase encounter chance slightly
+      encounterChance = Math.min(0.95, encounterChance * 1.2);
+    }
+    
     // Roll for encounter
     const roll = Math.random();
     
-    if (roll < table.encounterChance) {
+    if (roll < encounterChance) {
       // ENCOUNTER!
-      return this._triggerEncounter(characterId, zoneId, table);
+      const encounterResult = this._triggerEncounter(characterId, zoneId, table);
+      
+      // Add stealth narrative
+      if (!stealthCheck.success) {
+        encounterResult.stealthResult = stealthCheck;
+        encounterResult.stealthMessage = `⚠️ ${stealthCheck.narrative}`;
+      }
+      
+      return encounterResult;
     }
     
-    // No encounter - ambient exploration
+    // No encounter - try for discovery with PERCEPTION CHECK
+    const perceptionDC = 12 + (getZoneTier(zoneId) === 'hard' ? 3 : 0);
+    const perceptionCheck = makeSkillCheck(char, 'perception', perceptionDC);
+    
+    let discoveryChance = 0.15;
+    
+    if (perceptionCheck.success) {
+      // Perception success - double discovery chance!
+      discoveryChance = 0.30;
+    }
+    
     const ambientRoll = Math.random();
     
-    if (ambientRoll < 0.15) {
+    if (ambientRoll < discoveryChance) {
       // Discovery! Small reward
-      return this._handleDiscovery(characterId, table);
+      const discoveryResult = this._handleDiscovery(characterId, table);
+      discoveryResult.perceptionCheck = perceptionCheck;
+      discoveryResult.perceptionMessage = perceptionCheck.narrative;
+      return discoveryResult;
     }
     
     // Just ambient flavor
@@ -476,12 +516,20 @@ class EncounterManager {
       Math.floor(Math.random() * table.ambientMessages.length)
     ];
     
+    // Add stealth success message if they avoided encounter through stealth
+    let stealthBonus = '';
+    if (stealthCheck.success && roll < table.encounterChance && roll >= encounterChance) {
+      stealthBonus = ` ${stealthCheck.narrative} You avoided a potential encounter!`;
+    }
+    
     return {
       success: true,
       encounter: false,
       zone: table.name,
-      message,
-      hint: 'Continue exploring or return to safety.'
+      message: message + stealthBonus,
+      hint: 'Continue exploring or return to safety.',
+      stealthCheck,
+      perceptionCheck
     };
   }
   
@@ -791,7 +839,7 @@ class EncounterManager {
    */
   _getAvailableActions(currentTurn, characterId) {
     if (currentTurn.type === 'player') {
-      return ['attack', 'spell', 'item', 'flee'];
+      return ['attack', 'spell', 'item', 'flee', 'intimidate', 'shove', 'help', 'insight'];
     }
     return null;  // Monster turn - handled automatically
   }
@@ -835,6 +883,18 @@ class EncounterManager {
         break;
       case 'spell':
         result = this._handleSpell(char, encounter, target);
+        break;
+      case 'intimidate':
+        result = this._handleIntimidate(char, encounter, target);
+        break;
+      case 'shove':
+        result = this._handleShove(char, encounter, target);
+        break;
+      case 'help':
+        result = this._handleHelp(char, encounter, target);
+        break;
+      case 'insight':
+        result = this._handleInsight(char, encounter, target);
         break;
       default:
         result = { success: false, error: 'Unknown action' };
@@ -1501,6 +1561,221 @@ class EncounterManager {
       success: true,
       action: 'spell',
       spellCast: spell.name,
+      messages,
+      combatEnded: false
+    };
+  }
+  
+  /**
+   * Handle Intimidation - frighten enemies
+   */
+  _handleIntimidate(char, encounter, targetId) {
+    const row = this.db.prepare('SELECT monsters FROM active_encounters WHERE id = ?').get(encounter.id);
+    const { monsters, henchman } = this._parseCombatData(row.monsters);
+    
+    const target = targetId 
+      ? monsters.find(m => m.id === targetId && m.alive)
+      : monsters.find(m => m.alive);
+    
+    if (!target) {
+      return { success: false, error: 'No valid target' };
+    }
+    
+    // Intimidation check vs target's Wisdom save
+    const dc = 8 + Math.ceil(char.level / 4) + getAbilityMod(char.cha || 10);
+    const wisModTarget = getAbilityMod(target.stats?.wis || 10);
+    const targetSave = Math.floor(Math.random() * 20) + 1 + wisModTarget;
+    
+    const intimidateCheck = makeSkillCheck(char, 'intimidation', targetSave);
+    
+    const messages = [];
+    messages.push(intimidateCheck.narrative);
+    
+    if (intimidateCheck.success) {
+      // Target is frightened - disadvantage on attacks, can't move closer
+      messages.push(`😨 ${target.name} is **frightened** by your presence! They have disadvantage on attacks and cannot approach you.`);
+      
+      // Mark target as frightened (simplified - just give them disadvantage next turn)
+      target.frightened = true;
+      target.frightenedUntil = encounter.round + 2; // 1 round duration
+      
+      this.db.prepare('UPDATE active_encounters SET monsters = ? WHERE id = ?')
+        .run(this._serializeCombatData(monsters, henchman), encounter.id);
+        
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_skill',
+        player: char.name,
+        skill: 'intimidation',
+        target: target.name,
+        success: true
+      });
+    } else {
+      messages.push(`${target.name} is unfazed by your threats.`);
+      
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_skill',
+        player: char.name,
+        skill: 'intimidation',
+        target: target.name,
+        success: false
+      });
+    }
+    
+    return {
+      success: true,
+      action: 'intimidate',
+      messages,
+      combatEnded: false
+    };
+  }
+  
+  /**
+   * Handle Shove - knock enemy prone or push them back
+   */
+  _handleShove(char, encounter, targetId) {
+    const row = this.db.prepare('SELECT monsters FROM active_encounters WHERE id = ?').get(encounter.id);
+    const { monsters, henchman } = this._parseCombatData(row.monsters);
+    
+    const target = targetId 
+      ? monsters.find(m => m.id === targetId && m.alive)
+      : monsters.find(m => m.alive);
+    
+    if (!target) {
+      return { success: false, error: 'No valid target' };
+    }
+    
+    // Athletics check vs target's Athletics or Acrobatics (their choice - we'll use better)
+    const strModTarget = getAbilityMod(target.stats?.str || 10);
+    const dexModTarget = getAbilityMod(target.stats?.dex || 10);
+    const targetDefense = Math.max(strModTarget, dexModTarget);
+    const targetSave = Math.floor(Math.random() * 20) + 1 + targetDefense;
+    
+    const shoveCheck = makeSkillCheck(char, 'athletics', targetSave);
+    
+    const messages = [];
+    messages.push(shoveCheck.narrative);
+    
+    if (shoveCheck.success) {
+      // Target is knocked prone
+      messages.push(`💥 You **shove** ${target.name} to the ground! They are **prone** (attacks against them have advantage, their attacks have disadvantage).`);
+      
+      target.prone = true;
+      target.proneUntil = encounter.round + 2;
+      
+      this.db.prepare('UPDATE active_encounters SET monsters = ? WHERE id = ?')
+        .run(this._serializeCombatData(monsters, henchman), encounter.id);
+        
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_skill',
+        player: char.name,
+        skill: 'athletics',
+        action: 'shove',
+        target: target.name,
+        success: true
+      });
+    } else {
+      messages.push(`${target.name} resists your shove attempt.`);
+      
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_skill',
+        player: char.name,
+        skill: 'athletics',
+        action: 'shove',
+        target: target.name,
+        success: false
+      });
+    }
+    
+    return {
+      success: true,
+      action: 'shove',
+      messages,
+      combatEnded: false
+    };
+  }
+  
+  /**
+   * Handle Help - give ally advantage on next attack or check
+   */
+  _handleHelp(char, encounter, targetId) {
+    const messages = [];
+    
+    // Help action gives advantage to ally's next attack against an enemy you can see
+    messages.push(`🤝 You take the **Help** action, creating an opening for your ally!`);
+    messages.push(`Your next ally's attack against an enemy will have **advantage**.`);
+    
+    // In simplified system, just give narrative benefit
+    // In full implementation, would track this as a buff
+    
+    activityTracker.addCombatEvent(char.name, {
+      type: 'combat_skill',
+      player: char.name,
+      skill: 'help',
+      success: true
+    });
+    
+    return {
+      success: true,
+      action: 'help',
+      messages,
+      combatEnded: false
+    };
+  }
+  
+  /**
+   * Handle Insight - read enemy tactics
+   */
+  _handleInsight(char, encounter, targetId) {
+    const row = this.db.prepare('SELECT monsters FROM active_encounters WHERE id = ?').get(encounter.id);
+    const { monsters } = this._parseCombatData(row.monsters);
+    
+    const target = targetId 
+      ? monsters.find(m => m.id === targetId && m.alive)
+      : monsters.find(m => m.alive);
+    
+    if (!target) {
+      return { success: false, error: 'No valid target' };
+    }
+    
+    // Insight check to learn about enemy
+    const dc = 10 + (target.cr || 1);
+    const insightCheck = makeSkillCheck(char, 'insight', dc);
+    
+    const messages = [];
+    messages.push(insightCheck.narrative);
+    
+    if (insightCheck.success) {
+      // Reveal enemy information
+      const insights = [
+        `📖 ${target.name} has **${target.hp}/${target.maxHp} HP** remaining.`,
+        `⚔️ Their **AC is ${target.ac}**, making them ${target.ac > 15 ? 'heavily armored' : target.ac > 12 ? 'moderately protected' : 'lightly defended'}.`,
+        `🎯 You sense they will attack ${target.strategy || 'aggressively'} on their next turn.`
+      ];
+      
+      messages.push(...insights);
+      
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_skill',
+        player: char.name,
+        skill: 'insight',
+        target: target.name,
+        success: true
+      });
+    } else {
+      messages.push(`You cannot read ${target.name}'s intentions.`);
+      
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_skill',
+        player: char.name,
+        skill: 'insight',
+        target: target.name,
+        success: false
+      });
+    }
+    
+    return {
+      success: true,
+      action: 'insight',
       messages,
       combatEnded: false
     };

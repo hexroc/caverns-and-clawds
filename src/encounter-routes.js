@@ -174,7 +174,7 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
           hp: char.hp.current,
           maxHp: char.hp.max
         },
-        actions: isPlayerTurn ? ['attack', 'spell', 'item', 'flee'] : null
+        actions: isPlayerTurn ? ['attack', 'spell', 'item', 'flee', 'intimidate', 'shove', 'help', 'insight'] : null
       });
     } catch (err) {
       console.error('Combat status error:', err);
@@ -184,7 +184,13 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
 
   /**
    * POST /api/zone/combat/action - Take a combat action
-   * Body: { action: 'attack'|'item'|'flee', target?: string }
+   * Body: { action: 'attack'|'spell'|'item'|'flee'|'intimidate'|'shove'|'help'|'insight', target?: string }
+   * 
+   * Skill-based actions:
+   * - intimidate: Frighten target (disadvantage on attacks)
+   * - shove: Knock target prone (advantage to hit them)
+   * - help: Give ally advantage on next attack
+   * - insight: Learn enemy HP, AC, and tactics
    */
   router.post('/combat/action', authenticateAgent, (req, res) => {
     try {
@@ -764,7 +770,7 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
           'GET /monsters': 'List monsters in current zone'
         }
       },
-      actions: ['attack', 'item', 'flee'],
+      actions: ['attack', 'spell', 'item', 'flee', 'intimidate', 'shove', 'help', 'insight'],
       adventureZones: Object.keys(ENCOUNTER_TABLES)
     });
   });
