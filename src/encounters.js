@@ -2883,6 +2883,108 @@ class EncounterManager {
   }
   
   /**
+   * Monster special ability (frighten, grapple, etc.)
+   */
+  _monsterSpecialAbility(monster, template, attack, char, encounter) {
+    // Handle specific special abilities
+    switch (attack.special) {
+      case 'frighten_aoe': {
+        // Ghost Captain's Horrifying Visage
+        // Player (and henchman if present) must make WIS save
+        const wisSave = 13; // DC from attack
+        const wisBonus = Math.floor((char.wis - 10) / 2);
+        const profBonus = Math.ceil(char.level / 4) + 1;
+        
+        // Check if proficient in WIS saves
+        const proficientSaves = {
+          fighter: ['str', 'con'],
+          rogue: ['dex', 'int'],
+          wizard: ['int', 'wis'],
+          cleric: ['wis', 'cha'],
+          paladin: ['wis', 'cha'],
+          warlock: ['wis', 'cha'],
+          bard: ['dex', 'cha']
+        };
+        const isProficient = (proficientSaves[char.class] || []).includes('wis');
+        const saveBonus = wisBonus + (isProficient ? profBonus : 0);
+        
+        const saveRoll = Math.floor(Math.random() * 20) + 1;
+        const totalSave = saveRoll + saveBonus;
+        const success = totalSave >= wisSave;
+        
+        let message = `👻 **${monster.name}** reveals their **Horrifying Visage**!\n`;
+        message += `🎲 WIS save: ${success ? `**SAVED!** (${totalSave} vs DC ${wisSave})` : `**FAILED!** (${totalSave} vs DC ${wisSave})`}\n`;
+        
+        if (!success) {
+          message += `😱 You are **FRIGHTENED**! You have disadvantage on attacks and ability checks while you can see ${monster.name}!`;
+          // Note: Frightened condition would need to be tracked - simplified for now
+        } else {
+          message += `✨ You steel your nerves and resist the terror!`;
+        }
+        
+        activityTracker.addCombatEvent(char.name, {
+          type: 'combat_special',
+          monster: monster.name,
+          ability: 'Horrifying Visage',
+          target: char.name,
+          saveType: 'wis',
+          saveRoll: totalSave,
+          saveDC: wisSave,
+          success
+        });
+        
+        return { message, playerDied: false };
+      }
+      
+      case 'grapple': {
+        // Kelp Lurker's Constrict - attempt to grapple
+        const strSave = 8 + Math.floor((template.stats.str - 10) / 2) + 2; // CR-based proficiency
+        const strBonus = Math.floor((char.str - 10) / 2);
+        const saveRoll = Math.floor(Math.random() * 20) + 1;
+        const totalSave = saveRoll + strBonus;
+        const success = totalSave >= strSave;
+        
+        // Still do damage from the attack
+        const damageMatch = attack.damage.match(/(\d+)d(\d+)([+-]\d+)?/);
+        let damage = 0;
+        if (damageMatch) {
+          const numDice = parseInt(damageMatch[1]);
+          const dieSize = parseInt(damageMatch[2]);
+          const modifier = parseInt(damageMatch[3] || 0);
+          for (let i = 0; i < numDice; i++) {
+            damage += Math.floor(Math.random() * dieSize) + 1;
+          }
+          damage += modifier;
+        }
+        damage = Math.max(1, damage);
+        
+        const newHP = Math.max(0, char.hp_current - damage);
+        this.db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHP, char.id);
+        
+        let message = `🐍 **${monster.name}** wraps around you with crushing force! **${damage} damage**! *(${newHP}/${char.hp_max} HP)*\n`;
+        message += `🎲 STR save: ${success ? `**SAVED!** (${totalSave} vs DC ${strSave})` : `**GRAPPLED!** (${totalSave} vs DC ${strSave})`}\n`;
+        
+        if (!success) {
+          message += `🔒 You are **GRAPPLED**! Your speed is 0 until you escape!`;
+        } else {
+          message += `✨ You wrench free from their grip!`;
+        }
+        
+        return { message, playerDied: newHP <= 0, damage };
+      }
+      
+      case 'half_damage_below_half_hp': {
+        // Swarm mechanic - falls through to normal attack but adjusts damage
+        // This is handled in the normal attack flow below
+        return null; // Signal to continue with normal attack
+      }
+      
+      default:
+        return { message: `${monster.name} uses ${attack.name}!`, playerDied: false };
+    }
+  }
+  
+  /**
    * Apply resistances/immunities to damage against a monster
    */
   _applyMonsterResistances(damage, damageType, monsterId) {
@@ -3086,6 +3188,13 @@ class EncounterManager {
       return { message: `${monster.name} hesitates...`, playerDied: false };
     }
     
+    // Handle special abilities
+    if (attack.special && attack.special !== 'half_damage_below_half_hp') {
+      const specialResult = this._monsterSpecialAbility(monster, template, attack, char, encounter);
+      if (specialResult) return specialResult;
+      // If null, continue with normal attack
+    }
+    
     // Handle spell attacks with saving throws
     if (attack.saveDC && attack.saveType) {
       return this._monsterSpellAttack(monster, template, attack, char, encounter);
@@ -3133,6 +3242,13 @@ class EncounterManager {
         damage += modifier;
       } else {
         damage = Math.floor(Math.random() * 6) + 1;
+      }
+      
+      // Swarm mechanic - half damage below half HP
+      let swarmWeakened = false;
+      if (attack.special === 'half_damage_below_half_hp' && monster.hp < monster.maxHp / 2) {
+        damage = Math.floor(damage / 2);
+        swarmWeakened = true;
       }
       
       damage = Math.max(1, damage);
@@ -3221,6 +3337,12 @@ class EncounterManager {
         ];
         message = monsterHits[Math.floor(Math.random() * monsterHits.length)];
       }
+      
+      // Add swarm weakened message
+      if (swarmWeakened) {
+        message += `\n🐟 *The swarm is thinning! Its attacks are growing weaker...*`;
+      }
+      
       message += extraMessage;
       
       return { message, playerDied, damage };
