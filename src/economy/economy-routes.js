@@ -265,6 +265,17 @@ function createEconomyRoutes(db, authenticateAgent) {
       const pricePerUnit = Math.round(material.base_price * modifier * 10000) / 10000;
       const totalPrice = Math.round(pricePerUnit * quantity * 10000) / 10000;
       
+      // 🚨 CRITICAL: Check NPC has sufficient funds (CLOSED LOOP)
+      if (npc.balance_cache < totalPrice) {
+        return res.status(400).json({
+          success: false,
+          error: `${npc.name} has insufficient funds to buy your materials`,
+          npcBalance: npc.balance_cache,
+          priceAsked: totalPrice,
+          hint: 'Try selling to a different NPC or check back later after treasury refill'
+        });
+      }
+      
       // Ensure player has a wallet
       if (!char.wallet_public_key) {
         const newWallet = wallet.generateWallet();
@@ -875,6 +886,17 @@ function createEconomyRoutes(db, authenticateAgent) {
       // Get NPC wallet
       const npc = getSystemWallet(assignment.npc_id);
       const npcSecret = getWalletSecret(npc.encrypted_secret);
+      
+      // 🚨 CRITICAL: Check NPC has sufficient funds (CLOSED LOOP)
+      if (npc.balance_cache < assignment.pay) {
+        return res.status(400).json({
+          success: false,
+          error: `${npc.name} has insufficient funds to pay for this job`,
+          npcBalance: npc.balance_cache,
+          jobPay: assignment.pay,
+          hint: 'Treasury needs to refill NPC wallets. Contact an admin.'
+        });
+      }
       
       // Ensure player has wallet
       if (!char.wallet_public_key) {
