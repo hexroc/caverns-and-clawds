@@ -896,6 +896,7 @@
     let spectatorName = 'Spectator_' + Math.floor(Math.random() * 1000);
     let isInCombatMode = false;
     let seenCombatEventIds = new Set();
+    let currentSheetTab = 'skills';
     
     // ================================================================
     // LOBSTER PAPERDOLL (SVG-based — see /js/lobster-svg.js)
@@ -937,6 +938,7 @@
     // ================================================================
 
     function switchSheetTab(tab) {
+      currentSheetTab = tab;
       document.querySelectorAll('.sheet-tab').forEach(t => t.classList.remove('active'));
       document.querySelectorAll('.sheet-tab-content').forEach(c => c.classList.remove('active'));
       document.querySelector(`.sheet-tab[data-tab="${tab}"]`)?.classList.add('active');
@@ -1124,9 +1126,9 @@
 
         // Tabbed interface: Skills | Spells | Gear
         html += `<div class="sheet-tabs">
-          <button class="sheet-tab active" data-tab="skills" onclick="switchSheetTab('skills')">🎯 Skills</button>
-          <button class="sheet-tab" data-tab="spells" onclick="switchSheetTab('spells')">✨ Spells</button>
-          <button class="sheet-tab" data-tab="gear" onclick="switchSheetTab('gear')">🎒 Gear</button>
+          <button class="sheet-tab ${currentSheetTab === 'skills' ? 'active' : ''}" data-tab="skills" onclick="switchSheetTab('skills')">🎯 Skills</button>
+          <button class="sheet-tab ${currentSheetTab === 'spells' ? 'active' : ''}" data-tab="spells" onclick="switchSheetTab('spells')">✨ Spells</button>
+          <button class="sheet-tab ${currentSheetTab === 'gear' ? 'active' : ''}" data-tab="gear" onclick="switchSheetTab('gear')">🎒 Inventory</button>
         </div>`;
 
         // Skills tab
@@ -1152,7 +1154,7 @@
         };
         const profSkills = (c.proficiencies || []).map(p => p.proficiency_name || p.name || p).filter(p => typeof p === 'string');
 
-        html += '<div id="tab-skills" class="sheet-tab-content active">';
+        html += `<div id="tab-skills" class="sheet-tab-content ${currentSheetTab === 'skills' ? 'active' : ''}">`;
         Object.entries(SKILL_DEFS).forEach(([name, info]) => {
           const statVal = c[info.stat.toLowerCase()] || 10;
           const mod = Math.floor((statVal - 10) / 2);
@@ -1176,7 +1178,7 @@
         html += '</div>';
 
         // Spells tab
-        html += '<div id="tab-spells" class="sheet-tab-content">';
+        html += `<div id="tab-spells" class="sheet-tab-content ${currentSheetTab === 'spells' ? 'active' : ''}">`;
         if (data.spells && data.spells.length > 0) {
           data.spells.forEach(spell => {
             html += `<div class="spell-item"><span>${spell.name}</span><span class="level">Lvl ${spell.level}</span></div>`;
@@ -1187,7 +1189,7 @@
         html += '</div>';
 
         // Gear tab
-        html += '<div id="tab-gear" class="sheet-tab-content">';
+        html += `<div id="tab-gear" class="sheet-tab-content ${currentSheetTab === 'gear' ? 'active' : ''}">`;
         if (data.inventory && data.inventory.length > 0) {
           data.inventory.forEach(item => {
             html += `<div class="inventory-item"><span>${item.name || item.material_id}</span><span class="qty">x${item.quantity}</span></div>`;
