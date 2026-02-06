@@ -354,6 +354,38 @@ function generateAttackNarration(attacker, defender, result, distance = null) {
     narration += ` **[${result.damage} ${result.damageType || 'damage'}]**`;
   }
   
+  // Add class feature effects
+  if (result.divineSmite && result.divineSmite.success) {
+    const smite = result.divineSmite;
+    const godlyPower = [
+      'Divine radiance erupts from the wound',
+      'Holy fire blazes through the strike',
+      'Celestial energy surges through the blade',
+      'Sacred power explodes on impact',
+      'The gods\' wrath manifests in radiant fury'
+    ];
+    const flourish = godlyPower[Math.floor(Math.random() * godlyPower.length)];
+    narration += ` ${flourish}, dealing an additional **${smite.damage} radiant damage**!`;
+    
+    if (smite.bonusVsEvil) {
+      narration += ` *(The creature of darkness recoils from the holy might!)*`;
+    }
+  }
+  
+  // Add Sneak Attack if present
+  if (result.sneakAttack && result.sneakAttack.success) {
+    const sneak = result.sneakAttack;
+    const backstabFlourish = [
+      'Striking from the shadows',
+      'Finding a gap in the defenses',
+      'With surgical precision',
+      'Exploiting a moment of distraction',
+      'As quick as a mantis shrimp\'s strike'
+    ];
+    const flourish = backstabFlourish[Math.floor(Math.random() * backstabFlourish.length)];
+    narration += ` ${flourish}, the attack deals **${sneak.damage} extra damage**!`;
+  }
+  
   // Add environmental flourish
   const environmental = getEnvironmentalFlourish();
   narration += ` ${environmental}.`;
@@ -430,10 +462,96 @@ function generateMovementNarration(character, fromBand, toBand, cost, difficultT
   return narration;
 }
 
+// ============================================================================
+// CLASS FEATURE NARRATION
+// ============================================================================
+
+/**
+ * Generate descriptive narration for class features used in combat
+ */
+function generateClassFeatureNarration(featureName, character, result) {
+  const templates = {
+    'Second Wind': [
+      `${character.name} draws upon deep reserves of stamina, their wounds beginning to close with supernatural vigor`,
+      `Breathing deeply, ${character.name} channels battle-hardened endurance, flesh knitting together before your eyes`,
+      `With a warrior's resolve, ${character.name} pushes through the pain, finding strength in adversity`,
+      `${character.name} grits their claws together, adrenaline surging as injuries begin to mend`
+    ],
+    'Action Surge': [
+      `Time seems to slow as ${character.name} moves with blinding speed, muscles burning with exertion!`,
+      `${character.name} pushes past mortal limits, their body moving faster than thought!`,
+      `With a battle cry that shakes the depths, ${character.name} unleashes a furious barrage of attacks!`,
+      `${character.name}'s training takes over, limbs moving in a deadly blur of motion!`
+    ],
+    'Bardic Inspiration': [
+      `${character.name} weaves a melody of courage through the water, notes glittering like pearls`,
+      `With a flourish of bioluminescent harmony, ${character.name} fills their ally with renewed confidence`,
+      `${character.name}'s song rises and falls like the tide, inspiring heroic deeds`,
+      `The bard's voice carries ancient power, resonating in the bones of all who hear`
+    ],
+    'Lay on Hands': [
+      `${character.name} places their claws upon the wound, divine light flowing from their touch`,
+      `Holy energy pulses through ${character.name}'s shell, channeling the gods' healing grace`,
+      `With a whispered prayer, ${character.name} becomes a conduit for celestial restoration`,
+      `${character.name}'s touch blazes with sacred fire, mending flesh and bone alike`
+    ],
+    'Divine Sense': [
+      `${character.name} closes their eyes, divine awareness washing over them like a tide`,
+      `The paladin's antenna glow faintly as they attune to otherworldly presences`,
+      `${character.name} opens themselves to the divine, sensing ripples in the spiritual currents`,
+      `Power thrums through ${character.name} as they pierce the veil between worlds`
+    ],
+    'Turn Undead': [
+      `${character.name} raises their holy symbol high, channeling pure divine wrath!`,
+      `"By the gods' light, BEGONE!" ${character.name}'s voice thunders through the water, repelling the undead`,
+      `Sacred radiance explodes from ${character.name}, forcing abominations to flee in terror`,
+      `The cleric's faith manifests as blazing light, burning away the unholy`
+    ],
+    'Uncanny Dodge': [
+      `${character.name} twists impossibly fast, the attack grazing harmlessly past`,
+      `With rogue's instinct, ${character.name} shifts at precisely the right moment`,
+      `${character.name}'s training saves them — the blow that should have killed merely scratches`,
+      `Like a ghost, ${character.name} seems to phase through the attack`
+    ],
+    'Arcane Recovery': [
+      `${character.name} touches their forehead, arcane energy flooding back into their mind`,
+      `The wizard's eyes glow briefly as they reclaim expended magical power`,
+      `${character.name} meditates for a heartbeat, spell slots reforming in their consciousness`,
+      `Raw mana coalesces around ${character.name}, replenishing their mystical reserves`
+    ]
+  };
+  
+  const featureTemplates = templates[featureName];
+  if (!featureTemplates) {
+    // Fallback to the feature's built-in narrative
+    return result.narrative || `${character.name} uses ${featureName}!`;
+  }
+  
+  const template = featureTemplates[Math.floor(Math.random() * featureTemplates.length)];
+  
+  // Add result-specific details
+  let narration = template;
+  
+  if (result.healing) {
+    narration += ` **[Healed ${result.healing} HP]**`;
+  }
+  
+  if (result.damage) {
+    narration += ` **[${result.damage} ${result.damageType || 'damage'}]**`;
+  }
+  
+  if (result.usesRemaining !== undefined) {
+    narration += ` *(${result.usesRemaining} uses remaining)*`;
+  }
+  
+  return narration;
+}
+
 module.exports = {
   generateAttackNarration,
   generateDeathNarration,
   generateMovementNarration,
+  generateClassFeatureNarration,
   CREATURE_EMOTIONS,
   getEmotionalState
 };
