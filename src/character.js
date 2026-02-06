@@ -1292,8 +1292,8 @@ class CharacterManager {
     const { getCharacterSpells } = require('./spell-init');
     const { cantrips, leveled } = getCharacterSpells(this.db, characterId);
     
-    // Load spell details from encounters.js SPELLS constant
-    const { SPELLS } = require('./encounters');
+    // Load spell details from spell-definitions.js (no circular dependency)
+    const { SPELLS } = require('./spell-definitions');
     
     const cantripsWithDetails = cantrips.map(spellId => {
       const spell = SPELLS[spellId];
