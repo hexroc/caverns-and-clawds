@@ -309,6 +309,224 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
   });
 
   // ============================================================================
+  // CLASS FEATURES
+  // ============================================================================
+
+  /**
+   * POST /api/zone/combat/divine-smite - Use Divine Smite (Paladin)
+   * Body: { targetId?: string, level?: number }
+   */
+  router.post('/combat/divine-smite', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      if (char.class !== 'Paladin') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Only Paladins can use Divine Smite' 
+        });
+      }
+
+      const encounter = encounters.getActiveEncounter(char.id);
+      if (!encounter) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Not in combat' 
+        });
+      }
+
+      const { targetId, level } = req.body;
+      const classFeatures = require('./class-features');
+      
+      const result = classFeatures.paladin.useDivineSmite(
+        db,
+        char.id,
+        encounter,
+        targetId || encounter.monsters[0]?.id,
+        level
+      );
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('Divine Smite error:', err);
+      res.status(500).json({ success: false, error: 'Divine Smite failed', debug: err.message });
+    }
+  });
+
+  /**
+   * POST /api/zone/combat/action-surge - Use Action Surge (Fighter)
+   */
+  router.post('/combat/action-surge', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      if (char.class !== 'Fighter') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Only Fighters can use Action Surge' 
+        });
+      }
+
+      const encounter = encounters.getActiveEncounter(char.id);
+      if (!encounter) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Not in combat' 
+        });
+      }
+
+      const classFeatures = require('./class-features');
+      const result = classFeatures.fighter.useActionSurge(db, char.id);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('Action Surge error:', err);
+      res.status(500).json({ success: false, error: 'Action Surge failed', debug: err.message });
+    }
+  });
+
+  /**
+   * POST /api/zone/combat/second-wind - Use Second Wind (Fighter)
+   */
+  router.post('/combat/second-wind', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      if (char.class !== 'Fighter') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Only Fighters can use Second Wind' 
+        });
+      }
+
+      const encounter = encounters.getActiveEncounter(char.id);
+      if (!encounter) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Not in combat' 
+        });
+      }
+
+      const classFeatures = require('./class-features');
+      const result = classFeatures.fighter.useSecondWind(db, char.id);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      // Update character HP in response
+      const updatedChar = getChar(req);
+      result.character = {
+        name: updatedChar.name,
+        hp: updatedChar.hp.current,
+        maxHp: updatedChar.hp.max
+      };
+
+      res.json(result);
+    } catch (err) {
+      console.error('Second Wind error:', err);
+      res.status(500).json({ success: false, error: 'Second Wind failed', debug: err.message });
+    }
+  });
+
+  /**
+   * POST /api/zone/combat/bardic-inspiration - Give Bardic Inspiration (Bard)
+   * Body: { targetId: string }
+   */
+  router.post('/combat/bardic-inspiration', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      if (char.class !== 'Bard') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Only Bards can give Bardic Inspiration' 
+        });
+      }
+
+      const { targetId } = req.body;
+      if (!targetId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'targetId required (character or henchman id)' 
+        });
+      }
+
+      const classFeatures = require('./class-features');
+      const result = classFeatures.bard.giveBardicInspiration(db, char.id, targetId);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('Bardic Inspiration error:', err);
+      res.status(500).json({ success: false, error: 'Bardic Inspiration failed', debug: err.message });
+    }
+  });
+
+  /**
+   * POST /api/zone/combat/lay-on-hands - Use Lay on Hands (Paladin)
+   * Body: { targetId: string, hp: number }
+   */
+  router.post('/combat/lay-on-hands', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      if (char.class !== 'Paladin') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Only Paladins can use Lay on Hands' 
+        });
+      }
+
+      const { targetId, hp } = req.body;
+      if (!targetId || !hp) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'targetId and hp required' 
+        });
+      }
+
+      const classFeatures = require('./class-features');
+      const result = classFeatures.paladin.useLayOnHands(db, char.id, targetId, hp);
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      res.json(result);
+    } catch (err) {
+      console.error('Lay on Hands error:', err);
+      res.status(500).json({ success: false, error: 'Lay on Hands failed', debug: err.message });
+    }
+  });
+
+  // ============================================================================
   // DEATH & RESURRECTION
   // ============================================================================
 
@@ -469,6 +687,17 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
           'POST /combat/action': 'Take action (body: {action, target?})',
           'POST /combat/attack': 'Attack (body: {target?})',
           'POST /combat/flee': 'Attempt to flee'
+        },
+        classFeatures: {
+          'POST /combat/divine-smite': 'Use Divine Smite (Paladin, body: {targetId?, level?})',
+          'POST /combat/action-surge': 'Use Action Surge (Fighter)',
+          'POST /combat/second-wind': 'Use Second Wind (Fighter)',
+          'POST /combat/bardic-inspiration': 'Give Bardic Inspiration (Bard, body: {targetId})',
+          'POST /combat/lay-on-hands': 'Use Lay on Hands (Paladin, body: {targetId, hp})'
+        },
+        death: {
+          'GET /death': 'Check death status and resurrection options',
+          'POST /resurrect': 'Resurrect character (body: {method: "paid"|"free"|"voucher"})'
         },
         info: {
           'GET /monsters': 'List monsters in current zone'
