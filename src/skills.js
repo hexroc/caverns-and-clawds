@@ -24,7 +24,7 @@ const SKILLS = {
   religion: { name: 'Religion', ability: 'INT', description: 'Gods, rituals, holy symbols' },
   
   // Wisdom
-  animal_handling: { name: 'Animal Handling', ability: 'WIS', description: 'Calming, training animals' },
+  sea_creature_handling: { name: 'Sea Creature Handling', ability: 'WIS', description: 'Calming hostile sea creatures, reading creature behavior' },
   insight: { name: 'Insight', ability: 'WIS', description: 'Determining intentions, reading emotions' },
   medicine: { name: 'Medicine', ability: 'WIS', description: 'Diagnosing, stabilizing, healing' },
   perception: { name: 'Perception', ability: 'WIS', description: 'Spotting hidden things, noticing details' },

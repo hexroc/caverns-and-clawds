@@ -348,6 +348,30 @@ class EncounterManager {
       )
     `);
     
+    // Discovered landmarks
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS discovered_landmarks (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        character_id INTEGER NOT NULL,
+        landmark_id TEXT NOT NULL,
+        zone_id TEXT NOT NULL,
+        discovered_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE(character_id, landmark_id),
+        FOREIGN KEY (character_id) REFERENCES clawds(id) ON DELETE CASCADE
+      )
+    `);
+    
+    // Exploration state (for tracking pending choices like tracks)
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS exploration_state (
+        character_id INTEGER PRIMARY KEY,
+        state_type TEXT NOT NULL,
+        state_data TEXT NOT NULL,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (character_id) REFERENCES clawds(id) ON DELETE CASCADE
+      )
+    `);
+    
     console.log('⚔️ Encounter system initialized');
   }
   
@@ -437,7 +461,7 @@ class EncounterManager {
   /**
    * Explore a zone - may trigger encounter
    */
-  explore(characterId, zoneId) {
+  explore(characterId, zoneId, options = {}) {
     const table = ENCOUNTER_TABLES[zoneId];
     if (!table) {
       return { 
@@ -456,59 +480,45 @@ class EncounterManager {
       };
     }
     
-    // Get character for skill checks
+    // Get character
     const char = this.db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
     if (!char) return { success: false, error: 'Character not found' };
     
-    // STEALTH CHECK - Can player sneak past monsters?
-    const zoneDC = 8 + (table.encounterChance * 20); // Harder zones = harder to sneak
-    const stealthCheck = makeSkillCheck(char, 'stealth', zoneDC);
+    const { useSkill } = options;
     
-    let encounterChance = table.encounterChance;
-    
-    if (stealthCheck.success) {
-      // Stealth success - halve encounter chance!
-      encounterChance = encounterChance * 0.5;
-    } else {
-      // Stealth failure - increase encounter chance slightly
-      encounterChance = Math.min(0.95, encounterChance * 1.2);
+    // If using a skill, handle skill-specific exploration
+    if (useSkill) {
+      return this._exploreWithSkill(characterId, char, zoneId, table, useSkill);
     }
     
-    // Roll for encounter
+    // Normal exploration - random encounter roll
     const roll = Math.random();
     
-    if (roll < encounterChance) {
+    if (roll < table.encounterChance) {
       // ENCOUNTER!
-      const encounterResult = this._triggerEncounter(characterId, zoneId, table);
-      
-      // Add stealth narrative
-      if (!stealthCheck.success) {
-        encounterResult.stealthResult = stealthCheck;
-        encounterResult.stealthMessage = `⚠️ ${stealthCheck.narrative}`;
-      }
-      
-      return encounterResult;
+      return this._triggerEncounter(characterId, zoneId, table);
     }
     
-    // No encounter - try for discovery with PERCEPTION CHECK
-    const perceptionDC = 12 + (getZoneTier(zoneId) === 'hard' ? 3 : 0);
-    const perceptionCheck = makeSkillCheck(char, 'perception', perceptionDC);
-    
-    let discoveryChance = 0.15;
-    
-    if (perceptionCheck.success) {
-      // Perception success - double discovery chance!
-      discoveryChance = 0.30;
+    // Check for random skill event (15% chance)
+    const eventRoll = Math.random();
+    if (eventRoll < 0.15) {
+      const event = this._triggerSkillEvent(characterId, char, zoneId, table);
+      if (event) return event;
     }
     
+    // Check for landmark discovery (10% chance)
+    const landmarkRoll = Math.random();
+    if (landmarkRoll < 0.10) {
+      const landmark = this._discoverLandmark(characterId, char, zoneId, table);
+      if (landmark) return landmark;
+    }
+    
+    // No encounter - ambient exploration
     const ambientRoll = Math.random();
     
-    if (ambientRoll < discoveryChance) {
+    if (ambientRoll < 0.15) {
       // Discovery! Small reward
-      const discoveryResult = this._handleDiscovery(characterId, table);
-      discoveryResult.perceptionCheck = perceptionCheck;
-      discoveryResult.perceptionMessage = perceptionCheck.narrative;
-      return discoveryResult;
+      return this._handleDiscovery(characterId, table);
     }
     
     // Just ambient flavor
@@ -516,20 +526,12 @@ class EncounterManager {
       Math.floor(Math.random() * table.ambientMessages.length)
     ];
     
-    // Add stealth success message if they avoided encounter through stealth
-    let stealthBonus = '';
-    if (stealthCheck.success && roll < table.encounterChance && roll >= encounterChance) {
-      stealthBonus = ` ${stealthCheck.narrative} You avoided a potential encounter!`;
-    }
-    
     return {
       success: true,
       encounter: false,
       zone: table.name,
-      message: message + stealthBonus,
-      hint: 'Continue exploring or return to safety.',
-      stealthCheck,
-      perceptionCheck
+      message,
+      hint: 'Continue exploring or return to safety. Try using a skill for better results!'
     };
   }
   
@@ -777,6 +779,286 @@ class EncounterManager {
       },
       hint: 'Sell to NPCs for USDC or save for crafting!'
     };
+  }
+  
+  /**
+   * Explore using a specific skill
+   */
+  _exploreWithSkill(characterId, char, zoneId, table, skillName) {
+    const validSkills = ['stealth', 'perception', 'survival', 'investigation', 'arcana', 
+                        'nature', 'medicine', 'athletics', 'acrobatics', 'sleight_of_hand',
+                        'sea_creature_handling', 'intimidation', 'history', 'religion'];
+    
+    if (!validSkills.includes(skillName)) {
+      return {
+        success: false,
+        error: `Cannot use ${skillName} for exploration. Available: ${validSkills.join(', ')}`
+      };
+    }
+    
+    const zoneDC = 12 + (table.encounterChance * 10);
+    const skillCheck = makeSkillCheck(char, skillName, zoneDC);
+    
+    let result = {
+      success: true,
+      encounter: false,
+      zone: table.name,
+      skillUsed: skillName,
+      skillCheck
+    };
+    
+    // STEALTH - Sneak past encounters
+    if (skillName === 'stealth') {
+      const encounterRoll = Math.random();
+      const modifiedChance = skillCheck.success ? table.encounterChance * 0.3 : table.encounterChance * 1.5;
+      
+      if (encounterRoll < modifiedChance) {
+        const encounter = this._triggerEncounter(characterId, zoneId, table);
+        encounter.skillCheck = skillCheck;
+        if (!skillCheck.success) {
+          encounter.stealthFailed = true;
+          encounter.message = `${skillCheck.narrative}\n⚠️ Your noise attracted enemies!`;
+        }
+        return encounter;
+      }
+      
+      result.message = `${skillCheck.narrative}\n${skillCheck.success ? '✅ You successfully avoided encounters!' : '⚠️ You made some noise but got lucky.'}`;
+      return result;
+    }
+    
+    // PERCEPTION - Find hidden treasures/landmarks
+    if (skillName === 'perception') {
+      result.message = skillCheck.narrative;
+      
+      if (skillCheck.success) {
+        // High success - find landmark
+        if (skillCheck.total >= zoneDC + 5) {
+          const landmark = this._discoverLandmark(characterId, char, zoneId, table);
+          if (landmark) {
+            landmark.skillCheck = skillCheck;
+            return landmark;
+          }
+        }
+        
+        // Regular success - find treasure
+        const discovery = this._handleDiscovery(characterId, table);
+        discovery.skillCheck = skillCheck;
+        discovery.message = `${skillCheck.narrative}\n${discovery.message}`;
+        return discovery;
+      }
+      
+      result.message += '\nYou search carefully but find nothing of note.';
+      return result;
+    }
+    
+    // SURVIVAL - Track creatures
+    if (skillName === 'survival') {
+      result.message = skillCheck.narrative;
+      
+      if (skillCheck.success) {
+        // Find tracks - let player choose to hunt or avoid
+        const creature = this._weightedRandom(table.table);
+        const monsterInfo = MONSTERS[creature.monsterId];
+        
+        result.tracks = {
+          creature: monsterInfo?.name || creature.monsterId,
+          creatureId: creature.monsterId,
+          recentness: skillCheck.total >= zoneDC + 5 ? 'very fresh' : 'recent',
+          direction: ['north', 'south', 'east', 'west'][Math.floor(Math.random() * 4)]
+        };
+        result.message += `\n\n🐾 You spot ${result.tracks.recentness} tracks belonging to **${result.tracks.creature}**!`;
+        result.message += `\n\nWhat do you do?`;
+        result.message += `\n- POST /api/zone/explore/follow-tracks {"action": "hunt"} - Track them down`;
+        result.message += `\n- POST /api/zone/explore/follow-tracks {"action": "avoid"} - Go the other way`;
+        result.awaitingChoice = true;
+        
+        // Store tracks in temp storage
+        this.db.prepare(`
+          INSERT OR REPLACE INTO exploration_state (character_id, state_type, state_data)
+          VALUES (?, 'tracks', ?)
+        `).run(characterId, JSON.stringify(result.tracks));
+        
+        return result;
+      }
+      
+      result.message += '\nYou find no clear tracks to follow.';
+      return result;
+    }
+    
+    // INVESTIGATION - Discover landmarks with lore
+    if (skillName === 'investigation') {
+      result.message = skillCheck.narrative;
+      
+      if (skillCheck.success) {
+        const landmark = this._discoverLandmark(characterId, char, zoneId, table);
+        if (landmark) {
+          landmark.skillCheck = skillCheck;
+          return landmark;
+        }
+      }
+      
+      result.message += '\nYou investigate the area but find nothing unusual.';
+      return result;
+    }
+    
+    // OTHER SKILLS - Generic rewards based on success
+    result.message = skillCheck.narrative;
+    
+    if (skillCheck.success) {
+      // Small reward for successful skill use
+      result.message += '\n✨ Your expertise proves useful!';
+      
+      if (['arcana', 'nature', 'medicine'].includes(skillName)) {
+        const discovery = this._handleDiscovery(characterId, table);
+        result.reward = discovery.reward;
+        result.message += `\nYou find ${discovery.reward.quantity}x ${discovery.reward.material}!`;
+      }
+    }
+    
+    return result;
+  }
+  
+  /**
+   * Trigger a random skill event
+   */
+  _triggerSkillEvent(characterId, char, zoneId, table) {
+    const events = {
+      kelp_forest: [
+        { type: 'trapped_chest', skill: 'sleight_of_hand', dc: 13 },
+        { type: 'strong_current', skill: 'athletics', dc: 12 },
+        { type: 'aggressive_fauna', skill: 'sea_creature_handling', dc: 14 },
+        { type: 'healing_kelp', skill: 'medicine', dc: 11 },
+        { type: 'magical_vortex', skill: 'arcana', dc: 15 }
+      ],
+      shipwreck_graveyard: [
+        { type: 'locked_vault', skill: 'sleight_of_hand', dc: 15 },
+        { type: 'unstable_structure', skill: 'acrobatics', dc: 13 },
+        { type: 'ghostly_presence', skill: 'religion', dc: 14 },
+        { type: 'ancient_inscription', skill: 'history', dc: 12 }
+      ]
+    };
+    
+    const zoneEvents = events[zoneId] || events.kelp_forest;
+    const event = zoneEvents[Math.floor(Math.random() * zoneEvents.length)];
+    
+    return {
+      success: true,
+      encounter: false,
+      zone: table.name,
+      skillEvent: true,
+      eventType: event.type,
+      requiredSkill: event.skill,
+      dc: event.dc,
+      message: this._getSkillEventMessage(event.type),
+      hint: `Use ${event.skill} to interact: POST /api/zone/skill-event {"skill": "${event.skill}"}`
+    };
+  }
+  
+  /**
+   * Discover a landmark
+   */
+  _discoverLandmark(characterId, char, zoneId, table) {
+    const landmarks = {
+      kelp_forest: [
+        {
+          id: 'sunken_temple',
+          name: 'Sunken Temple of the Tide Mother',
+          lore: 'Ancient carvings depict lobster priests worshipping a massive sea goddess. This temple predates the current civilization by millennia.',
+          reward: { material: 'Moonstone Shard', quantity: 2 },
+          skill: 'religion'
+        },
+        {
+          id: 'lobster_king_statue',
+          name: 'Statue of the First Lobster King',
+          lore: 'King Crusher the Mighty ruled these waters 500 years ago. His dynasty fell when the Squat Lobsters rebelled.',
+          reward: { material: 'Ancient Coin', quantity: 3 },
+          skill: 'history'
+        },
+        {
+          id: 'bioluminescent_grove',
+          name: 'The Glowing Grove',
+          lore: 'This kelp grove pulses with magical energy. Wizards once harvested here for spell components.',
+          reward: { material: 'Luminescent Algae', quantity: 2 },
+          skill: 'arcana'
+        }
+      ],
+      shipwreck_graveyard: [
+        {
+          id: 'crimson_claw_flagship',
+          name: 'The Flagship "Crimson Claw"',
+          lore: 'Admiral Pincers\' pride and joy, sunk in the Great Storm of 1642. Hundreds of crew members perished.',
+          reward: { material: 'Black Pearl', quantity: 1 },
+          skill: 'history'
+        },
+        {
+          id: 'cursed_anchor',
+          name: 'The Cursed Anchor',
+          lore: 'This anchor radiates dark magic. Legend says it was forged to trap sea demons.',
+          reward: { material: 'Ghost Essence', quantity: 2 },
+          skill: 'arcana'
+        }
+      ]
+    };
+    
+    const zoneLandmarks = landmarks[zoneId] || landmarks.kelp_forest;
+    const landmark = zoneLandmarks[Math.floor(Math.random() * zoneLandmarks.length)];
+    
+    // Check if already discovered
+    const discovered = this.db.prepare(
+      'SELECT * FROM discovered_landmarks WHERE character_id = ? AND landmark_id = ?'
+    ).get(characterId, landmark.id);
+    
+    if (discovered) {
+      return null; // Already found this one
+    }
+    
+    // Mark as discovered
+    this.db.prepare(`
+      INSERT INTO discovered_landmarks (character_id, landmark_id, zone_id, discovered_at)
+      VALUES (?, ?, ?, datetime('now'))
+    `).run(characterId, landmark.id, zoneId);
+    
+    // Give reward
+    const materialId = landmark.reward.material.toLowerCase().replace(/\s+/g, '_');
+    this.db.prepare(`
+      INSERT INTO player_materials (id, character_id, material_id, quantity)
+      VALUES (?, ?, ?, ?)
+      ON CONFLICT(character_id, material_id) DO UPDATE SET quantity = quantity + ?
+    `).run(
+      require('crypto').randomUUID(),
+      characterId,
+      materialId,
+      landmark.reward.quantity,
+      landmark.reward.quantity
+    );
+    
+    return {
+      success: true,
+      encounter: false,
+      landmark: true,
+      zone: table.name,
+      message: `🏛️ **LANDMARK DISCOVERED: ${landmark.name}**\n\n📜 ${landmark.lore}\n\n💎 You found ${landmark.reward.quantity}x ${landmark.reward.material}!`,
+      landmarkData: landmark
+    };
+  }
+  
+  /**
+   * Get message for skill event type
+   */
+  _getSkillEventMessage(eventType) {
+    const messages = {
+      trapped_chest: '🪤 You spot an old chest covered in barnacles... but something seems off about the lock.',
+      strong_current: '🌊 A powerful current blocks your path. You could push through with enough strength.',
+      aggressive_fauna: '🐟 An aggressive school of barracuda circles nearby. They look hostile.',
+      healing_kelp: '🌿 You notice a patch of vibrant kelp that seems to pulse with restorative energy.',
+      magical_vortex: '🔮 A swirling vortex of magical energy hangs in the water before you.',
+      locked_vault: '🔒 An intact ship vault lies before you, its lock still functional after all these years.',
+      unstable_structure: '⚠️ Debris blocks your path, but a nimble lobster could navigate through.',
+      ghostly_presence: '👻 A spectral figure appears, its translucent form flickering in the current.',
+      ancient_inscription: '📜 Strange runes are carved into a weathered stone. They seem to tell a story.'
+    };
+    
+    return messages[eventType] || 'Something interesting catches your attention.';
   }
   
   /**

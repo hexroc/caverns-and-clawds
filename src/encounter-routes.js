@@ -6,7 +6,7 @@
 
 const express = require('express');
 const { EncounterManager, ENCOUNTER_TABLES } = require('./encounters');
-const { MONSTERS } = require('./monsters');
+const { MONSTERS, spawnMonster } = require('./monsters');
 const { CharacterManager } = require('./character');
 const { LOCATIONS } = require('./world');
 const { activityTracker } = require('./activity-tracker');
@@ -46,6 +46,22 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
 
   /**
    * POST /api/zone/explore - Explore current zone (may trigger encounter)
+   * Body: { useSkill?: string }
+   * 
+   * Available skills for exploration:
+   * - stealth: Sneak past encounters (reduces encounter chance)
+   * - perception: Find hidden treasures and landmarks  
+   * - survival: Track creatures (choose to hunt or avoid)
+   * - investigation: Discover landmarks with lore
+   * - arcana: Find magical items
+   * - nature: Identify valuable materials
+   * - medicine: Harvest healing plants
+   * - athletics: Navigate difficult terrain
+   * - acrobatics: Avoid hazards
+   * - sleight_of_hand: Disarm traps, pick locks
+   * - sea_creature_handling: Calm/recruit creatures
+   * - intimidation: Scare away weak creatures
+   * - history/religion: Learn lore at landmarks
    */
   router.post('/explore', authenticateAgent, (req, res) => {
     try {
@@ -66,18 +82,27 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
         });
       }
       
-      const result = encounters.explore(char.id, zone);
+      const { useSkill } = req.body || {};
+      const result = encounters.explore(char.id, zone, { useSkill });
       
       // Track activity for live ticker
       if (result.encounter) {
         activityTracker.playerCombat(char.name, result.monster?.name || 'monster', 'engaged', zone);
-      } else if (result.discovery) {
+      } else if (result.discovery || result.landmark) {
         activityTracker.addActivity({
-          icon: '🔍',
+          icon: result.landmark ? '🏛️' : '🔍',
           player: char.name,
-          action: `found ${result.reward?.material || 'something'}!`,
+          action: result.landmark ? `discovered ${result.landmarkData?.name}!` : `found ${result.reward?.material || 'something'}!`,
           location: zone,
           type: 'discovery'
+        });
+      } else if (useSkill) {
+        activityTracker.addActivity({
+          icon: '🎯',
+          player: char.name,
+          action: `used ${useSkill}`,
+          location: zone,
+          type: 'skill'
         });
       } else {
         activityTracker.playerExplore(char.name, zone, 'searching...');
@@ -87,6 +112,76 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
     } catch (err) {
       console.error('Explore error:', err);
       res.status(500).json({ success: false, error: 'Exploration failed' });
+    }
+  });
+  
+  /**
+   * POST /api/zone/explore/follow-tracks - Follow creature tracks (from Survival skill)
+   * Body: { action: 'hunt' | 'avoid' }
+   */
+  router.post('/explore/follow-tracks', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      const { action } = req.body;
+      if (!action || !['hunt', 'avoid'].includes(action)) {
+        return res.status(400).json({
+          success: false,
+          error: 'action required: "hunt" or "avoid"'
+        });
+      }
+      
+      // Get stored tracks
+      const state = db.prepare('SELECT state_data FROM exploration_state WHERE character_id = ? AND state_type = ?')
+        .get(char.id, 'tracks');
+      
+      if (!state) {
+        return res.status(400).json({
+          success: false,
+          error: 'No tracks to follow. Use Survival skill while exploring first.'
+        });
+      }
+      
+      const tracks = JSON.parse(state.state_data);
+      
+      // Clear the state
+      db.prepare('DELETE FROM exploration_state WHERE character_id = ? AND state_type = ?')
+        .run(char.id, 'tracks');
+      
+      const zone = getZoneType(char.location);
+      
+      if (action === 'hunt') {
+        // Force encounter with the tracked creature
+        const monster = spawnMonster(tracks.creatureId);
+        if (!monster) {
+          return res.status(500).json({ success: false, error: 'Failed to spawn creature' });
+        }
+        
+        // Trigger encounter manually
+        const result = encounters._triggerEncounter(char.id, zone, ENCOUNTER_TABLES[zone]);
+        result.tracked = true;
+        result.message = `🎯 You follow the tracks and find **${tracks.creature}**!\n\n${result.message || ''}`;
+        
+        activityTracker.playerCombat(char.name, tracks.creature, 'engaged', zone);
+        
+        return res.json(result);
+      } else {
+        // Avoid - go the opposite direction, safe exploration
+        return res.json({
+          success: true,
+          encounter: false,
+          avoided: true,
+          zone: ENCOUNTER_TABLES[zone]?.name || zone,
+          message: `🚶 You carefully avoid the ${tracks.creature} and explore in a different direction.`,
+          hint: 'You avoided a potential encounter!'
+        });
+      }
+    } catch (err) {
+      console.error('Follow tracks error:', err);
+      res.status(500).json({ success: false, error: 'Failed to follow tracks' });
     }
   });
 
