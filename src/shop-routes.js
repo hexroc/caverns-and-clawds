@@ -130,7 +130,7 @@ function createShopRoutes(db, authenticateAgent) {
           type: item.type,
           rarity: item.rarity || 'common',
           description: item.description || '',
-          price: Math.ceil(item.value * npc.shop.buyMultiplier),
+          price: parseFloat((item.value * npc.shop.buyMultiplier).toFixed(4)),
           stock: shopItem.stock,
           effect: item.effect,
           spell: item.spell,
@@ -210,8 +210,8 @@ function createShopRoutes(db, authenticateAgent) {
       }
 
       // Calculate cost
-      const unitPrice = Math.ceil(item.value * npc.shop.buyMultiplier);
-      const totalCost = unitPrice * quantity;
+      const unitPrice = parseFloat((item.value * npc.shop.buyMultiplier).toFixed(4));
+      const totalCost = parseFloat((unitPrice * quantity).toFixed(4));
 
       // Check if player can afford it
       if (char.currency.usdc < totalCost) {
@@ -408,8 +408,8 @@ function createShopRoutes(db, authenticateAgent) {
         return res.status(404).json({ success: false, error: 'Unknown item' });
       }
 
-      const buyPrice = Math.ceil(item.value * npc.shop.buyMultiplier);
-      const sellValue = Math.floor(item.value * npc.shop.sellMultiplier);
+      const buyPrice = parseFloat((item.value * npc.shop.buyMultiplier).toFixed(4));
+      const sellValue = parseFloat((item.value * npc.shop.sellMultiplier).toFixed(4));
 
       res.json({
         success: true,
