@@ -1177,6 +1177,15 @@ class CharacterManager {
       'SELECT * FROM character_features WHERE character_id = ?'
     ).all(char.id);
     
+    // Get materials
+    const materials = this.db.prepare(`
+      SELECT pm.*, m.name, m.description, m.base_price, m.rarity
+      FROM player_materials pm
+      JOIN materials m ON pm.material_id = m.id
+      WHERE pm.character_id = ?
+      ORDER BY m.base_price DESC
+    `).all(char.id);
+    
     // Calculate modifiers
     const mods = {
       str: getModifier(char.str),
@@ -1230,6 +1239,14 @@ class CharacterManager {
       currency: {
         usdc: char.usdc_balance || 0
       },
+      
+      materials: materials.map(m => ({
+        material: m.material_id,
+        name: m.name,
+        quantity: m.quantity,
+        basePrice: m.base_price,
+        rarity: m.rarity
+      })),
       
       location: char.current_zone,
       
