@@ -37,6 +37,35 @@ function init(database, tracker) {
 }
 
 /**
+ * GET /api/spectate/market-prices
+ * Get current material prices for ticker
+ */
+router.get('/market-prices', (req, res) => {
+  try {
+    // Get all materials sorted by value (high to low)
+    const materials = db.prepare(`
+      SELECT id, name, base_price, rarity
+      FROM materials
+      ORDER BY base_price DESC
+      LIMIT 15
+    `).all();
+    
+    res.json({
+      success: true,
+      materials: materials.map(m => ({
+        id: m.id,
+        name: m.name,
+        price: m.base_price,
+        rarity: m.rarity
+      }))
+    });
+  } catch (err) {
+    console.error('Market prices error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+/**
  * GET /api/agents/list
  * List all AI agents with basic info
  */

@@ -30,6 +30,64 @@
       flex-shrink: 0;
     }
     
+    /* ========== MARKET TICKER ========== */
+    .market-ticker {
+      background: linear-gradient(90deg, rgba(0,10,20,0.9), rgba(10,20,40,0.9));
+      border-bottom: 1px solid rgba(78, 205, 196, 0.3);
+      overflow: hidden;
+      position: relative;
+      height: 32px;
+      flex-shrink: 0;
+    }
+    
+    .ticker-track {
+      display: flex;
+      gap: 3rem;
+      position: absolute;
+      white-space: nowrap;
+      animation: scroll-ticker 60s linear infinite;
+      padding: 0.5rem 0;
+    }
+    
+    @keyframes scroll-ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    
+    .ticker-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.75rem;
+    }
+    
+    .ticker-icon {
+      font-size: 0.9rem;
+    }
+    
+    .ticker-name {
+      color: #aaa;
+      font-weight: 500;
+    }
+    
+    .ticker-price {
+      color: #4ecdc4;
+      font-weight: bold;
+      font-family: 'Courier New', monospace;
+    }
+    
+    .ticker-rarity {
+      font-size: 0.65rem;
+      padding: 0.1rem 0.3rem;
+      border-radius: 3px;
+      text-transform: uppercase;
+    }
+    .ticker-rarity.common { background: rgba(150,150,150,0.3); color: #999; }
+    .ticker-rarity.uncommon { background: rgba(46,204,113,0.3); color: #2ecc71; }
+    .ticker-rarity.rare { background: rgba(52,152,219,0.3); color: #3498db; }
+    .ticker-rarity.epic { background: rgba(155,89,182,0.3); color: #9b59b6; }
+    .ticker-rarity.legendary { background: rgba(241,196,15,0.3); color: #f1c40f; }
+    
     .header h1 {
       font-size: 1.3rem;
       color: #ff6b4a;
@@ -759,6 +817,11 @@
     </div>
   </div>
   
+  <!-- MARKET PRICES TICKER -->
+  <div class="market-ticker">
+    <div class="ticker-track" id="tickerTrack"></div>
+  </div>
+  
   <!-- THREE-COLUMN LAYOUT -->
   <div class="layout">
     
@@ -907,12 +970,49 @@
     async function init() {
       loadMapData();
       await loadAgents();
+      await loadMarketPrices();
       startPolling();
       
       setTimeout(() => {
         const name = prompt('Enter your spectator name:', spectatorName);
         if (name) spectatorName = name;
       }, 300);
+    }
+    
+    // ================================================================
+    // MARKET PRICES TICKER
+    // ================================================================
+    
+    const RARITY_ICONS = {
+      common: '⚪',
+      uncommon: '🟢',
+      rare: '🔵',
+      epic: '🟣',
+      legendary: '🟡'
+    };
+    
+    async function loadMarketPrices() {
+      try {
+        const res = await fetch('/api/spectate/market-prices');
+        const data = await res.json();
+        if (!data.success || !data.materials) return;
+        
+        const track = document.getElementById('tickerTrack');
+        
+        // Create ticker items HTML (duplicate for seamless loop)
+        const itemsHtml = data.materials.map(m => `
+          <div class="ticker-item">
+            <span class="ticker-icon">${RARITY_ICONS[m.rarity] || '💎'}</span>
+            <span class="ticker-name">${m.name}</span>
+            <span class="ticker-price">${m.price.toFixed(3)} USDC</span>
+          </div>
+        `).join('');
+        
+        // Duplicate for seamless scrolling
+        track.innerHTML = itemsHtml + itemsHtml;
+      } catch (err) {
+        console.error('Failed to load market prices:', err);
+      }
     }
     
     // ================================================================
@@ -1334,6 +1434,9 @@
       
       // Map — 5s
       setInterval(() => { if (mapVisible) loadMapData(); }, 5000);
+      
+      // Market prices — 30s
+      setInterval(() => { loadMarketPrices(); }, 30000);
     }
     
     // ================================================================
