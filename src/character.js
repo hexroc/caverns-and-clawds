@@ -126,6 +126,34 @@ const RACES = {
 };
 
 // ============================================================================
+// FEATURE DESCRIPTIONS
+// ============================================================================
+
+const FEATURE_DESCRIPTIONS = {
+  // Rogue features
+  expertise: 'Double your proficiency bonus for two skills',
+  sneak_attack_1d6: 'Deal an extra 1d6 damage when you have advantage',
+  sneak_attack_2d6: 'Deal an extra 2d6 damage when you have advantage',
+  sneak_attack_3d6: 'Deal an extra 3d6 damage when you have advantage',
+  thieves_cant: 'Secret language of thieves and criminals',
+  cunning_action: 'Use Dash, Disengage, or Hide as a bonus action',
+  uncanny_dodge: 'Use reaction to halve damage from an attack you can see',
+  roguish_archetype: 'Choose your Rogue subclass',
+  
+  // Fighter features
+  fighting_style: 'Choose a fighting style specialization',
+  second_wind: 'Recover HP as a bonus action (1d10 + fighter level)',
+  action_surge: 'Take an additional action on your turn',
+  martial_archetype: 'Choose your Fighter subclass',
+  extra_attack: 'Attack twice when you take the Attack action',
+  
+  // General features
+  asi: 'Ability Score Improvement: +2 to one stat or +1 to two stats',
+  darkvision_60: 'See in darkness as if it were dim light up to 60 feet',
+  darkvision_120: 'See in darkness as if it were dim light up to 120 feet'
+};
+
+// ============================================================================
 // CLASS DEFINITIONS (5e Core)
 // ============================================================================
 
@@ -1219,7 +1247,11 @@ class CharacterManager {
         armor: classData?.armorProficiencies || [],
         weapons: classData?.weaponProficiencies || []
       },
-      features: features.map(f => ({ name: f.feature_name, source: f.source })),
+      features: features.map(f => ({ 
+        name: f.feature_name, 
+        source: f.source,
+        description: FEATURE_DESCRIPTIONS[f.feature_name] || ''
+      })),
       
       cosmetics: this._getCosmetics(char.id),
       

@@ -936,6 +936,36 @@ function handleSpecialAbility(ability, attacker, defender, attackResult) {
 // ACTION HANDLERS
 // ============================================================================
 
+/**
+ * Check if character has Cunning Action feature (Rogue level 2+)
+ */
+function hasCunningAction(character) {
+  // Check features array
+  if (character.features) {
+    if (Array.isArray(character.features)) {
+      return character.features.some(f => 
+        f.feature_name === 'cunning_action' || f.name === 'cunning_action'
+      );
+    }
+  }
+  
+  // Fallback: check class and level
+  const className = (character.class || character.stats?.class || '').toLowerCase();
+  const level = character.level || character.stats?.level || 1;
+  
+  return className === 'rogue' && level >= 2;
+}
+
+/**
+ * Check if an action can be used as a bonus action with Cunning Action
+ */
+function canUseCunningAction(actionType, character) {
+  if (!hasCunningAction(character)) return false;
+  
+  const cunningActionTypes = ['dash', 'disengage', 'hide'];
+  return cunningActionTypes.includes(actionType);
+}
+
 const ACTIONS = {
   attack: (character, enemies, options = {}) => {
     const targetIndex = options.targetIndex || 0;
@@ -1186,6 +1216,15 @@ const ACTIONS = {
       narrative: success
         ? `${character.name} breaks free and escapes the combat!`
         : `${character.name} tries to flee but the enemies block their escape!`
+    };
+  },
+  
+  disengage: (character, enemies, options = {}) => {
+    return {
+      success: true,
+      action: 'disengage',
+      effect: 'no_opportunity_attacks',
+      narrative: `${character.name} carefully disengages, avoiding attacks of opportunity!`
     };
   }
 };
@@ -1471,6 +1510,20 @@ function resolveCombatRound(combatState, playerAction) {
   // Reset dodging at start of new round
   combatState.characterDodging = false;
   
+  // Validate bonus action if provided
+  if (playerAction.bonusAction) {
+    const bonusActionType = playerAction.bonusAction.type;
+    if (!canUseCunningAction(bonusActionType, character)) {
+      roundResults.actions.push({
+        error: true,
+        message: `Cannot use ${bonusActionType} as bonus action. Cunning Action required (Rogue level 2+).`
+      });
+      roundResults.narration.push(`⚠️ Cannot use ${bonusActionType} as bonus action without Cunning Action!`);
+      // Remove invalid bonus action
+      delete playerAction.bonusAction;
+    }
+  }
+  
   // Process each combatant in initiative order
   for (const init of initiativeOrder) {
     const combatant = init.combatant;
@@ -1480,17 +1533,45 @@ function resolveCombatRound(combatState, playerAction) {
     if (!combatant.isPlayer && enemies[combatant.combatIndex]?.currentHp <= 0) continue;
     
     if (combatant.isPlayer) {
-      // Player's turn
+      // Player's turn - process main action
       const actionHandler = ACTIONS[playerAction.type] || ACTIONS.attack;
       const actionResult = actionHandler(character, enemies, playerAction.options || {});
       
       roundResults.actions.push({
         actor: character.name,
         isPlayer: true,
+        actionType: 'action',
         ...actionResult
       });
       
       roundResults.narration.push(actionResult.narrative);
+      
+      // Process bonus action if provided (Cunning Action)
+      if (playerAction.bonusAction && !actionResult.skipCombat) {
+        const bonusHandler = ACTIONS[playerAction.bonusAction.type];
+        if (bonusHandler) {
+          const bonusResult = bonusHandler(character, enemies, playerAction.bonusAction.options || {});
+          
+          roundResults.actions.push({
+            actor: character.name,
+            isPlayer: true,
+            actionType: 'bonus_action',
+            cunningAction: true,
+            ...bonusResult
+          });
+          
+          roundResults.narration.push(`🎯 **Cunning Action:** ${bonusResult.narrative}`);
+          
+          // Apply bonus action effects (like dodge from bonus action)
+          if (bonusResult.action === 'dodge') {
+            combatState.characterDodging = true;
+          }
+          if (bonusResult.action === 'hide' && bonusResult.hidden) {
+            character.conditions = character.conditions || [];
+            character.conditions.push('hidden');
+          }
+        }
+      }
       
       // Apply damage
       if (actionResult.damage && actionResult.targetIndex !== undefined) {
@@ -1737,6 +1818,8 @@ module.exports = {
   
   // Actions
   ACTIONS,
+  hasCunningAction,
+  canUseCunningAction,
   
   // Monsters
   MONSTERS,
