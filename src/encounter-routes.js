@@ -356,7 +356,7 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       if (!method) {
         return res.status(400).json({ 
           success: false, 
-          error: 'method required: paid (25 USDC, 10% XP loss), free (35% XP loss), or voucher (no penalty)' 
+          error: 'method required: paid (0.025 USDC, 10% XP loss), free (35% XP loss), or voucher (no penalty)' 
         });
       }
       
