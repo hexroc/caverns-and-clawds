@@ -2997,6 +2997,11 @@ initEconomy().catch(err => console.error('Economy init failed:', err));
 app.use('/api/economy', createEconomyRoutes(db, authenticateAgent));
 console.log('💰 Economy system loaded (USDC, banking, trading)');
 
+// Initialize spell tracking system
+const { initSpellsTable } = require('./spell-init');
+initSpellsTable(db);
+console.log('✨ Spell tracking system initialized (cantrips + prepared/known spells)');
+
 // Initialize and mount DeFi routes (Kamino vault integration)
 const { init: initDefiRoutes } = require('./economy/defi-routes');
 app.use('/api/defi', initDefiRoutes(db));

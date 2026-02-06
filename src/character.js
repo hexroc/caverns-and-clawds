@@ -1127,6 +1127,10 @@ class CharacterManager {
       const { initClassFeatures } = require('./init-class-features');
       initClassFeatures(characterId, characterClass, 1, finalStats);
       
+      // Initialize spells for spellcasting classes
+      const { addDefaultSpells } = require('./spell-init');
+      addDefaultSpells(this.db, characterId, characterClass, finalStats);
+      
       return {
         success: true,
         character: this.getCharacter(characterId)
@@ -1274,11 +1278,54 @@ class CharacterManager {
         description: FEATURE_DESCRIPTIONS[f.feature_name] || ''
       })),
       
+      spells: this._getSpells(char.id),
+      
       cosmetics: this._getCosmetics(char.id),
       
       createdAt: char.created_at,
       updatedAt: char.updated_at
     };
+  }
+  
+  // Get character's known spells
+  _getSpells(characterId) {
+    const { getCharacterSpells } = require('./spell-init');
+    const { cantrips, leveled } = getCharacterSpells(this.db, characterId);
+    
+    // Load spell details from encounters.js SPELLS constant
+    const { SPELLS } = require('./encounters');
+    
+    const cantripsWithDetails = cantrips.map(spellId => {
+      const spell = SPELLS[spellId];
+      return spell ? { 
+        id: spellId, 
+        name: spell.name,
+        type: 'cantrip',
+        level: 0,
+        school: spell.school || 'unknown',
+        castingTime: spell.castingTime || '1 action',
+        range: spell.range || 'Touch',
+        description: spell.description || ''
+      } : null;
+    }).filter(Boolean);
+    
+    const leveledWithDetails = leveled.map(s => {
+      const spell = SPELLS[s.id];
+      return spell ? {
+        id: s.id,
+        name: spell.name,
+        type: 'leveled',
+        level: s.level,
+        school: spell.school || 'unknown',
+        castingTime: spell.castingTime || '1 action',
+        range: spell.range || 'Touch',
+        prepared: s.prepared,
+        source: s.source,
+        description: spell.description || ''
+      } : null;
+    }).filter(Boolean);
+    
+    return [...cantripsWithDetails, ...leveledWithDetails];
   }
   
   // Get equipped cosmetics
@@ -1475,8 +1522,27 @@ class CharacterManager {
     const char = this.db.prepare('SELECT id FROM clawds WHERE agent_id = ?').get(agentId);
     if (!char) return { success: false, error: 'No character found' };
     
-    this.db.prepare('DELETE FROM clawds WHERE id = ?').run(char.id);
-    return { success: true, message: 'Character deleted' };
+    // Delete all related data (cascading delete)
+    try {
+      this.db.prepare('DELETE FROM character_inventory WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM character_proficiencies WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM class_features WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM character_quests WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM active_encounters WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM henchman_instances WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM player_shops WHERE owner_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM shop_inventory WHERE seller_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM trade_offers WHERE from_character_id = ? OR to_character_id = ?').run(char.id, char.id);
+      this.db.prepare('DELETE FROM auction_listings WHERE seller_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM auction_bids WHERE bidder_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM loans WHERE character_id = ?').run(char.id);
+      this.db.prepare('DELETE FROM clawds WHERE id = ?').run(char.id);
+      
+      return { success: true, message: 'Character deleted' };
+    } catch (err) {
+      console.error('Error deleting character:', err);
+      return { success: false, error: 'Failed to delete character', detail: err.message };
+    }
   }
   
   // Move character to zone
