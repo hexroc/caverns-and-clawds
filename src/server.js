@@ -3006,6 +3006,11 @@ console.log('🏪 Player shop system loaded (Sims-style retail)');
 app.use('/api/shells', createShellRoutes(db, authenticateAgent));
 console.log('🐚 Shells premium currency loaded (100 Shells = $1 USDC)');
 
+// 🐚 Shell Purchase Verification (no auth - public endpoint)
+const createShellPurchaseRoutes = require('./shell-purchase-routes');
+app.use('/api/shells', createShellPurchaseRoutes(db));
+console.log('💳 Shell purchase verification enabled (Solana mainnet)');
+
 // (Capstone dungeon system removed - MUD direction)
 
 // Activity tracker for live ticker

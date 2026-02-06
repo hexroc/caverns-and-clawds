@@ -1,0 +1,483 @@
+<!-- Shell Purchase Modal Component -->
+<!-- Include this in spectate.html and index.html -->
+
+<style>
+  /* Shell Purchase Modal */
+  .shell-modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .shell-modal-overlay.active {
+    display: flex;
+  }
+  
+  .shell-modal {
+    background: linear-gradient(135deg, #0a1628 0%, #1a0a28 100%);
+    border: 2px solid #4ecdc4;
+    border-radius: 16px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(78, 205, 196, 0.2);
+  }
+  
+  .shell-modal-header {
+    text-align: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .shell-modal-header h2 {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.8rem;
+    color: #4ecdc4;
+    margin-bottom: 0.5rem;
+    text-shadow: 0 2px 10px rgba(78, 205, 196, 0.5);
+  }
+  
+  .shell-modal-header p {
+    color: #aaa;
+    font-size: 0.9rem;
+  }
+  
+  .shell-tiers {
+    display: grid;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .shell-tier {
+    background: rgba(13, 47, 43, 0.6);
+    border: 2px solid rgba(78, 205, 196, 0.3);
+    border-radius: 10px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .shell-tier:hover {
+    background: rgba(46, 139, 87, 0.3);
+    border-color: #4ecdc4;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.3);
+  }
+  
+  .shell-tier-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  
+  .shell-tier-amount {
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1.2rem;
+    color: #4ecdc4;
+  }
+  
+  .shell-tier-bonus {
+    font-size: 0.75rem;
+    color: #ffd700;
+  }
+  
+  .shell-tier-price {
+    font-family: 'Courier New', monospace;
+    font-size: 1.3rem;
+    font-weight: bold;
+    color: #fff;
+  }
+  
+  .wallet-connect-section {
+    margin-bottom: 1.5rem;
+    text-align: center;
+  }
+  
+  .wallet-status {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(78, 205, 196, 0.3);
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: #aaa;
+  }
+  
+  .wallet-status.connected {
+    border-color: #2ecc71;
+    background: rgba(46, 204, 113, 0.1);
+  }
+  
+  .wallet-address {
+    font-family: 'Courier New', monospace;
+    color: #4ecdc4;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+  }
+  
+  .btn-wallet-connect {
+    background: linear-gradient(90deg, #4ecdc4, #44b3a5);
+    border: none;
+    color: #0a1628;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+  }
+  
+  .btn-wallet-connect:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(78, 205, 196, 0.4);
+  }
+  
+  .btn-wallet-connect:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .modal-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .btn-modal {
+    flex: 1;
+    padding: 0.75rem;
+    border-radius: 8px;
+    font-family: 'Luckiest Guy', cursive;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.2s;
+  }
+  
+  .btn-modal-cancel {
+    background: rgba(255, 255, 255, 0.1);
+    color: #fff;
+  }
+  
+  .btn-modal-cancel:hover {
+    background: rgba(255, 255, 255, 0.15);
+  }
+  
+  .btn-modal-purchase {
+    background: linear-gradient(90deg, #ff6b4a, #ff8a6b);
+    color: #fff;
+  }
+  
+  .btn-modal-purchase:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(255, 107, 74, 0.4);
+  }
+  
+  .btn-modal-purchase:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  
+  .purchase-status {
+    text-align: center;
+    padding: 1rem;
+    margin-bottom: 1rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+  }
+  
+  .purchase-status.processing {
+    background: rgba(255, 193, 7, 0.1);
+    border: 1px solid rgba(255, 193, 7, 0.3);
+    color: #ffc107;
+  }
+  
+  .purchase-status.success {
+    background: rgba(46, 204, 113, 0.1);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    color: #2ecc71;
+  }
+  
+  .purchase-status.error {
+    background: rgba(231, 76, 60, 0.1);
+    border: 1px solid rgba(231, 76, 60, 0.3);
+    color: #e74c3c;
+  }
+</style>
+
+<!-- Modal HTML -->
+<div class="shell-modal-overlay" id="shellModalOverlay" onclick="if(event.target === this) closeShellModal()">
+  <div class="shell-modal">
+    <div class="shell-modal-header">
+      <h2>🐚 Buy Shells</h2>
+      <p>Premium currency for henchmen, cosmetics, and more!</p>
+    </div>
+    
+    <div id="purchaseStatus"></div>
+    
+    <div class="wallet-connect-section">
+      <div class="wallet-status" id="walletStatus">
+        <div>💳 Wallet not connected</div>
+      </div>
+      <button class="btn-wallet-connect" id="btnWalletConnect" onclick="connectWallet()">
+        Connect Phantom Wallet
+      </button>
+    </div>
+    
+    <div class="shell-tiers" id="shellTiers">
+      <div class="shell-tier" onclick="selectTier(1)">
+        <div class="shell-tier-info">
+          <div class="shell-tier-amount">🐚 100 Shells</div>
+        </div>
+        <div class="shell-tier-price">$1</div>
+      </div>
+      
+      <div class="shell-tier" onclick="selectTier(5)">
+        <div class="shell-tier-info">
+          <div class="shell-tier-amount">🐚 500 Shells</div>
+          <div class="shell-tier-bonus">1 Henchman Pull</div>
+        </div>
+        <div class="shell-tier-price">$5</div>
+      </div>
+      
+      <div class="shell-tier" onclick="selectTier(20)">
+        <div class="shell-tier-info">
+          <div class="shell-tier-amount">🐚 2,100 Shells</div>
+          <div class="shell-tier-bonus">+5% bonus!</div>
+        </div>
+        <div class="shell-tier-price">$20</div>
+      </div>
+      
+      <div class="shell-tier" onclick="selectTier(50)">
+        <div class="shell-tier-info">
+          <div class="shell-tier-amount">🐚 5,500 Shells</div>
+          <div class="shell-tier-bonus">+10% bonus!</div>
+        </div>
+        <div class="shell-tier-price">$50</div>
+      </div>
+      
+      <div class="shell-tier" onclick="selectTier(100)">
+        <div class="shell-tier-info">
+          <div class="shell-tier-amount">🐚 12,000 Shells</div>
+          <div class="shell-tier-bonus">+20% bonus!</div>
+        </div>
+        <div class="shell-tier-price">$100</div>
+      </div>
+    </div>
+    
+    <div class="modal-actions">
+      <button class="btn-modal btn-modal-cancel" onclick="closeShellModal()">Cancel</button>
+      <button class="btn-modal btn-modal-purchase" id="btnPurchase" onclick="purchaseShells()" disabled>
+        Purchase
+      </button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Shell Purchase System
+  let walletConnected = false;
+  let walletAddress = null;
+  let selectedTierAmount = null;
+  
+  async function connectWallet() {
+    try {
+      // Check for Phantom wallet
+      if (typeof window.solana === 'undefined' || !window.solana.isPhantom) {
+        showPurchaseStatus('error', '❌ Phantom wallet not found! Install from phantom.app');
+        return;
+      }
+      
+      showPurchaseStatus('processing', '🔌 Connecting to wallet...');
+      
+      const resp = await window.solana.connect();
+      walletAddress = resp.publicKey.toString();
+      walletConnected = true;
+      
+      document.getElementById('walletStatus').innerHTML = `
+        <div>✅ Wallet Connected</div>
+        <div class="wallet-address">${walletAddress.substring(0, 8)}...${walletAddress.substring(walletAddress.length - 8)}</div>
+      `;
+      document.getElementById('walletStatus').classList.add('connected');
+      document.getElementById('btnWalletConnect').textContent = 'Wallet Connected ✓';
+      document.getElementById('btnWalletConnect').disabled = true;
+      
+      clearPurchaseStatus();
+      enablePurchaseIfReady();
+      
+    } catch (err) {
+      console.error('Wallet connection error:', err);
+      showPurchaseStatus('error', '❌ Failed to connect wallet: ' + err.message);
+    }
+  }
+  
+  function selectTier(amount) {
+    selectedTierAmount = amount;
+    
+    // Visual feedback
+    document.querySelectorAll('.shell-tier').forEach(tier => {
+      tier.style.background = 'rgba(13, 47, 43, 0.6)';
+      tier.style.borderColor = 'rgba(78, 205, 196, 0.3)';
+    });
+    
+    event.currentTarget.style.background = 'rgba(46, 139, 87, 0.5)';
+    event.currentTarget.style.borderColor = '#4ecdc4';
+    
+    enablePurchaseIfReady();
+  }
+  
+  function enablePurchaseIfReady() {
+    const btn = document.getElementById('btnPurchase');
+    if (walletConnected && selectedTierAmount) {
+      btn.disabled = false;
+      btn.textContent = `Purchase $${selectedTierAmount} Worth`;
+    }
+  }
+  
+  async function purchaseShells() {
+    if (!walletConnected || !selectedTierAmount) return;
+    
+    try {
+      showPurchaseStatus('processing', '💫 Creating transaction...');
+      
+      // Calculate Shell amount (100 Shells = $1 USDC + bonuses)
+      let shellAmount = selectedTierAmount * 100;
+      if (selectedTierAmount >= 20) shellAmount = Math.floor(shellAmount * 1.05);
+      if (selectedTierAmount >= 50) shellAmount = Math.floor(shellAmount * 1.05); // +10% total
+      if (selectedTierAmount >= 100) shellAmount = Math.floor(shellAmount * (1.20/1.10)); // +20% total
+      
+      // Convert USD to USDC (6 decimals)
+      const usdcAmount = selectedTierAmount * 1000000;
+      
+      // Company wallet
+      const companyWallet = 'C9VxL3EF8qZdPVBy6GzSYborjozGRVBZC6goM6Ag2dHh';
+      
+      // Create Solana transaction
+      const connection = new solanaWeb3.Connection('https://api.mainnet-beta.solana.com');
+      
+      // Get USDC token account addresses
+      const usdcMint = new solanaWeb3.PublicKey('EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'); // USDC mainnet
+      
+      const fromTokenAccount = await getAssociatedTokenAddress(
+        usdcMint,
+        window.solana.publicKey
+      );
+      
+      const toTokenAccount = await getAssociatedTokenAddress(
+        usdcMint,
+        new solanaWeb3.PublicKey(companyWallet)
+      );
+      
+      // Build transaction
+      const transaction = new solanaWeb3.Transaction().add(
+        createTransferInstruction(
+          fromTokenAccount,
+          toTokenAccount,
+          window.solana.publicKey,
+          usdcAmount,
+          [],
+          solanaWeb3.TOKEN_PROGRAM_ID
+        )
+      );
+      
+      transaction.feePayer = window.solana.publicKey;
+      transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
+      
+      showPurchaseStatus('processing', '🔐 Please approve transaction in wallet...');
+      
+      // Sign and send
+      const signed = await window.solana.signTransaction(transaction);
+      const signature = await connection.sendRawTransaction(signed.serialize());
+      
+      showPurchaseStatus('processing', '⏳ Confirming transaction...');
+      
+      // Wait for confirmation
+      await connection.confirmTransaction(signature);
+      
+      showPurchaseStatus('processing', '✨ Crediting Shells...');
+      
+      // Verify payment and credit Shells
+      const response = await fetch('/api/shells/verify-purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          signature,
+          amount: selectedTierAmount,
+          shellAmount,
+          walletAddress
+        })
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        showPurchaseStatus('success', `✅ Success! ${shellAmount} Shells credited!`);
+        setTimeout(() => {
+          closeShellModal();
+          location.reload(); // Refresh to show new balance
+        }, 2000);
+      } else {
+        throw new Error(result.error || 'Verification failed');
+      }
+      
+    } catch (err) {
+      console.error('Purchase error:', err);
+      showPurchaseStatus('error', '❌ Purchase failed: ' + err.message);
+    }
+  }
+  
+  function showPurchaseStatus(type, message) {
+    const statusDiv = document.getElementById('purchaseStatus');
+    statusDiv.className = `purchase-status ${type}`;
+    statusDiv.textContent = message;
+  }
+  
+  function clearPurchaseStatus() {
+    document.getElementById('purchaseStatus').innerHTML = '';
+  }
+  
+  function openShellModal() {
+    document.getElementById('shellModalOverlay').classList.add('active');
+  }
+  
+  function closeShellModal() {
+    document.getElementById('shellModalOverlay').classList.remove('active');
+    clearPurchaseStatus();
+  }
+  
+  // Helper functions for SPL Token
+  function getAssociatedTokenAddress(mint, owner) {
+    return solanaWeb3.PublicKey.findProgramAddress(
+      [
+        owner.toBuffer(),
+        solanaWeb3.TOKEN_PROGRAM_ID.toBuffer(),
+        mint.toBuffer(),
+      ],
+      new solanaWeb3.PublicKey('ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL') // Associated Token Program
+    ).then(([address]) => address);
+  }
+  
+  function createTransferInstruction(source, destination, owner, amount, multiSigners, programId) {
+    const keys = [
+      { pubkey: source, isSigner: false, isWritable: true },
+      { pubkey: destination, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: true, isWritable: false },
+    ];
+    
+    const data = Buffer.alloc(9);
+    data.writeUInt8(3, 0); // Transfer instruction
+    data.writeBigUInt64LE(BigInt(amount), 1);
+    
+    return new solanaWeb3.TransactionInstruction({ keys, programId, data });
+  }
+</script>
