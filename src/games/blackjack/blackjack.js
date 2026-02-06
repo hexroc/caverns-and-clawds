@@ -2,20 +2,22 @@
  * Dragon's Blackjack - Core Game Logic
  * 
  * Handles game state, rules enforcement, and payout calculations.
+ * Now integrated with USDC economy and treasury tax system.
  */
 
 const crypto = require('crypto');
 const deck = require('./deck');
 const dragon = require('./dragon-dealer');
+const { GamblingService, GAMBLING_CONFIG } = require('../../gambling-service');
 
 // Game configuration
 const CONFIG = {
-  MIN_BET: 10,
-  MAX_BET: 10000,
-  BLACKJACK_PAYOUT: 1.5,    // 3:2 payout
-  INSURANCE_PAYOUT: 2,       // 2:1 payout
-  NUM_DECKS: 6,              // Standard casino shoe
-  DEALER_STAND_ON: 17,       // Dealer stands on 17+
+  MIN_BET: GAMBLING_CONFIG.MIN_BET,     // 0.001 USDC
+  MAX_BET: GAMBLING_CONFIG.MAX_BET,     // 0.05 USDC
+  BLACKJACK_PAYOUT: 1.5,                // 3:2 payout
+  INSURANCE_PAYOUT: 2,                  // 2:1 payout
+  NUM_DECKS: 6,                         // Standard casino shoe
+  DEALER_STAND_ON: 17,                  // Dealer stands on 17+
 };
 
 // Game states
@@ -46,16 +48,18 @@ function initBlackjackDB(db) {
     CREATE TABLE IF NOT EXISTS blackjack_sessions (
       id TEXT PRIMARY KEY,
       player_id TEXT NOT NULL,
-      bet_amount INTEGER NOT NULL,
+      character_id TEXT NOT NULL,
+      participant_type TEXT DEFAULT 'player',
+      bet_amount REAL NOT NULL,
       player_hands TEXT DEFAULT '[]',
       dealer_hand TEXT DEFAULT '[]',
       deck_state TEXT,
       current_hand_index INTEGER DEFAULT 0,
       status TEXT DEFAULT 'betting',
       result TEXT,
-      payout INTEGER DEFAULT 0,
+      payout REAL DEFAULT 0,
       dealer_dialog TEXT,
-      insurance_bet INTEGER DEFAULT 0,
+      insurance_bet REAL DEFAULT 0,
       created_at TEXT DEFAULT CURRENT_TIMESTAMP,
       completed_at TEXT
     )
@@ -67,9 +71,9 @@ function initBlackjackDB(db) {
       games_played INTEGER DEFAULT 0,
       games_won INTEGER DEFAULT 0,
       blackjacks INTEGER DEFAULT 0,
-      total_wagered INTEGER DEFAULT 0,
-      total_won INTEGER DEFAULT 0,
-      biggest_win INTEGER DEFAULT 0,
+      total_wagered REAL DEFAULT 0,
+      total_won REAL DEFAULT 0,
+      biggest_win REAL DEFAULT 0,
       longest_streak INTEGER DEFAULT 0,
       current_streak INTEGER DEFAULT 0
     )
@@ -82,41 +86,36 @@ function initBlackjackDB(db) {
  * BlackjackGame class - manages a single game session
  */
 class BlackjackGame {
-  constructor(db) {
+  constructor(db, gamblingService = null) {
     this.db = db;
+    this.gambling = gamblingService || new GamblingService(db);
   }
 
   /**
    * Start a new game
+   * @param {string} characterId - Character ID (player) or system wallet ID (NPC)
+   * @param {number} betAmount - Bet in USDC
+   * @param {string} participantType - 'player' or 'npc'
    */
-  startGame(playerId, betAmount) {
+  startGame(characterId, betAmount, participantType = 'player') {
     // Validate bet
-    if (betAmount < CONFIG.MIN_BET) {
-      return { success: false, error: `Minimum bet is ${CONFIG.MIN_BET} gold` };
-    }
-    if (betAmount > CONFIG.MAX_BET) {
-      return { success: false, error: `Maximum bet is ${CONFIG.MAX_BET} gold` };
+    const validation = GamblingService.validateBetAmount(betAmount);
+    if (!validation.valid) {
+      return { success: false, error: validation.error };
     }
 
-    // Check player balance
-    const player = this.db.prepare(
-      'SELECT * FROM tavern_players WHERE id = ?'
-    ).get(playerId);
-
-    if (!player) {
-      return { success: false, error: 'Player not found. Register at the tavern first.' };
-    }
-
-    if (player.balance_lamports < betAmount) {
-      return { success: false, error: 'Insufficient balance' };
+    // Get participant info
+    const participant = this.gambling.getParticipantInfo(characterId, participantType);
+    if (!participant) {
+      return { success: false, error: `${participantType === 'player' ? 'Character' : 'NPC'} not found` };
     }
 
     // Check for existing active game
     const existingGame = this.db.prepare(`
       SELECT * FROM blackjack_sessions 
-      WHERE player_id = ? AND status NOT IN ('complete')
+      WHERE character_id = ? AND status NOT IN ('complete')
       ORDER BY created_at DESC LIMIT 1
-    `).get(playerId);
+    `).get(characterId);
 
     if (existingGame) {
       return { 
@@ -126,10 +125,21 @@ class BlackjackGame {
       };
     }
 
-    // Deduct bet from balance
-    this.db.prepare(`
-      UPDATE tavern_players SET balance_lamports = balance_lamports - ? WHERE id = ?
-    `).run(betAmount, playerId);
+    // Create game ID first (needed for gambling service)
+    const gameId = crypto.randomUUID();
+
+    // Place bet through gambling service (includes 1% tax)
+    const betResult = this.gambling.placeBet(
+      characterId,
+      participantType,
+      betAmount,
+      'blackjack',
+      gameId
+    );
+
+    if (!betResult.success) {
+      return betResult; // Return error from gambling service
+    }
 
     // Create fresh shuffled shoe
     const shoe = deck.shuffle(deck.createShoe(CONFIG.NUM_DECKS));
@@ -157,7 +167,6 @@ class BlackjackGame {
     currentDeck = draw.deck;
 
     // Create game session
-    const gameId = crypto.randomUUID();
     const playerHands = [{ cards: playerCards, bet: betAmount, status: 'active' }];
     
     // Get dealer greeting and optional bet reaction
@@ -171,12 +180,14 @@ class BlackjackGame {
 
     this.db.prepare(`
       INSERT INTO blackjack_sessions (
-        id, player_id, bet_amount, player_hands, dealer_hand, 
+        id, player_id, character_id, participant_type, bet_amount, player_hands, dealer_hand, 
         deck_state, status, dealer_dialog
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `).run(
       gameId,
-      playerId,
+      characterId, // player_id kept for backward compat, now stores character_id
+      characterId,
+      participantType,
       betAmount,
       JSON.stringify(playerHands),
       JSON.stringify(dealerCards),
@@ -208,10 +219,14 @@ class BlackjackGame {
     }
 
     // Get current state
-    const game = this.getGameState(gameId, playerId);
+    const game = this.getGameState(gameId, characterId);
     return {
       success: true,
       gameId,
+      betAmount,
+      taxPaid: betResult.taxAmount,
+      totalCost: betResult.totalCost,
+      newBalance: betResult.newBalance,
       ...game
     };
   }
@@ -219,7 +234,7 @@ class BlackjackGame {
   /**
    * Get current game state
    */
-  getGameState(gameId, playerId = null) {
+  getGameState(gameId, characterId = null) {
     const session = this.db.prepare(
       'SELECT * FROM blackjack_sessions WHERE id = ?'
     ).get(gameId);
@@ -243,12 +258,11 @@ class BlackjackGame {
       
       // Can double down on first two cards
       if (currentHand.cards.length === 2) {
-        // Check if player can afford double
-        const player = this.db.prepare(
-          'SELECT balance_lamports FROM tavern_players WHERE id = ?'
-        ).get(session.player_id);
+        // Check if player can afford double (need to pay bet + tax again)
+        const balance = this.gambling.getBalance(session.character_id, session.participant_type);
+        const doubleAmount = currentHand.bet * (1 + GAMBLING_CONFIG.TREASURY_TAX_RATE);
         
-        if (player && player.balance_lamports >= currentHand.bet) {
+        if (balance >= doubleAmount) {
           actions.push('double');
         }
       }
@@ -256,11 +270,10 @@ class BlackjackGame {
       // Can split if pair and first two cards
       if (currentHand.cards.length === 2 && deck.canSplit(currentHand.cards)) {
         // Check if player can afford split
-        const player = this.db.prepare(
-          'SELECT balance_lamports FROM tavern_players WHERE id = ?'
-        ).get(session.player_id);
+        const balance = this.gambling.getBalance(session.character_id, session.participant_type);
+        const splitAmount = currentHand.bet * (1 + GAMBLING_CONFIG.TREASURY_TAX_RATE);
         
-        if (player && player.balance_lamports >= currentHand.bet) {
+        if (balance >= splitAmount) {
           actions.push('split');
         }
       }
@@ -302,10 +315,10 @@ class BlackjackGame {
   /**
    * Player hits (draw a card)
    */
-  hit(gameId, playerId) {
+  hit(gameId, characterId) {
     const session = this.db.prepare(
-      'SELECT * FROM blackjack_sessions WHERE id = ? AND player_id = ?'
-    ).get(gameId, playerId);
+      'SELECT * FROM blackjack_sessions WHERE id = ? AND character_id = ?'
+    ).get(gameId, characterId);
 
     if (!session) {
       return { success: false, error: 'Game not found' };
@@ -349,7 +362,7 @@ class BlackjackGame {
           gameId
         );
         
-        return this.getGameState(gameId, playerId);
+        return this.getGameState(gameId, characterId);
       }
       
       // All hands busted - dealer wins
@@ -363,16 +376,16 @@ class BlackjackGame {
       WHERE id = ?
     `).run(JSON.stringify(playerHands), JSON.stringify(currentDeck), dealerDialog, gameId);
 
-    return this.getGameState(gameId, playerId);
+    return this.getGameState(gameId, characterId);
   }
 
   /**
    * Player stands (end turn)
    */
-  stand(gameId, playerId) {
+  stand(gameId, characterId) {
     const session = this.db.prepare(
-      'SELECT * FROM blackjack_sessions WHERE id = ? AND player_id = ?'
-    ).get(gameId, playerId);
+      'SELECT * FROM blackjack_sessions WHERE id = ? AND character_id = ?'
+    ).get(gameId, characterId);
 
     if (!session) {
       return { success: false, error: 'Game not found' };
@@ -400,7 +413,7 @@ class BlackjackGame {
         gameId
       );
       
-      return this.getGameState(gameId, playerId);
+      return this.getGameState(gameId, characterId);
     }
 
     // All hands done - dealer's turn
@@ -418,10 +431,10 @@ class BlackjackGame {
   /**
    * Player doubles down
    */
-  double(gameId, playerId) {
+  double(gameId, characterId) {
     const session = this.db.prepare(
-      'SELECT * FROM blackjack_sessions WHERE id = ? AND player_id = ?'
-    ).get(gameId, playerId);
+      'SELECT * FROM blackjack_sessions WHERE id = ? AND character_id = ?'
+    ).get(gameId, characterId);
 
     if (!session) {
       return { success: false, error: 'Game not found' };
@@ -438,19 +451,18 @@ class BlackjackGame {
       return { success: false, error: 'Can only double on first two cards' };
     }
 
-    // Check player balance
-    const player = this.db.prepare(
-      'SELECT balance_lamports FROM tavern_players WHERE id = ?'
-    ).get(playerId);
+    // Place additional bet (same amount as original bet, with tax)
+    const betResult = this.gambling.placeBet(
+      session.character_id,
+      session.participant_type,
+      currentHand.bet,
+      'blackjack',
+      gameId
+    );
 
-    if (player.balance_lamports < currentHand.bet) {
-      return { success: false, error: 'Insufficient balance to double' };
+    if (!betResult.success) {
+      return betResult; // Insufficient balance or other error
     }
-
-    // Deduct additional bet
-    this.db.prepare(`
-      UPDATE tavern_players SET balance_lamports = balance_lamports - ? WHERE id = ?
-    `).run(currentHand.bet, playerId);
 
     // Double the bet
     currentHand.bet *= 2;
@@ -486,7 +498,7 @@ class BlackjackGame {
           gameId
         );
         
-        return this.getGameState(gameId, playerId);
+        return this.getGameState(gameId, characterId);
       }
       
       return this.completeGame(gameId, Result.PLAYER_BUST, playerHands, JSON.parse(session.dealer_hand));
@@ -512,7 +524,7 @@ class BlackjackGame {
         gameId
       );
       
-      return this.getGameState(gameId, playerId);
+      return this.getGameState(gameId, characterId);
     }
 
     // Dealer's turn
@@ -536,10 +548,10 @@ class BlackjackGame {
   /**
    * Player surrenders
    */
-  surrender(gameId, playerId) {
+  surrender(gameId, characterId) {
     const session = this.db.prepare(
-      'SELECT * FROM blackjack_sessions WHERE id = ? AND player_id = ?'
-    ).get(gameId, playerId);
+      'SELECT * FROM blackjack_sessions WHERE id = ? AND character_id = ?'
+    ).get(gameId, characterId);
 
     if (!session) {
       return { success: false, error: 'Game not found' };
@@ -556,11 +568,16 @@ class BlackjackGame {
       return { success: false, error: 'Can only surrender on initial hand' };
     }
 
-    // Return half the bet
-    const refund = Math.floor(session.bet_amount / 2);
-    this.db.prepare(`
-      UPDATE tavern_players SET balance_lamports = balance_lamports + ? WHERE id = ?
-    `).run(refund, playerId);
+    // Return half the bet (tax is NOT refunded)
+    const refund = session.bet_amount / 2;
+    
+    this.gambling.awardWinnings(
+      session.character_id,
+      session.participant_type,
+      refund,
+      'blackjack',
+      gameId
+    );
 
     return this.completeGame(gameId, Result.SURRENDER, playerHands, JSON.parse(session.dealer_hand));
   }
@@ -689,11 +706,15 @@ class BlackjackGame {
       }
     }
 
-    // Credit winnings to player
+    // Credit winnings to player via gambling service
     if (totalPayout > 0) {
-      this.db.prepare(`
-        UPDATE tavern_players SET balance_lamports = balance_lamports + ? WHERE id = ?
-      `).run(totalPayout, session.player_id);
+      this.gambling.awardWinnings(
+        session.character_id,
+        session.participant_type,
+        totalPayout,
+        'blackjack',
+        gameId
+      );
     }
 
     // Get appropriate dialog
@@ -716,19 +737,19 @@ class BlackjackGame {
     );
 
     // Update player stats
-    this.updateStats(session.player_id, result, session.bet_amount, totalPayout);
+    this.updateStats(session.character_id, result, session.bet_amount, totalPayout);
 
-    return this.getGameState(gameId, session.player_id);
+    return this.getGameState(gameId, session.character_id);
   }
 
   /**
    * Update player statistics
    */
-  updateStats(playerId, result, betAmount, payout) {
+  updateStats(characterId, result, betAmount, payout) {
     // Ensure stats row exists
     this.db.prepare(`
       INSERT OR IGNORE INTO blackjack_stats (player_id) VALUES (?)
-    `).run(playerId);
+    `).run(characterId);
 
     const isWin = [Result.PLAYER_BLACKJACK, Result.PLAYER_WIN, Result.DEALER_BUST].includes(result);
     const isBlackjack = result === Result.PLAYER_BLACKJACK;
@@ -737,7 +758,7 @@ class BlackjackGame {
     // Get current streak
     const stats = this.db.prepare(
       'SELECT current_streak, longest_streak, biggest_win FROM blackjack_stats WHERE player_id = ?'
-    ).get(playerId);
+    ).get(characterId);
 
     let newStreak = isWin ? (stats?.current_streak || 0) + 1 : 0;
     let longestStreak = Math.max(stats?.longest_streak || 0, newStreak);
@@ -769,10 +790,10 @@ class BlackjackGame {
   /**
    * Get player stats
    */
-  getStats(playerId) {
+  getStats(characterId) {
     const stats = this.db.prepare(`
       SELECT * FROM blackjack_stats WHERE player_id = ?
-    `).get(playerId);
+    `).get(characterId);
 
     if (!stats) {
       return {

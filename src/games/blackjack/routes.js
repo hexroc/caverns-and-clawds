@@ -2,9 +2,11 @@
  * Dragon's Blackjack - Express API Routes
  * 
  * Endpoints for playing blackjack in the tavern.
+ * Now integrated with USDC economy and treasury tax system.
  */
 
 const { BlackjackGame, initBlackjackDB, CONFIG } = require('./blackjack');
+const { GamblingService } = require('../../gambling-service');
 const dragon = require('./dragon-dealer');
 
 /**
@@ -18,8 +20,9 @@ function createBlackjackRoutes(db, authenticateAgent) {
   // Initialize database tables
   initBlackjackDB(db);
   
-  // Create game instance
-  const game = new BlackjackGame(db);
+  // Create gambling service and game instance
+  const gambling = new GamblingService(db);
+  const game = new BlackjackGame(db, gambling);
 
   /**
    * GET /api/tavern/blackjack
@@ -30,30 +33,38 @@ function createBlackjackRoutes(db, authenticateAgent) {
       success: true,
       game: 'Dragon\'s Blackjack',
       dealer: dragon.PYRAXIS,
+      currency: 'USDC',
       rules: {
-        minBet: CONFIG.MIN_BET,
-        maxBet: CONFIG.MAX_BET,
+        minBet: `${CONFIG.MIN_BET} USDC`,
+        maxBet: `${CONFIG.MAX_BET} USDC`,
         blackjackPayout: '3:2',
         dealerStandsOn: CONFIG.DEALER_STAND_ON,
-        decks: CONFIG.NUM_DECKS
+        decks: CONFIG.NUM_DECKS,
+        treasuryTax: '1% on all bets'
       },
       actions: ['hit', 'stand', 'double', 'split', 'surrender'],
       greeting: dragon.getDialog('greeting'),
       endpoints: {
-        start: 'POST /api/tavern/blackjack/start { bet: number }',
+        start: 'POST /api/tavern/blackjack/start { bet: number } (USDC)',
         hit: 'POST /api/tavern/blackjack/hit',
         stand: 'POST /api/tavern/blackjack/stand',
         double: 'POST /api/tavern/blackjack/double',
         surrender: 'POST /api/tavern/blackjack/surrender',
         state: 'GET /api/tavern/blackjack/state',
         stats: 'GET /api/tavern/blackjack/stats'
-      }
+      },
+      notes: [
+        'Bets are in USDC (e.g., 0.01 = 1 penny)',
+        '1% treasury tax is automatically deducted from each bet',
+        'Uses your character USDC balance',
+        'NPCs can also gamble using their system wallet balances'
+      ]
     });
   });
 
   /**
    * POST /api/tavern/blackjack/start
-   * Start a new game with a bet
+   * Start a new game with a bet (USDC)
    */
   router.post('/start', authenticateAgent, (req, res) => {
     const { bet } = req.body;
@@ -61,33 +72,26 @@ function createBlackjackRoutes(db, authenticateAgent) {
     if (!bet || typeof bet !== 'number') {
       return res.status(400).json({
         success: false,
-        error: 'Bet amount required',
-        hint: `Bet must be between ${CONFIG.MIN_BET} and ${CONFIG.MAX_BET} gold`
+        error: 'Bet amount required (in USDC)',
+        hint: `Bet must be between ${CONFIG.MIN_BET} and ${CONFIG.MAX_BET} USDC`,
+        example: { bet: 0.01 }
       });
     }
 
-    // Get player's tavern ID
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    // Get player's character
+    const character = db.prepare(
+      'SELECT id, name, usdc_balance FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
+    if (!character) {
       return res.status(400).json({
         success: false,
-        error: 'Not registered at the tavern',
-        hint: 'Register with POST /api/tavern/register first'
+        error: 'No character found',
+        hint: 'Create a character first with POST /api/character/create'
       });
     }
 
-    if (!player.verified) {
-      return res.status(400).json({
-        success: false,
-        error: 'Wallet not verified',
-        hint: 'Complete wallet verification first'
-      });
-    }
-
-    const result = game.startGame(player.id, bet);
+    const result = game.startGame(character.id, bet, 'player');
     
     if (result.success) {
       res.json(result);
@@ -101,24 +105,24 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Get current game state
    */
   router.get('/state', authenticateAgent, (req, res) => {
-    // Get player's tavern ID
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    // Get player's character
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
+    if (!character) {
       return res.status(400).json({
         success: false,
-        error: 'Not registered at the tavern'
+        error: 'No character found'
       });
     }
 
     // Find active game
     const session = db.prepare(`
       SELECT id FROM blackjack_sessions 
-      WHERE player_id = ? AND status != 'complete'
+      WHERE character_id = ? AND status != 'complete'
       ORDER BY created_at DESC LIMIT 1
-    `).get(player.id);
+    `).get(character.id);
 
     if (!session) {
       return res.json({
@@ -128,7 +132,7 @@ function createBlackjackRoutes(db, authenticateAgent) {
       });
     }
 
-    const state = game.getGameState(session.id, player.id);
+    const state = game.getGameState(session.id, character.id);
     res.json(state);
   });
 
@@ -137,19 +141,19 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Draw another card
    */
   router.post('/hit', authenticateAgent, (req, res) => {
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
-      return res.status(400).json({ success: false, error: 'Not registered at the tavern' });
+    if (!character) {
+      return res.status(400).json({ success: false, error: 'No character found' });
     }
 
     const session = db.prepare(`
       SELECT id FROM blackjack_sessions 
-      WHERE player_id = ? AND status = 'player_turn'
+      WHERE character_id = ? AND status = 'player_turn'
       ORDER BY created_at DESC LIMIT 1
-    `).get(player.id);
+    `).get(character.id);
 
     if (!session) {
       return res.status(400).json({
@@ -158,7 +162,7 @@ function createBlackjackRoutes(db, authenticateAgent) {
       });
     }
 
-    const result = game.hit(session.id, player.id);
+    const result = game.hit(session.id, character.id);
     
     if (result.success) {
       res.json(result);
@@ -172,19 +176,19 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Keep current hand
    */
   router.post('/stand', authenticateAgent, (req, res) => {
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
-      return res.status(400).json({ success: false, error: 'Not registered at the tavern' });
+    if (!character) {
+      return res.status(400).json({ success: false, error: 'No character found' });
     }
 
     const session = db.prepare(`
       SELECT id FROM blackjack_sessions 
-      WHERE player_id = ? AND status = 'player_turn'
+      WHERE character_id = ? AND status = 'player_turn'
       ORDER BY created_at DESC LIMIT 1
-    `).get(player.id);
+    `).get(character.id);
 
     if (!session) {
       return res.status(400).json({
@@ -193,7 +197,7 @@ function createBlackjackRoutes(db, authenticateAgent) {
       });
     }
 
-    const result = game.stand(session.id, player.id);
+    const result = game.stand(session.id, character.id);
     
     if (result.success) {
       res.json(result);
@@ -207,19 +211,19 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Double bet and draw one card
    */
   router.post('/double', authenticateAgent, (req, res) => {
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
-      return res.status(400).json({ success: false, error: 'Not registered at the tavern' });
+    if (!character) {
+      return res.status(400).json({ success: false, error: 'No character found' });
     }
 
     const session = db.prepare(`
       SELECT id FROM blackjack_sessions 
-      WHERE player_id = ? AND status = 'player_turn'
+      WHERE character_id = ? AND status = 'player_turn'
       ORDER BY created_at DESC LIMIT 1
-    `).get(player.id);
+    `).get(character.id);
 
     if (!session) {
       return res.status(400).json({
@@ -228,7 +232,7 @@ function createBlackjackRoutes(db, authenticateAgent) {
       });
     }
 
-    const result = game.double(session.id, player.id);
+    const result = game.double(session.id, character.id);
     
     if (result.success) {
       res.json(result);
@@ -242,19 +246,19 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Give up and get half bet back
    */
   router.post('/surrender', authenticateAgent, (req, res) => {
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
-      return res.status(400).json({ success: false, error: 'Not registered at the tavern' });
+    if (!character) {
+      return res.status(400).json({ success: false, error: 'No character found' });
     }
 
     const session = db.prepare(`
       SELECT id FROM blackjack_sessions 
-      WHERE player_id = ? AND status = 'player_turn'
+      WHERE character_id = ? AND status = 'player_turn'
       ORDER BY created_at DESC LIMIT 1
-    `).get(player.id);
+    `).get(character.id);
 
     if (!session) {
       return res.status(400).json({
@@ -263,7 +267,7 @@ function createBlackjackRoutes(db, authenticateAgent) {
       });
     }
 
-    const result = game.surrender(session.id, player.id);
+    const result = game.surrender(session.id, character.id);
     
     if (result.success) {
       res.json(result);
@@ -277,15 +281,15 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Get player's blackjack statistics
    */
   router.get('/stats', authenticateAgent, (req, res) => {
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
-      return res.status(400).json({ success: false, error: 'Not registered at the tavern' });
+    if (!character) {
+      return res.status(400).json({ success: false, error: 'No character found' });
     }
 
-    const stats = game.getStats(player.id);
+    const stats = game.getStats(character.id);
     
     res.json({
       success: true,
@@ -346,12 +350,12 @@ function createBlackjackRoutes(db, authenticateAgent) {
    * Get recent games
    */
   router.get('/history', authenticateAgent, (req, res) => {
-    const player = db.prepare(
-      'SELECT * FROM tavern_players WHERE agent_id = ?'
+    const character = db.prepare(
+      'SELECT id FROM clawds WHERE agent_id = ?'
     ).get(req.user.id);
 
-    if (!player) {
-      return res.status(400).json({ success: false, error: 'Not registered at the tavern' });
+    if (!character) {
+      return res.status(400).json({ success: false, error: 'No character found' });
     }
 
     const limit = Math.min(parseInt(req.query.limit) || 10, 50);
@@ -359,10 +363,10 @@ function createBlackjackRoutes(db, authenticateAgent) {
     const history = db.prepare(`
       SELECT id, bet_amount, result, payout, created_at, completed_at
       FROM blackjack_sessions
-      WHERE player_id = ? AND status = 'complete'
+      WHERE character_id = ? AND status = 'complete'
       ORDER BY completed_at DESC
       LIMIT ?
-    `).all(player.id, limit);
+    `).all(character.id, limit);
 
     res.json({
       success: true,
