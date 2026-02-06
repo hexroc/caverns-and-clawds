@@ -36,6 +36,99 @@ function init(database, tracker) {
   return router;
 }
 
+// ============================================================================
+// COMBAT NARRATION HELPERS (match spectate.html frontend)
+// ============================================================================
+
+function narrateCombatEvent(event) {
+  const attackVerbs = ['lunges at', 'strikes toward', 'slashes at', 'thrusts toward', 'sweeps at'];
+  const hitVerbs = ['connects solidly with', 'tears into', 'carves through', 'crashes into', 'rips through'];
+  const missVerbs = ['swings wide of', 'misjudges the distance to', 'barely misses', 'finds only water near'];
+  
+  const rand = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  
+  switch (event.type) {
+    case 'combat_start':
+      return `⚔️ The water churns violently as enemies emerge from the murky depths!`;
+    
+    case 'combat_attack': {
+      const isPlayer = event.player === event.characterName || !isMonsterName(event.player);
+      if (isPlayer) {
+        return `⚔️ **${event.player}** ${rand(hitVerbs)} **${event.target}**, weapon biting deep! (${event.roll} vs AC ${event.ac}) **${event.damage} ${event.damageType||'damage'}** — blood clouds the water!`;
+      } else {
+        return `🩸 **${event.player}** ${rand(hitVerbs)} **${event.target}**, claws raking across shell! (${event.roll} vs AC ${event.ac}) **${event.damage} ${event.damageType||'damage'}**!`;
+      }
+    }
+    
+    case 'combat_miss': {
+      if (event.critMiss) {
+        return `🎲 **${event.player}** swings wildly, weapon tangling in drifting kelp! *Natural 1!* — **critical fumble**!`;
+      }
+      return `🛡️ **${event.player}** ${rand(missVerbs)} **${event.target}** — they slip away through the water! (${event.roll||event.totalRoll} vs AC ${event.ac})`;
+    }
+    
+    case 'combat_critical':
+      return `⚡ **CRITICAL HIT!** **${event.player}** finds a critical weak point in **${event.target}'s** defenses! **${event.damage} ${event.damageType||'damage'}** — the water shakes with the impact!`;
+    
+    case 'combat_spell': {
+      if (event.healing) {
+        return `💚 **${event.player}** channels *${event.spell||'divine energy'}* — golden light pulses through the water! **+${event.healing} HP**`;
+      }
+      if (event.damage) {
+        return `✨ **${event.player}** unleashes *${event.spell}* — arcane energy crackles through the water, slamming into **${event.target}**! **${event.damage} ${event.damageType||'arcane'} damage**!`;
+      }
+      return `✨ **${event.player}** weaves *${event.spell||'a spell'}* into being — the water shimmers with magical energy!`;
+    }
+    
+    case 'combat_death':
+      return `💀 With a final, gurgling cry, **${event.target}** collapses! Their form goes limp and sinks to the seafloor. *Defeated by ${event.killer}.*`;
+    
+    case 'combat_defeat':
+      return `☠️ **${event.player}** crumples to the sand, vision fading to black... The cold depths claim another soul.`;
+    
+    case 'combat_victory': {
+      const xp = event.xpGained ? ` *Gained **${event.xpGained} XP**!*` : '';
+      const loot = (event.materials && event.materials.length) ? ` Treasures: *${event.materials.join(', ')}*` : '';
+      return `🎉 **VICTORY!** The water clears as the last foe falls! **${event.player}** stands triumphant!${xp}${loot}`;
+    }
+    
+    case 'combat_flee':
+      return event.success 
+        ? `🏃 **${event.player}** kicks hard against the current, darting into the kelp! They slip away into the shadows!`
+        : `❌ **${event.player}** tries to retreat, but enemies block every escape route!`;
+    
+    case 'combat_end':
+      return event.result === 'defeat'
+        ? `☠️ **COMBAT OVER** — The battle ends in defeat. *${event.player}* lies motionless on the ocean floor...`
+        : `🎉 **COMBAT ENDS** — Victory! The water settles as the last enemy falls!`;
+    
+    default:
+      return event.description || `${event.type} event`;
+  }
+}
+
+function getEventIcon(type) {
+  const icons = {
+    'combat_start': '⚔️',
+    'combat_attack': '⚔️',
+    'combat_miss': '🛡️',
+    'combat_critical': '⚡',
+    'combat_spell': '✨',
+    'combat_death': '💀',
+    'combat_defeat': '☠️',
+    'combat_victory': '🎉',
+    'combat_flee': '🏃',
+    'combat_end': '⚔️'
+  };
+  return icons[type] || '📋';
+}
+
+function isMonsterName(name) {
+  if (!name) return false;
+  const keywords = ['Giant Crab','King Crab','Kelp Lurker','Reef Shark','Fish Swarm','Drowned Sailor','Barnacle Horror','Sea Wraith','Moray Terror','Treasure Mimic','Anchor Wight','Ghost Captain','Magma Crab','Loan Shark'];
+  return keywords.some(m => name.includes(m));
+}
+
 /**
  * GET /api/spectate/market-prices
  * Get current material prices for ticker
@@ -229,17 +322,39 @@ router.get('/activity/:userId', (req, res) => {
     // Get activities from tracker (if available)
     let activities = [];
     if (activityTracker && typeof activityTracker.getActivitiesForPlayer === 'function') {
-      activities = activityTracker.getActivitiesForPlayer(agentName, limit);
+      activities = activityTracker.getActivitiesForPlayer(agentName, limit * 2); // Get more to filter
     } else {
       // Fallback: get from global activity feed
       const allActivities = activityTracker?.getRecentActivities?.(200) || [];
-      activities = allActivities.filter(a => a.player === agentName).slice(0, limit);
+      activities = allActivities.filter(a => a.player === agentName);
     }
+    
+    // Get combat events and merge with narration
+    const combatEvents = activityTracker.getCombatLog(agentName, limit);
+    
+    // Convert combat events to activity format with narration
+    const combatActivities = combatEvents.map(event => {
+      const narration = narrateCombatEvent(event);
+      return {
+        id: event.id,
+        timestamp: event.timestamp,
+        icon: getEventIcon(event.type),
+        player: event.player || agentName,
+        action: narration,
+        type: 'combat',
+        combatEvent: true
+      };
+    });
+    
+    // Merge and sort by timestamp
+    const merged = [...activities, ...combatActivities]
+      .sort((a, b) => b.timestamp - a.timestamp)
+      .slice(0, limit);
     
     res.json({
       success: true,
       agent: agentName,
-      activities
+      activities: merged
     });
   } catch (err) {
     console.error('Get activity error:', err);
