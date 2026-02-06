@@ -807,22 +807,56 @@ class EncounterManager {
       skillCheck
     };
     
-    // STEALTH - Sneak past encounters
+    // STEALTH - Sneak past encounters (contested check vs monster Perception)
     if (skillName === 'stealth') {
       const encounterRoll = Math.random();
-      const modifiedChance = skillCheck.success ? table.encounterChance * 0.3 : table.encounterChance * 1.5;
       
-      if (encounterRoll < modifiedChance) {
-        const encounter = this._triggerEncounter(characterId, zoneId, table);
-        encounter.skillCheck = skillCheck;
-        if (!skillCheck.success) {
-          encounter.stealthFailed = true;
-          encounter.message = `${skillCheck.narrative}\n⚠️ Your noise attracted enemies!`;
+      // Check if we encounter anything
+      if (encounterRoll < table.encounterChance) {
+        // Pick what we would have encountered
+        const entry = this._weightedRandom(table.table);
+        const monsterData = MONSTERS[entry.monsterId];
+        
+        if (monsterData) {
+          // CONTESTED CHECK: Player Stealth vs Monster Perception
+          const monsterWisMod = Math.floor((monsterData.stats.wis - 10) / 2);
+          
+          // Monster makes Perception check (d20 + WIS mod)
+          // OR use passive Perception (10 + WIS mod) if they're not actively searching
+          const usePassivePerception = Math.random() < 0.5; // 50% chance of passive vs active
+          let monsterPerception;
+          
+          if (usePassivePerception) {
+            // Passive Perception = 10 + WIS mod
+            monsterPerception = 10 + monsterWisMod;
+          } else {
+            // Active Perception check: d20 + WIS mod
+            const perceptionRoll = Math.floor(Math.random() * 20) + 1;
+            monsterPerception = perceptionRoll + monsterWisMod;
+          }
+          
+          // Compare: Stealth vs Perception
+          if (skillCheck.total >= monsterPerception) {
+            // SUCCESS! Snuck past completely
+            result.message = `${skillCheck.narrative}\n`;
+            result.message += `\n🦀 You spot **${monsterData.name}** ahead (Perception: ${monsterPerception})`;
+            result.message += `\n✅ Your Stealth (${skillCheck.total}) beats their awareness! You slip past unnoticed.`;
+            return result;
+          } else {
+            // FAILURE! They spot you, combat begins
+            const encounter = this._triggerEncounter(characterId, zoneId, table);
+            encounter.skillCheck = skillCheck;
+            encounter.monsterPerception = monsterPerception;
+            encounter.message = `${skillCheck.narrative}\n`;
+            encounter.message += `\n🦀 A **${monsterData.name}** notices you! (Perception: ${monsterPerception} vs your Stealth: ${skillCheck.total})`;
+            encounter.message += `\n⚔️ Roll initiative!`;
+            return encounter;
+          }
         }
-        return encounter;
       }
       
-      result.message = `${skillCheck.narrative}\n${skillCheck.success ? '✅ You successfully avoided encounters!' : '⚠️ You made some noise but got lucky.'}`;
+      // No encounter - stealth check was just practice
+      result.message = `${skillCheck.narrative}\nYou move stealthily through ${table.name}, ready to hide if danger appears.`;
       return result;
     }
     
