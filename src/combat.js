@@ -12,6 +12,7 @@ const sneakAttack = require('./combat/sneak-attack');
 const damageSystem = require('./combat/damage');
 const reactions = require('./combat/reactions');
 const conditions = require('./combat/conditions');
+const classFeatures = require('./class-features');
 
 // ============================================================================
 // RANGE BANDS & POSITIONING
@@ -846,6 +847,20 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
     attackBonus = Math.max(strMod, dexMod) + proficiency;
     // Apply magic weapon bonus if any
     attackBonus += (attacker.weaponBonus || 0);
+    
+    // Apply Fighting Style bonuses (Fighter/Paladin)
+    if (attacker.fightingStyle) {
+      const styleResult = classFeatures.fighter.applyFightingStyle(
+        attacker,
+        attacker.fightingStyle,
+        { weapon: attacker.weapon }
+      );
+      if (styleResult.active && styleResult.bonuses.attackBonus) {
+        attackBonus += styleResult.bonuses.attackBonus;
+      }
+      // Store for later damage application
+      attacker._styleBonus = styleResult.bonuses;
+    }
   } else {
     attackBonus = attacker.attackBonus || 0;
   }
@@ -884,6 +899,11 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
       damageMod = Math.max(strMod, dexMod);
       // Apply magic weapon bonus to damage
       damageMod += (attacker.weaponBonus || 0);
+      
+      // Apply Fighting Style damage bonuses (Dueling, etc.)
+      if (attacker._styleBonus && attacker._styleBonus.damageBonus) {
+        damageMod += attacker._styleBonus.damageBonus;
+      }
     }
     
     damage = damageResult.total + damageMod;
@@ -911,6 +931,26 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
       if (sneakAttackResult.applied) {
         damage = sneakAttackResult.totalDamage;
         sneakAttack.markSneakAttackUsed(attacker);
+      }
+    }
+    
+    // Check for Divine Smite (Paladin)
+    let divineSmiteResult = null;
+    if (attacker.class?.toLowerCase() === 'paladin' && options.divineSmite) {
+      const canSmite = classFeatures.paladin.canDivineSmite(attacker);
+      if (canSmite.can) {
+        const smiteLevel = options.divineSmiteLevel || canSmite.lowestSlot;
+        divineSmiteResult = classFeatures.paladin.divineSmite(
+          smiteLevel,
+          defender.type || 'normal'
+        );
+        if (divineSmiteResult.success) {
+          damage += divineSmiteResult.damage;
+          // Consume spell slot
+          if (attacker.spellSlots && attacker.spellSlots[smiteLevel]) {
+            attacker.spellSlots[smiteLevel].current -= 1;
+          }
+        }
       }
     }
     
@@ -955,6 +995,7 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
     damageType: attacker.damagetype || 'slashing',
     shieldUsed,
     sneakAttack: sneakAttackResult,
+    divineSmite: divineSmiteResult,
     conditionMods,
     autoCrit
   };
@@ -2349,6 +2390,34 @@ function longRest(character) {
     );
   }
   
+  // Restore class features (long rest)
+  const charClass = character.class?.toLowerCase() || character.class_name?.toLowerCase();
+  
+  if (charClass === 'fighter') {
+    classFeatures.fighter.restoreSecondWind(character);
+    classFeatures.fighter.restoreActionSurge(character);
+  }
+  
+  if (charClass === 'paladin') {
+    classFeatures.paladin.restoreLayOnHands(character);
+    classFeatures.paladin.restoreDivineSense(character);
+  }
+  
+  if (charClass === 'bard') {
+    classFeatures.bard.restoreBardicInspiration(character, 'long');
+  }
+  
+  if (charClass === 'wizard') {
+    classFeatures.wizard.restoreArcaneRecovery(character);
+  }
+  
+  if (charClass === 'cleric') {
+    classFeatures.cleric.restoreChannelDivinity(character);
+  }
+  
+  // Reset reactions
+  character.reactionUsed = false;
+  
   return results;
 }
 
@@ -2370,6 +2439,26 @@ function shortRest(character, hitDiceSpent = 1) {
   character.currentHp = Math.min(character.maxHp || character.stats?.maxHp || 20, 
                                   character.currentHp + hpRestored);
   const actualHealing = character.currentHp - oldHp;
+  
+  // Restore class features (short rest)
+  const charClass = character.class?.toLowerCase() || character.class_name?.toLowerCase();
+  
+  if (charClass === 'fighter') {
+    classFeatures.fighter.restoreSecondWind(character);
+    classFeatures.fighter.restoreActionSurge(character);
+  }
+  
+  if (charClass === 'cleric') {
+    classFeatures.cleric.restoreChannelDivinity(character);
+  }
+  
+  if (charClass === 'bard' && character.level >= 5) {
+    // Font of Inspiration: recover on short rest at level 5+
+    classFeatures.bard.restoreBardicInspiration(character, 'short');
+  }
+  
+  // Reset reactions
+  character.reactionUsed = false;
   
   return {
     hitDiceSpent,
