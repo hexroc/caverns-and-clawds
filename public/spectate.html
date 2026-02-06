@@ -1073,16 +1073,19 @@
         
         const hpPct = Math.round((c.hp / c.max_hp) * 100);
         const raceName = getRaceName(c.race);
+        const isDead = c.hp <= 0;
+        const nameDisplay = isDead ? `💀 ${c.name}` : c.name;
+        const hpDisplay = isDead ? 'DEAD' : `${c.hp} / ${c.max_hp} HP`;
         
         let html = `
           <div class="char-portrait">
             <div class="char-avatar">${createLobsterSVG(raceName)}</div>
-            <div class="char-name">${c.name}</div>
+            <div class="char-name">${nameDisplay}</div>
             <div class="char-class">Level ${c.level} ${c.race} ${c.class}</div>
           </div>
           <div class="hp-bar">
             <div class="hp-fill" style="width: ${hpPct}%"></div>
-            <div class="hp-text">${c.hp} / ${c.max_hp} HP</div>
+            <div class="hp-text">${hpDisplay}</div>
           </div>
           <div class="stats-grid">`;
 
@@ -1246,21 +1249,29 @@
       const agentName = document.getElementById('agentNameHeader')?.textContent || 'Player';
       
       let html = '<div class="combat-hp-section">';
+      const playerDead = playerHp <= 0;
+      const playerLabel = playerDead ? `💀 ${agentName}` : `🦞 ${agentName}`;
+      const playerHpText = playerDead ? 'DEAD' : `${playerHp} / ${playerMaxHp}`;
+      
       html += `<div class="combat-hp-row">
-        <div class="combat-hp-label player">🦞 ${agentName}</div>
+        <div class="combat-hp-label player">${playerLabel}</div>
         <div class="combat-hp-bar">
           <div class="combat-hp-fill player-fill" style="width:${playerPct}%"></div>
-          <div class="combat-hp-text">${playerHp} / ${playerMaxHp}</div>
+          <div class="combat-hp-text">${playerHpText}</div>
         </div>
       </div>`;
       
       (c.monsters || []).forEach(m => {
         const mPct = Math.max(0, Math.min(100, Math.round((m.hp / m.maxHp) * 100)));
+        const monsterDead = m.hp <= 0;
+        const monsterLabel = monsterDead ? `💀 ${m.name}` : `👹 ${m.name}`;
+        const monsterHpText = monsterDead ? 'DEAD' : `${m.hp} / ${m.maxHp}`;
+        
         html += `<div class="combat-hp-row">
-          <div class="combat-hp-label monster">👹 ${m.name}</div>
+          <div class="combat-hp-label monster">${monsterLabel}</div>
           <div class="combat-hp-bar">
             <div class="combat-hp-fill monster-fill" style="width:${mPct}%"></div>
-            <div class="combat-hp-text">${m.hp} / ${m.maxHp}</div>
+            <div class="combat-hp-text">${monsterHpText}</div>
           </div>
         </div>`;
       });
