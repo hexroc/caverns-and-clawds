@@ -471,34 +471,95 @@ Combat is **turn-based**. The flow is:
 4. **Natural 20:** Critical hit! Double damage dice
 5. **Natural 1:** Critical miss! Always fails
 
-### Monster Tiers
+### Monster Zones & Encounters
 
-The game features 20+ monsters across 5 difficulty tiers:
+The game features **21 unique monsters** across **3 adventure zones**:
 
-#### Tier 1: Minions (CR 1/8-1/4)
-- **HP:** 5-13 | **XP:** 25-50
-- **Examples:** Giant Rat, Kobold, Skeleton, Goblin
-- **Strategy:** Easy kills for new characters. Good for learning combat.
+#### 🌊 Kelp Forest (Starter Zone - CR 1/8 to 2)
+- **Encounter Chance:** 35% | **Flee Chance:** 70%
+- **Monsters:**
+  - Giant Crab (CR 1/8) - Basic melee attacker
+  - Kelp Lurker (CR 1/4) - Grapple attacks
+  - Hostile Fish Swarm (CR 1/2) - Resistant to weapons, weakens below half HP
+  - Reef Shark (CR 1/2) - Fast predator
+- **Boss:** King Crab (CR 2) - High AC, powerful claws
 
-#### Tier 2: Soldiers (CR 1/2-1)
-- **HP:** 11-30 | **XP:** 50-200
-- **Examples:** Orc, Zombie, Hobgoblin, Giant Spider
-- **Strategy:** Moderate threat. Watch for poison (Giant Spider).
+#### ⚓ Shipwreck Graveyard (Mid Zone - CR 1/2 to 4)
+- **Encounter Chance:** 45% | **Flee Chance:** 50%
+- **Monsters:**
+  - Drowned Sailor (CR 1/2) - Undead, spawns in groups
+  - Barnacle Horror (CR 1) - Undead construct
+  - Sea Wraith (CR 1) - Incorporeal, resistant to physical damage
+  - Moray Terror (CR 2) - High damage melee
+  - Treasure Mimic (CR 2) - Ambush predator
+  - Anchor Wight (CR 3) - Undead warrior
+- **Boss:** Ghost Captain (CR 4) - **Horrifying Visage** AOE frighten, resistant to physical damage
 
-#### Tier 3: Elites (CR 1-3)
-- **HP:** 22-76 | **XP:** 200-700
-- **Examples:** Ogre, Ghoul, Bugbear, Minotaur
-- **Strategy:** Dangerous! Ghouls can paralyze. Minotaurs have charge attacks.
+#### 🔥 Thermal Vents (High Zone - CR 1/4 to 3)
+- **Encounter Chance:** 50% | **Flee Chance:** 40%
+- **Monsters:**
+  - Magma Crab (CR 3) - Fire damage, spawns in groups
+  - Fish Swarm (CR 1/4) - See Kelp Forest
+  - Kelp Lurker (CR 1/4) - See Kelp Forest
+- **Boss:** TBD (Currently Magma Crab placeholder)
 
-#### Tier 4: Champions (CR 3-6)
-- **HP:** 59-110 | **XP:** 700-2300
-- **Examples:** Owlbear, Troll, Medusa, Basilisk
-- **Strategy:** High HP, multiattacks. Trolls regenerate! Medusa can petrify.
+### Monster AI & Abilities
 
-#### Tier 5: Bosses (CR 7-10)
-- **HP:** 126-172 | **XP:** 2900-5900
-- **Examples:** Young Dragon, Mind Flayer, Death Knight, Beholder
-- **Strategy:** Boss fights. Bring potions. Dragons have breath weapons!
+**Monsters are intelligent!** They use tactical AI and have unique abilities:
+
+#### Tactical Attack Selection
+- **Spellcasters** (Voltaic Eel) use spells at range, melee up close
+- **Ranged attackers** keep distance and use ranged attacks
+- **Melee monsters** close to melee range
+- Monsters with **multiple attacks** choose the best one for the situation
+- **Spell slots:** Spellcasting monsters can run out of spells!
+
+#### Resistances & Immunities
+Many monsters have damage resistances or immunities:
+
+**Ghost Captain:**
+- **Resistant:** acid, fire, lightning, thunder, bludgeoning, piercing, slashing (takes half damage)
+- **Immune:** cold, necrotic, poison
+
+**Swarms (Razorfin Swarm):**
+- **Resistant:** bludgeoning, piercing, slashing (takes half damage)
+- **Immune:** charm, frighten, grapple, paralysis, prone, stun
+
+**Voltaic Eel:**
+- **Immune:** lightning damage
+
+When you hit a resistant monster: `⚔️ You hit Ghost Captain for 8 damage! (Resistant to slashing: 16 → 8)`
+
+When you hit an immune monster: `⚡ Lightning Bolt hits Voltaic Eel for 0 damage! (IMMUNE to lightning!)`
+
+#### Special Abilities
+
+**👻 Ghost Captain - Horrifying Visage:**
+- AOE frighten attack (30ft range)
+- WIS save DC 13 or **frightened**
+- Frightened = disadvantage on attacks and checks while you can see the ghost
+
+**🐍 Kelp Lurker - Grapple:**
+- Constrict attack includes STR save
+- Failed save = **grappled** (speed reduced to 0)
+- Must use action to escape
+
+**🐟 Razorfin Swarm - Weakening:**
+- Below half HP: damage output halves
+- Message: "The swarm is thinning! Its attacks are growing weaker..."
+- Makes swarms easier to finish off
+
+**⚡ Voltaic Eel - Lightning Bolt:**
+- Save-based spell attack (DEX save DC 13)
+- 3d6 lightning damage (half on successful save)
+- Prefers to stay at range and cast spells
+
+**Strategy Tips:**
+- Use **radiant/force damage** against ghosts (they resist physical)
+- **Magic damage** bypasses most resistances
+- **Fire/lightning** spells are effective against most enemies
+- Fight **swarms** with AOE or wait them out (they weaken)
+- **Save your spell slots** for tough fights
 
 ### Class Features in Combat
 
