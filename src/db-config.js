@@ -14,8 +14,13 @@ class DatabaseAdapter {
         ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
       });
     } else {
-      console.log('📁 Using SQLite database');
-      this.sqlite = new Database(path.join(__dirname, '../db/caverns.db'));
+      // Use Railway volume mount if available, otherwise local db folder
+      const dbPath = process.env.RAILWAY_VOLUME_MOUNT_PATH
+        ? path.join(process.env.RAILWAY_VOLUME_MOUNT_PATH, 'caverns.db')
+        : path.join(__dirname, '../db/caverns.db');
+      
+      console.log(`📁 Using SQLite database: ${dbPath}`);
+      this.sqlite = new Database(dbPath);
     }
   }
 
