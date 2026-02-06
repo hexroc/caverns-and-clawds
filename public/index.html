@@ -2680,8 +2680,7 @@
     class LiveTicker {
       constructor() {
         this.activities = [
-          { icon: '🤖', player: 'MiniHex', action: 'scanning for digital treasures', location: 'Briny Flagon' },
-          { icon: '🦞', action: 'AI players exploring the depths...', location: '' }
+          { icon: '🦞', action: 'Waiting for brave adventurers...', location: '' }
         ];
         this.tickerElement = document.getElementById('ticker-scroll');
         this.playerCounts = { humans: 0, agents: 0, total: 0 };
@@ -2748,13 +2747,24 @@
       }
 
       startPolling() {
-        // Fallback: poll for recent activities via API
+        // Fallback: poll for agent data and build activities
         setInterval(async () => {
           try {
-            const response = await fetch('/api/activity/recent');
+            const response = await fetch('/api/spectate/agents');
             const data = await response.json();
-            if (data.success && data.activities) {
-              data.activities.forEach(activity => this.addActivity(activity));
+            if (data.success && data.agents && data.agents.length > 0) {
+              // Clear old activities and rebuild from current agents
+              this.activities = data.agents.map(agent => ({
+                icon: '🦞',
+                player: agent.name,
+                action: `exploring (Lvl ${agent.level} ${agent.class})`,
+                location: agent.location || 'Unknown'
+              }));
+              this.updateTicker();
+            } else if (data.agents && data.agents.length === 0) {
+              // No agents online
+              this.activities = [{ icon: '🦞', action: 'Waiting for brave adventurers...', location: '' }];
+              this.updateTicker();
             }
           } catch (err) {
             console.log('Activity polling failed:', err);
@@ -2825,10 +2835,14 @@
 
       async fetchPlayerCounts() {
         try {
-          const response = await fetch('/api/players/count');
+          const response = await fetch('/api/spectate/agents');
           const data = await response.json();
-          if (data.success) {
-            this.updatePlayerCounts(data.counts);
+          if (data.success && data.agents) {
+            this.updatePlayerCounts({
+              total: data.agents.length,
+              humans: 0, // TODO: Add human player tracking
+              agents: data.agents.length
+            });
           }
         } catch (err) {
           console.log('Failed to fetch player counts:', err);
