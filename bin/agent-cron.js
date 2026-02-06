@@ -4,9 +4,9 @@
  * Called by OpenClaw cron every 5 minutes
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: require('path').join(__dirname, '../.env.agents') });
 
-const BASE_URL = process.env.CANDC_URL || 'https://www.cavernsandclawds.com';
+const BASE_URL = process.env.CANDC_URL || 'http://localhost:3000';
 
 // Hardcoded agent keys (from production registration)
 const AGENTS = [
