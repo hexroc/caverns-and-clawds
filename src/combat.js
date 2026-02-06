@@ -1165,12 +1165,69 @@ const ACTIONS = {
     const spellName = options.spell || 'magic_missile';
     const targetIndex = options.targetIndex || 0;
     
+    // Try cantrip system first
+    try {
+      const { castCantrip, getCantrip } = require('./spells/cantrips');
+      const cantrip = getCantrip(spellName);
+      
+      if (cantrip) {
+        // Use new cantrip system
+        const target = enemies[targetIndex];
+        
+        // Handle utility cantrips (self-targeting)
+        if (cantrip.range === 0 || !cantrip.baseDamage) {
+          const cantripResult = castCantrip(spellName, character, target || character, options);
+          return {
+            success: cantripResult.success,
+            action: 'cast_spell',
+            spell: spellName,
+            ...cantripResult
+          };
+        }
+        
+        // Validate target exists for damage cantrips
+        if (!target || target.currentHp <= 0) {
+          return { success: false, error: 'Invalid target' };
+        }
+        
+        // Range validation
+        const characterPos = character.position || { rangeBand: RANGE_BANDS.MELEE };
+        const targetPos = target.position || { rangeBand: RANGE_BANDS.MELEE };
+        
+        if (!validateRange(characterPos, targetPos, cantrip.range)) {
+          return {
+            success: false,
+            error: `Target out of spell range! ${targetPos.rangeBand} is beyond ${cantrip.range} ft range of ${spellName}`,
+            currentRange: characterPos.rangeBand,
+            targetRange: targetPos.rangeBand,
+            spellRange: cantrip.range
+          };
+        }
+        
+        // Cast the cantrip
+        const cantripResult = castCantrip(spellName, character, target, options);
+        
+        return {
+          success: cantripResult.success,
+          action: 'cast_spell',
+          spell: spellName,
+          target: target.name,
+          targetIndex,
+          ...cantripResult
+        };
+      }
+    } catch (err) {
+      // Cantrip system not available or error, fall through to legacy system
+      console.log('Cantrip system error:', err.message);
+    }
+    
+    // Fallback to legacy spell system
     // Check if character has spells
     if (!character.stats?.spells || character.stats.spells.length === 0) {
       return { success: false, error: 'No spells available' };
     }
     
-    // Simple spell effects with ranges
+    // Simple spell effects with ranges (legacy)
     const spells = {
       magic_missile: { damage: '3d4+3', auto: true, type: 'force', range: 120 },
       fire_bolt: { damage: '1d10', attackRoll: true, type: 'fire', range: 120 },
