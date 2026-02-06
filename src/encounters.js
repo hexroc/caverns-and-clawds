@@ -3164,7 +3164,26 @@ class EncounterManager {
       return meleeAttacks[Math.floor(Math.random() * meleeAttacks.length)];
     }
     
-    // Fallback - use first attack
+    // Fallback - use first available attack (prefer non-spell if out of slots)
+    const nonSpellAttacks = template.attacks.filter(a => a.type !== 'spell');
+    if (nonSpellAttacks.length > 0) {
+      return nonSpellAttacks[0];
+    }
+    
+    // Ultimate fallback - improvised attack for spellcasters out of slots
+    if (template.spellcaster && template.attacks.every(a => a.type === 'spell')) {
+      console.log(`⚠️ ${monster.name} out of spells, using improvised attack`);
+      return {
+        name: 'Desperate Strike',
+        type: 'melee',
+        hit: 2,
+        damage: '1d4',
+        damageType: 'bludgeoning',
+        range: 1
+      };
+    }
+    
+    // Last resort - use first attack
     return template.attacks[0];
   }
   
