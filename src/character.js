@@ -426,7 +426,7 @@ const ITEMS = {
     rarity: 'common',
     description: 'A bubbling red liquid that smells of brine. Heals 2d4+2 HP.',
     effect: { type: 'heal', dice: '2d4+2' },
-    value: 0.05 
+    value: 0.01 
   },
   potion_greater_healing: { 
     name: 'Potion of Greater Healing', 
@@ -434,7 +434,7 @@ const ITEMS = {
     rarity: 'uncommon',
     description: 'A thick crimson elixir. Heals 4d4+4 HP.',
     effect: { type: 'heal', dice: '4d4+4' },
-    value: 0.15 
+    value: 0.03 
   },
   potion_superior_healing: { 
     name: 'Potion of Superior Healing', 
@@ -442,7 +442,7 @@ const ITEMS = {
     rarity: 'rare',
     description: 'A glowing red potion with golden flecks. Heals 8d4+8 HP.',
     effect: { type: 'heal', dice: '8d4+8' },
-    value: 0.5 
+    value: 0.1 
   },
   antitoxin: { 
     name: 'Antitoxin', 
@@ -450,7 +450,7 @@ const ITEMS = {
     rarity: 'common',
     description: 'Grants advantage on saves vs poison for 1 hour.',
     effect: { type: 'buff', condition: 'poison_advantage', duration: '1 hour' },
-    value: 0.05 
+    value: 0.01 
   },
   oil_of_slipperiness: {
     name: 'Oil of Slipperiness',
@@ -458,7 +458,7 @@ const ITEMS = {
     rarity: 'uncommon',
     description: 'Coat yourself to gain Freedom of Movement for 8 hours.',
     effect: { type: 'buff', condition: 'freedom_of_movement', duration: '8 hours' },
-    value: 0.2
+    value: 0.04
   },
   potion_land_breathing: {
     name: 'Potion of Land Breathing',
@@ -466,7 +466,7 @@ const ITEMS = {
     rarity: 'uncommon',
     description: 'Survive in the cursed dry air above the waves for 1 hour. Essential for shipwreck exploration.',
     effect: { type: 'buff', condition: 'land_breathing', duration: '1 hour' },
-    value: 0.18
+    value: 0.036
   },
   
   // === SCROLLS ===
@@ -477,7 +477,7 @@ const ITEMS = {
     spellLevel: 1,
     description: 'A single-use spell scroll. Heals 1d8 + spellcasting mod HP.',
     spell: 'cure_wounds',
-    value: 0.025
+    value: 0.005
   },
   scroll_shield: {
     name: 'Scroll of Shield',
@@ -486,7 +486,7 @@ const ITEMS = {
     spellLevel: 1,
     description: '+5 AC as a reaction until your next turn.',
     spell: 'shield',
-    value: 0.025
+    value: 0.005
   },
   scroll_magic_missile: {
     name: 'Scroll of Magic Missile',
@@ -495,7 +495,7 @@ const ITEMS = {
     spellLevel: 1,
     description: 'Three darts of magical force. 1d4+1 damage each, auto-hit.',
     spell: 'magic_missile',
-    value: 0.025
+    value: 0.005
   },
   scroll_identify: {
     name: 'Scroll of Identify',
@@ -504,7 +504,7 @@ const ITEMS = {
     spellLevel: 1,
     description: 'Learn the properties of a magic item.',
     spell: 'identify',
-    value: 0.025
+    value: 0.005
   },
   scroll_lesser_restoration: {
     name: 'Scroll of Lesser Restoration',
@@ -513,7 +513,7 @@ const ITEMS = {
     spellLevel: 2,
     description: 'End one disease or condition: blinded, deafened, paralyzed, or poisoned.',
     spell: 'lesser_restoration',
-    value: 0.075
+    value: 0.015
   },
   scroll_invisibility: {
     name: 'Scroll of Invisibility',
@@ -522,7 +522,7 @@ const ITEMS = {
     spellLevel: 2,
     description: 'Become invisible for up to 1 hour.',
     spell: 'invisibility',
-    value: 0.12
+    value: 0.024
   },
   scroll_depth_charge: {
     name: 'Scroll of Depth Charge',
@@ -531,7 +531,7 @@ const ITEMS = {
     spellLevel: 3,
     description: '8d6 fire damage in a 20ft radius. The water flash-boils in a devastating explosion.',
     spell: 'depthCharge',
-    value: 0.3
+    value: 0.06
   },
   
   // === ADVENTURING SUPPLIES ===
@@ -539,50 +539,50 @@ const ITEMS = {
     name: 'Bioluminescent Torch',
     type: 'gear',
     description: 'Glows for 1 hour, 20ft bright light.',
-    value: 0.001
+    value: 0.0002
   },
   rope_50ft: {
     name: 'Kelp Rope (50ft)',
     type: 'gear',
     description: 'Strong woven kelp rope. 50 feet.',
-    value: 0.001
+    value: 0.0002
   },
   rations: {
     name: 'Rations (1 day)',
     type: 'gear',
     description: 'Dried kelp, salted fish, and algae cakes.',
-    value: 0.0005
+    value: 0.0001
   },
   healers_kit: {
     name: "Healer's Kit",
     type: 'gear',
     description: '10 uses. Stabilize a creature at 0 HP without a Medicine check.',
     uses: 10,
-    value: 0.005
+    value: 0.001
   },
   caltrops: {
     name: 'Sea Urchin Caltrops',
     type: 'gear',
     description: 'Cover a 5ft square. Creatures must save or take 1 piercing and stop.',
-    value: 0.001
+    value: 0.0002
   },
   grappling_hook: {
     name: 'Anchor Hook',
     type: 'gear',
     description: 'A sturdy hook for climbing.',
-    value: 0.002
+    value: 0.0004
   },
   lantern: {
     name: 'Angler Lantern',
     type: 'gear',
     description: 'Bright light 30ft, dim 30ft more. Burns oil.',
-    value: 0.005
+    value: 0.001
   },
   oil_flask: {
     name: 'Oil Flask',
     type: 'gear',
     description: 'Fuel for lanterns, or splash on enemies and ignite.',
-    value: 0.0005
+    value: 0.0001
   },
   
   // === SPECIAL ITEMS (from drops/quests) ===
