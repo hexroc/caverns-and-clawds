@@ -115,12 +115,11 @@
       top: 70px;
       left: 0;
       right: 0;
-      background: linear-gradient(90deg, rgba(7, 26, 31, 0.98) 0%, rgba(13, 47, 43, 0.95) 50%, rgba(7, 26, 31, 0.98) 100%);
-      backdrop-filter: blur(12px);
-      border-bottom: 2px solid var(--primary);
+      background: linear-gradient(90deg, rgba(0,10,20,0.9), rgba(10,20,40,0.9));
+      border-bottom: 1px solid rgba(78, 205, 196, 0.3);
       overflow: hidden;
+      height: 32px;
       z-index: 99;
-      padding: 0.75rem 1.5rem;
     }
 
     /* USDC Volume Tracker */
@@ -220,58 +219,40 @@
       font-size: 0.7rem;
     }
 
-    .ticker-label {
-      font-family: 'Luckiest Guy', cursive;
-      font-size: 1.1rem;
-      color: var(--primary);
-      text-shadow: 0 2px 10px rgba(64, 224, 208, 0.6);
-      margin-bottom: 0.6rem;
+    .ticker-scroll {
       display: flex;
+      gap: 3rem;
+      position: absolute;
+      white-space: nowrap;
+      animation: scroll-ticker 60s linear infinite;
+      padding: 0.5rem 0;
+    }
+    
+    @keyframes scroll-ticker {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    
+    .ticker-item {
+      display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      font-size: 0.75rem;
     }
-
-    .ticker-content {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 0.75rem;
-    }
-
-    .market-price-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.4rem 0.9rem;
-      background: rgba(13, 47, 43, 0.6);
-      border: 1px solid rgba(64, 224, 208, 0.3);
-      border-radius: 6px;
-      transition: all 0.2s;
-    }
-
-    .market-price-item:hover {
-      background: rgba(46, 139, 87, 0.3);
-      border-color: var(--primary);
-      transform: translateY(-2px);
-      box-shadow: 0 4px 12px rgba(64, 224, 208, 0.2);
-    }
-
-    .market-price-name {
-      color: var(--text);
+    
+    .ticker-icon {
       font-size: 0.9rem;
-      font-weight: 600;
     }
-
-    .market-price-value {
-      color: var(--primary);
-      font-family: 'Courier New', monospace;
+    
+    .ticker-name {
+      color: #aaa;
+      font-weight: 500;
+    }
+    
+    .ticker-price {
+      color: #4ecdc4;
       font-weight: bold;
-      font-size: 0.95rem;
-      text-shadow: 0 0 8px rgba(64, 224, 208, 0.5);
-    }
-
-    .rarity-icon {
-      font-size: 0.85rem;
-      margin-right: 0.3rem;
+      font-family: 'Courier New', monospace;
     }
 
     /* Main Content */
@@ -1320,9 +1301,8 @@
 
   <!-- Market Prices Ticker -->
   <div class="live-ticker">
-    <div class="ticker-label">📊 MARKET PRICES</div>
-    <div class="ticker-content" id="market-prices">
-      <!-- Dynamically populated with market data -->
+    <div class="ticker-scroll" id="ticker-scroll">
+      <!-- Dynamically populated with scrolling market prices -->
     </div>
   </div>
 
@@ -2631,7 +2611,7 @@
     // Market Prices Ticker System
     class MarketPricesTicker {
       constructor() {
-        this.pricesElement = document.getElementById('market-prices');
+        this.tickerElement = document.getElementById('ticker-scroll');
         this.rarityIcons = {
           'common': '⚪',
           'uncommon': '🟢',
@@ -2668,23 +2648,17 @@
       }
 
       renderPrices(materials) {
-        // Show top 12 materials for grid layout
-        const displayMaterials = materials.slice(0, 12);
+        // Create ticker items HTML
+        const itemsHtml = materials.map(m => `
+          <div class="ticker-item">
+            <span class="ticker-icon">${this.rarityIcons[m.rarity] || '💎'}</span>
+            <span class="ticker-name">${m.name}</span>
+            <span class="ticker-price">${m.price.toFixed(3)} USDC</span>
+          </div>
+        `).join('');
         
-        const html = displayMaterials.map(mat => {
-          const icon = this.rarityIcons[mat.rarity] || '💎';
-          return `
-            <div class="market-price-item">
-              <span class="market-price-name">
-                <span class="rarity-icon">${icon}</span>
-                ${mat.name}
-              </span>
-              <span class="market-price-value">${mat.price.toFixed(3)} USDC</span>
-            </div>
-          `;
-        }).join('');
-        
-        this.pricesElement.innerHTML = html;
+        // Duplicate for seamless scrolling
+        this.tickerElement.innerHTML = itemsHtml + itemsHtml;
       }
 
       async fetchUSDCVolume() {
