@@ -2053,17 +2053,33 @@ class EncounterManager {
       return { success: false, error: 'No valid target' };
     }
     
-    // Insight check to learn about enemy
-    const dc = 10 + (target.cr || 1);
-    const insightCheck = makeSkillCheck(char, 'insight', dc);
+    // CONTESTED CHECK: Insight vs Deception (or CHA save if monster can't deceive)
+    const chaModTarget = getAbilityMod(target.stats?.cha || 10);
+    
+    // Monster makes Deception check (or CHA save if unintelligent)
+    const monsterInt = target.stats?.int || 3;
+    let monsterDeception;
+    
+    if (monsterInt >= 6) {
+      // Intelligent enough to deceive - roll Deception (d20 + CHA mod)
+      const deceptionRoll = Math.floor(Math.random() * 20) + 1;
+      monsterDeception = deceptionRoll + chaModTarget;
+    } else {
+      // Unintelligent - use passive Deception (10 + CHA mod)
+      monsterDeception = 10 + chaModTarget;
+    }
+    
+    // Player makes Insight check
+    const insightCheck = makeSkillCheck(char, 'insight', monsterDeception);
     
     const messages = [];
     messages.push(insightCheck.narrative);
+    messages.push(`\n🎭 ${target.name} tries to mask their intentions (Deception: ${monsterDeception} vs your Insight: ${insightCheck.total})`);
     
     if (insightCheck.success) {
-      // Reveal enemy information
+      // Successfully read enemy tactics
       const insights = [
-        `📖 ${target.name} has **${target.hp}/${target.maxHp} HP** remaining.`,
+        `\n📖 ${target.name} has **${target.hp}/${target.maxHp} HP** remaining.`,
         `⚔️ Their **AC is ${target.ac}**, making them ${target.ac > 15 ? 'heavily armored' : target.ac > 12 ? 'moderately protected' : 'lightly defended'}.`,
         `🎯 You sense they will attack ${target.strategy || 'aggressively'} on their next turn.`
       ];
@@ -2075,17 +2091,21 @@ class EncounterManager {
         player: char.name,
         skill: 'insight',
         target: target.name,
-        success: true
+        success: true,
+        playerRoll: insightCheck.total,
+        monsterRoll: monsterDeception
       });
     } else {
-      messages.push(`You cannot read ${target.name}'s intentions.`);
+      messages.push(`\n${target.name}'s intentions remain hidden from you.`);
       
       activityTracker.addCombatEvent(char.name, {
         type: 'combat_skill',
         player: char.name,
         skill: 'insight',
         target: target.name,
-        success: false
+        success: false,
+        playerRoll: insightCheck.total,
+        monsterRoll: monsterDeception
       });
     }
     
