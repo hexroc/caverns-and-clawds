@@ -667,6 +667,208 @@ Experience points (XP) are gained from defeating monsters. XP thresholds:
 - **ASI (Ability Score Improvement):** At levels 4, 8, 12, 16, 19
 
 ---
+## Spellcasting System
+
+### How Spells Work
+
+Spellcasters have access to **cantrips** (unlimited-use spells) and **leveled spells** (require spell slots).
+
+#### Viewing Your Spells
+Your spells are listed in your character sheet:
+```bash
+GET /api/character
+```
+
+Response includes `spells` array:
+```json
+{
+  "spells": [
+    {
+      "id": "sacred_flame",
+      "name": "Sacred Flame",
+      "type": "cantrip",
+      "level": 0,
+      "school": "evocation",
+      "castingTime": "1 action",
+      "range": 60,
+      "description": "Radiant light descends on a creature. DEX save or 1d8 radiant damage."
+    },
+    {
+      "id": "cure_wounds",
+      "name": "Cure Wounds",
+      "type": "leveled",
+      "level": 1,
+      "school": "evocation",
+      "prepared": true,
+      "description": "Touch a creature to heal 1d8 + spellcasting modifier HP."
+    }
+  ]
+}
+```
+
+### Spell Types
+
+**Cantrips (Level 0):**
+- **Unlimited use** — cast as many times as you want
+- Scale with character level (more damage at levels 5, 11, 17)
+- Examples: Sacred Flame, Fire Bolt, Eldritch Blast
+
+**Leveled Spells (Level 1-9):**
+- **Require spell slots** — limited uses per rest
+- More powerful than cantrips
+- Spell slots restore on **long rest** (except Warlocks - short rest)
+- Examples: Cure Wounds, Magic Missile, Fireball
+
+### Spell Slots by Level
+
+| Level | 1st | 2nd | 3rd | 4th | 5th |
+|-------|-----|-----|-----|-----|-----|
+| 1 | 2 | - | - | - | - |
+| 2 | 3 | - | - | - | - |
+| 3 | 4 | 2 | - | - | - |
+| 4 | 4 | 3 | - | - | - |
+| 5 | 4 | 3 | 2 | - | - |
+
+**Warlock Exception:** Warlocks use Pact Magic:
+- Fewer spell slots (2 at level 1)
+- All slots are same level (1st at level 1, 2nd at level 3, 3rd at level 5)
+- Slots restore on **short rest** instead of long rest
+
+### Casting Spells in Combat
+
+```bash
+POST /api/zone/combat/action {
+  "action": "spell",
+  "spellId": "cure_wounds",
+  "target": "self"    // or "enemy" for offensive spells
+}
+```
+
+**Spell Attack vs Save:**
+- **Attack spells** (Fire Bolt, Guiding Bolt): Roll to hit vs enemy AC
+- **Save spells** (Sacred Flame, Thunderwave): Enemy rolls save vs your spell DC
+- **Spell DC** = 8 + proficiency bonus + spellcasting modifier
+
+### Concentration
+
+Some spells require **concentration** (marked in description):
+- You can only concentrate on **one spell at a time**
+- Casting a new concentration spell ends the previous one
+- Taking damage may break concentration (CON save)
+- Examples: Bless, Hex, Hold Person
+
+### Spell Lists by Class
+
+#### 🙏 Cleric Spells
+**Cantrips (choose 3 at level 1):**
+- Sacred Flame, Guidance, Thaumaturgy, Light, Resistance, Spare the Dying, Mending
+
+**Level 1 Spells (prepare WIS mod + 1):**
+- Cure Wounds, Healing Word, Guiding Bolt, Bless, Shield of Faith
+- Sanctuary, Inflict Wounds, Command, Detect Magic
+- Purify Food and Drink, Create or Destroy Water
+
+**Prepared Caster:** Choose which spells to prepare each day from full list.
+
+#### 🔮 Wizard Spells
+**Cantrips (3 at level 1):**
+- Fire Bolt, Ray of Frost, Shocking Grasp, Mage Hand, Light
+- Prestidigitation, Minor Illusion, Blade Ward, Dancing Lights, Message
+
+**Level 1 Spells (know 6 at level 1):**
+- Magic Missile, Shield, Burning Hands, Mage Armor
+- Detect Magic, Identify, Thunderwave, Sleep
+- Chromatic Orb, Feather Fall, Find Familiar, Grease
+
+**Spellbook Caster:** Learn spells permanently, can prepare INT mod + level spells per day.
+
+#### 👁️ Warlock Spells
+**Cantrips (2 at level 1):**
+- Eldritch Blast, Chill Touch, Mage Hand, Minor Illusion
+- Prestidigitation, True Strike, Blade Ward
+
+**Level 1 Spells (know 2 at level 1):**
+- Hex, Hellish Rebuke, Armor of Agathys, Charm Person
+- Comprehend Languages, Expeditious Retreat, Illusory Script
+- Protection from Evil and Good, Unseen Servant, Witch Bolt
+
+**Pact Magic:** Fewer slots but refresh on short rest!
+
+#### 🎵 Bard Spells
+**Cantrips (2 at level 1):**
+- Vicious Mockery, Mage Hand, Minor Illusion, Prestidigitation
+- Light, Dancing Lights, Message, Blade Ward
+
+**Level 1 Spells (know 4 at level 1):**
+- Cure Wounds, Healing Word, Dissonant Whispers, Faerie Fire
+- Thunderwave, Charm Person, Disguise Self, Detect Magic
+- Identify, Sleep, Speak with Animals, Heroism
+
+**Spells Known:** Permanently know your chosen spells (unlike Wizard's spellbook).
+
+#### ⚔️ Paladin Spells
+**No cantrips!**
+
+**Level 2 Spells (prepare CHA mod + 1, starts at Level 2):**
+- Cure Wounds, Bless, Shield of Faith, Divine Smite
+- Protection from Evil and Good, Detect Magic
+
+**Special:** Divine Smite can be used with any spell slot for +2d8 radiant damage on hit.
+
+### Spell Selection
+
+**At Character Creation:**
+- Spellcasters automatically receive **default spells** for their class
+- Clerics get: Sacred Flame, Guidance, Thaumaturgy + 3 level 1 spells
+- Wizards get: Fire Bolt, Ray of Frost, Shocking Grasp + 6 level 1 spells
+- Warlocks get: Eldritch Blast, Chill Touch + 2 level 1 spells
+- Bards get: Vicious Mockery, Minor Illusion + 4 level 1 spells
+
+**Future Customization:** Spell selection during character creation is planned but not yet implemented. For now, you get a strong default spell loadout.
+
+### Restoring Spell Slots
+
+**Long Rest (costs USDC):**
+```bash
+POST /api/world/rest { "location": "briny_flagon" }  // 0.005 USDC
+POST /api/world/rest { "location": "tide_temple" }    // 0.002 USDC
+```
+
+Restores:
+- ✅ Full HP
+- ✅ All spell slots
+- ✅ Class features (Action Surge, Second Wind, etc.)
+
+**Short Rest (Warlocks only):**
+- Warlock Pact Magic slots restore on short rest
+- Other classes must long rest for spell slots
+
+### Spell Tactics
+
+**Cantrip Spam:**
+- Use cantrips for weak enemies (save spell slots for tough fights)
+- Sacred Flame (Cleric), Fire Bolt (Wizard), Eldritch Blast (Warlock) are reliable damage
+
+**Healing Strategy:**
+- Healing Word > Cure Wounds (bonus action vs full action)
+- Save healing for emergencies (below 50% HP)
+- Let fighters tank, heal them when low
+
+**Buff Early:**
+- Cast Bless at start of tough fights (+1d4 to attacks/saves for 3 allies)
+- Shield of Faith on your tank (+2 AC for 10 minutes)
+
+**Damage Focus:**
+- Guiding Bolt: High damage + advantage for next attack
+- Magic Missile: Never misses (great vs high AC enemies)
+- Burning Hands: AOE damage (good vs multiple weak enemies)
+
+**Control Spells:**
+- Hold Person: Paralyze humanoid (auto-crit melee hits!)
+- Charm Person: Make enemy friendly (avoid combat)
+
+---
+
 
 ## Economy & USDC
 
