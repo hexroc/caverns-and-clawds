@@ -884,7 +884,12 @@ class EncounterManager {
     let crit = attackRoll === 20;
     
     if (attackRoll === 1) {
-      messages.push(`🎲 Critical miss! Your attack goes wide.`);
+      const fumbles = [
+        `🎲 **Critical fumble!** Your weapon tangles in drifting kelp as you swing wildly off-balance!`,
+        `🎲 **Critical miss!** The currents betray you — you spin away from ${target.name}, striking only water!`,
+        `🎲 **Catastrophic miss!** You misjudge the water pressure completely, your attack sailing laughably wide!`
+      ];
+      messages.push(fumbles[Math.floor(Math.random() * fumbles.length)]);
       // Emit miss event
       activityTracker.addCombatEvent(char.name, {
         type: 'combat_miss',
@@ -910,7 +915,12 @@ class EncounterManager {
       target.hp -= damage;
       
       if (crit) {
-        messages.push(`💥 **CRITICAL HIT!** You strike ${target.name} for ${damage} damage!`);
+        const crits = [
+          `💥 **DEVASTATING STRIKE!** You find a critical weak point in ${target.name}'s defenses! Your weapon tears through shell and flesh — **${damage} damage**! The water shakes with the impact!`,
+          `💥 **CRITICAL HIT!** In a blur of deadly motion, you strike true! ${target.name} staggers as your blow crashes through their guard — **${damage} damage**!`,
+          `💥 **PERFECT STRIKE!** You channel all your might into ${target.name}! The blow lands with bone-crushing force, sending shockwaves through the water — **${damage} damage**!`
+        ];
+        messages.push(crits[Math.floor(Math.random() * crits.length)]);
         // Emit critical hit event
         activityTracker.addCombatEvent(char.name, {
           type: 'combat_critical',
@@ -924,7 +934,13 @@ class EncounterManager {
           weapon: 'melee attack'
         });
       } else {
-        messages.push(`⚔️ You hit ${target.name} for ${damage} damage! (${attackRoll}+${strMod+profBonus}=${totalAttack} vs AC ${target.ac})`);
+        const hits = [
+          `⚔️ Your weapon connects solidly with ${target.name}, tearing into their flesh! **${damage} damage** — blood clouds the water! *(${totalAttack} vs AC ${target.ac})*`,
+          `⚔️ With deadly precision, you carve through ${target.name}'s defenses! The blow lands true for **${damage} damage**! *(${totalAttack} vs AC ${target.ac})*`,
+          `⚔️ You find an opening and strike! Your weapon rips through ${target.name} — they reel back from **${damage} damage**! *(${totalAttack} vs AC ${target.ac})*`,
+          `⚔️ A solid hit! You crash into ${target.name}, your attack biting deep for **${damage} damage**! *(${totalAttack} vs AC ${target.ac})*`
+        ];
+        messages.push(hits[Math.floor(Math.random() * hits.length)]);
         // Emit attack hit event
         activityTracker.addCombatEvent(char.name, {
           type: 'combat_attack',
@@ -943,7 +959,12 @@ class EncounterManager {
       
       if (target.hp <= 0) {
         target.alive = false;
-        messages.push(`💀 ${target.name} is slain!`);
+        const deaths = [
+          `💀 With a final, gurgling cry, **${target.name} collapses!** Their form goes limp and sinks to the seafloor. Victory is yours!`,
+          `💀 **${target.name} shudders and falls still**, life bleeding into the water. You stand victorious over the corpse!`,
+          `💀 The light fades from **${target.name}'s eyes**. They crumble before you, utterly defeated!`
+        ];
+        messages.push(deaths[Math.floor(Math.random() * deaths.length)]);
         // Emit death event
         activityTracker.addCombatEvent(char.name, {
           type: 'combat_death',
@@ -956,7 +977,13 @@ class EncounterManager {
         messages.push(`${target.name} has ${target.hp}/${target.maxHp} HP remaining.`);
       }
     } else {
-      messages.push(`🛡️ Your attack misses ${target.name}. (${attackRoll}+${strMod+profBonus}=${totalAttack} vs AC ${target.ac})`);
+      const misses = [
+        `🛡️ Your attack swings wide as **${target.name} slips away** through the water! *(${totalAttack} vs AC ${target.ac})*`,
+        `🛡️ **${target.name} twists aside!** Your weapon finds only swirling sand and kelp. *(${totalAttack} vs AC ${target.ac})*`,
+        `🛡️ A near miss! **${target.name} darts away** at the last moment, your blade barely grazing them! *(${totalAttack} vs AC ${target.ac})*`,
+        `🛡️ You misjudge the distance — **${target.name} evades** your strike with ease! *(${totalAttack} vs AC ${target.ac})*`
+      ];
+      messages.push(misses[Math.floor(Math.random() * misses.length)]);
       // Emit miss event
       activityTracker.addCombatEvent(char.name, {
         type: 'combat_miss',
@@ -2096,7 +2123,12 @@ class EncounterManager {
         critMiss: true,
         weapon: attack.name
       });
-      return { message: `🎲 ${monster.name}'s attack misses wildly!`, playerDied: false };
+      const monsterFumbles = [
+        `🎲 **${monster.name} flails wildly**, completely losing their grip! Their attack goes nowhere!`,
+        `🎲 **${monster.name} lunges recklessly** — they miss by a mile and tumble through the water!`,
+        `🎲 **Catastrophic miss!** **${monster.name}** misjudges completely, striking only sand!`
+      ];
+      return { message: monsterFumbles[Math.floor(Math.random() * monsterFumbles.length)], playerDied: false };
     }
     
     const crit = attackRoll === 20;
@@ -2188,8 +2220,23 @@ class EncounterManager {
         playerAc: char.ac
       });
       
-      const prefix = crit ? '💥 **CRITICAL!** ' : '';
-      let message = `${prefix}${monster.name} hits you with ${attack.name} for ${damage} damage! (${newHP}/${char.hp_max} HP)`;
+      let message;
+      if (crit) {
+        const monsterCrits = [
+          `💥 **DEVASTATING BLOW!** **${monster.name}** finds a critical opening! Their ${attack.name} tears through your defenses — **${damage} damage**! Pain lances through you! *(${newHP}/${char.hp_max} HP)*`,
+          `💥 **CRITICAL STRIKE!** **${monster.name}** strikes with deadly precision! You reel as their ${attack.name} crashes into you — **${damage} damage**! *(${newHP}/${char.hp_max} HP)*`,
+          `💥 **CRUSHING IMPACT!** **${monster.name}'s** ${attack.name} catches you perfectly! The blow sends shockwaves through your body — **${damage} damage**! *(${newHP}/${char.hp_max} HP)*`
+        ];
+        message = monsterCrits[Math.floor(Math.random() * monsterCrits.length)];
+      } else {
+        const monsterHits = [
+          `🩸 **${monster.name}** connects with their ${attack.name}, raking across your shell! You feel the impact — **${damage} damage**! *(${newHP}/${char.hp_max} HP)*`,
+          `🩸 A vicious strike! **${monster.name}'s** ${attack.name} tears into you! **${damage} damage** — you stumble back! *(${newHP}/${char.hp_max} HP)*`,
+          `🩸 **${monster.name}** surges forward, their ${attack.name} crashing into you! **${damage} damage** — blood clouds the water around you! *(${newHP}/${char.hp_max} HP)*`,
+          `🩸 Pain! **${monster.name}'s** ${attack.name} finds its mark, dealing **${damage} damage**! You grit your teeth against the agony. *(${newHP}/${char.hp_max} HP)*`
+        ];
+        message = monsterHits[Math.floor(Math.random() * monsterHits.length)];
+      }
       message += extraMessage;
       
       return { message, playerDied, damage };
@@ -2206,7 +2253,13 @@ class EncounterManager {
       weapon: attack.name
     });
     
-    return { message: `🛡️ ${monster.name}'s ${attack.name} misses you!`, playerDied: false };
+    const monsterMisses = [
+      `🛡️ You twist aside! **${monster.name}'s** ${attack.name} finds only water!`,
+      `🛡️ **${monster.name}** swings at you, but you slip away through the current!`,
+      `🛡️ You dodge! **${monster.name}'s** ${attack.name} barely misses — you feel the rush of water!`,
+      `🛡️ **${monster.name}** lunges, but you dart aside at the last moment! Their ${attack.name} misses!`
+    ];
+    return { message: monsterMisses[Math.floor(Math.random() * monsterMisses.length)], playerDied: false };
   }
   
   /**
