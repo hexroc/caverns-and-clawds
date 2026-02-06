@@ -2832,7 +2832,7 @@ class EncounterManager {
           
           messages.push('');
           messages.push('💀 **YOU HAVE FALLEN!**');
-          messages.push('You wake up at the Tide Temple...');
+          messages.push('You wake up at the Tide Temple. **35% of your XP has been lost...**');
           
           // Respawn logic
           this._handleDefeat(encounter);
@@ -3396,23 +3396,67 @@ class EncounterManager {
     
     if (!charId) return;
     
-    // Get character name for spectator events
-    const char = this.db.prepare('SELECT name FROM clawds WHERE id = ?').get(charId);
-    if (char) {
-      activityTracker.addCombatEvent(char.name, {
-        type: 'combat_end',
-        player: char.name,
-        result: 'defeat'
-      });
-      activityTracker.clearCombatState(char.name);
+    // Get full character for spectator events and resurrection
+    const char = this.db.prepare('SELECT * FROM clawds WHERE id = ?').get(charId);
+    if (!char) return;
+    
+    // Track combat end
+    activityTracker.addCombatEvent(char.name, {
+      type: 'combat_end',
+      player: char.name,
+      result: 'defeat'
+    });
+    activityTracker.clearCombatState(char.name);
+    
+    // AUTO-RESURRECT with free method (35% XP loss)
+    // This matches the "You wake up at the Tide Temple" message
+    const xpLoss = Math.floor(char.xp * 0.35);  // 35% XP penalty
+    const newXP = Math.max(0, char.xp - xpLoss);
+    
+    // Check for level loss
+    const xpThresholds = {
+      1: 0, 2: 300, 3: 900, 4: 2700, 5: 6500,
+      6: 14000, 7: 23000, 8: 34000, 9: 48000, 10: 64000,
+      11: 85000, 12: 100000, 13: 120000, 14: 140000, 15: 165000,
+      16: 195000, 17: 225000, 18: 265000, 19: 305000, 20: 355000
+    };
+    
+    let newLevel = 1;
+    for (let lvl = 20; lvl >= 1; lvl--) {
+      if (newXP >= xpThresholds[lvl]) {
+        newLevel = lvl;
+        break;
+      }
     }
     
-    // Mark character as dead (needs to choose resurrection option)
+    const levelsLost = char.level - newLevel;
+    
+    // Calculate new HP max if level changed
+    let newHPMax = char.hp_max;
+    if (levelsLost > 0) {
+      // Rough HP reduction: ~6 HP per level lost
+      newHPMax = Math.max(8, char.hp_max - (levelsLost * 6));
+    }
+    
+    // Respawn at temple with half HP
+    const respawnHP = Math.max(1, Math.floor(newHPMax / 2));
+    
+    // Apply resurrection
     this.db.prepare(`
       UPDATE clawds 
-      SET hp_current = 0, status = 'dead'
+      SET hp_current = ?, hp_max = ?, xp = ?, level = ?, 
+          status = 'alive', current_zone = 'tide_temple'
       WHERE id = ?
-    `).run(charId);
+    `).run(respawnHP, newHPMax, newXP, newLevel, charId);
+    
+    // Notify spectators
+    activityTracker.addActivityEvent(char.name, {
+      type: 'resurrection',
+      player: char.name,
+      method: 'auto',
+      xpLost: xpLoss,
+      levelsLost: levelsLost
+    });
   }
   
   /**
