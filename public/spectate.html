@@ -194,10 +194,11 @@
     .hp-bar {
       background: rgba(255,255,255,0.1);
       border-radius: 10px;
-      height: 18px;
+      height: 20px;
       margin: 0.5rem 0;
       overflow: hidden;
       position: relative;
+      border: 1px solid rgba(255,255,255,0.2);
     }
     
     .hp-fill {
@@ -210,9 +211,12 @@
       position: absolute;
       width: 100%;
       text-align: center;
-      font-size: 0.7rem;
-      line-height: 18px;
+      font-size: 0.75rem;
+      line-height: 20px;
       font-weight: bold;
+      color: #fff;
+      text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);
+      z-index: 1;
     }
     
     .stats-grid {
@@ -642,9 +646,10 @@
       flex: 1;
       background: rgba(255,255,255,0.1);
       border-radius: 5px;
-      height: 14px;
+      height: 16px;
       overflow: hidden;
       position: relative;
+      border: 1px solid rgba(255,255,255,0.15);
     }
     
     .combat-hp-fill {
@@ -659,10 +664,12 @@
       position: absolute;
       width: 100%;
       text-align: center;
-      font-size: 0.6rem;
-      line-height: 14px;
+      font-size: 0.65rem;
+      line-height: 16px;
       font-weight: bold;
-      text-shadow: 0 0 3px rgba(0,0,0,0.8);
+      color: #fff;
+      text-shadow: 0 0 4px rgba(0,0,0,0.9), 0 0 8px rgba(0,0,0,0.5);
+      z-index: 1;
     }
     
     .combat-round {
@@ -1077,6 +1084,16 @@
         const nameDisplay = isDead ? `💀 ${c.name}` : c.name;
         const hpDisplay = isDead ? 'DEAD' : `${c.hp} / ${c.max_hp} HP`;
         
+        // Dynamic HP bar colors based on percentage
+        let hpGradient = 'linear-gradient(90deg, #2ecc71, #27ae60)'; // Green (full)
+        if (hpPct < 25) {
+          hpGradient = 'linear-gradient(90deg, #e74c3c, #c0392b)'; // Red (critical)
+        } else if (hpPct < 50) {
+          hpGradient = 'linear-gradient(90deg, #f39c12, #e67e22)'; // Orange (low)
+        } else if (hpPct < 75) {
+          hpGradient = 'linear-gradient(90deg, #f1c40f, #f39c12)'; // Yellow (medium)
+        }
+        
         let html = `
           <div class="char-portrait">
             <div class="char-avatar">${createLobsterSVG(raceName)}</div>
@@ -1084,7 +1101,7 @@
             <div class="char-class">Level ${c.level} ${c.race} ${c.class}</div>
           </div>
           <div class="hp-bar">
-            <div class="hp-fill" style="width: ${hpPct}%"></div>
+            <div class="hp-fill" style="width: ${hpPct}%; background: ${hpGradient}"></div>
             <div class="hp-text">${hpDisplay}</div>
           </div>
           <div class="stats-grid">`;
@@ -1137,7 +1154,7 @@
         // Skills tab
         const SKILL_DEFS = {
           'Acrobatics': { stat: 'DEX', desc: 'Balance, tumbling, flips' },
-          'Animal Handling': { stat: 'WIS', desc: 'Calm or control sea creatures' },
+          'Sea Creature Handling': { stat: 'WIS', desc: 'Calm or control sea creatures' },
           'Arcana': { stat: 'INT', desc: 'Magical knowledge and lore' },
           'Athletics': { stat: 'STR', desc: 'Climbing, swimming, grappling' },
           'Deception': { stat: 'CHA', desc: 'Lying, disguises, misdirection' },

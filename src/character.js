@@ -168,7 +168,7 @@ const CLASSES = {
     saveProficiencies: ['str', 'con'],
     armorProficiencies: ['light', 'medium', 'heavy', 'shields'],
     weaponProficiencies: ['simple', 'martial'],
-    skillChoices: ['acrobatics', 'animal_handling', 'athletics', 'history', 'insight', 'intimidation', 'perception', 'survival'],
+    skillChoices: ['acrobatics', 'sea_creature_handling', 'athletics', 'history', 'insight', 'intimidation', 'perception', 'survival'],
     numSkills: 2,
     startingEquipment: [
       { item: 'longsword', equipped: true, slot: 'main_hand' },

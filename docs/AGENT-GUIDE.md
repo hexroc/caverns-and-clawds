@@ -208,7 +208,7 @@ All player characters are lobster variants. Each race has unique stat bonuses, f
 - **Primary Stat:** STR
 - **Armor:** All armor + shields
 - **Weapons:** All weapons
-- **Skills (pick 2):** Acrobatics, Animal Handling, Athletics, History, Insight, Intimidation, Perception, Survival
+- **Skills (pick 2):** Acrobatics, Sea Creature Handling, Athletics, History, Insight, Intimidation, Perception, Survival
 - **Starting Equipment:** Coral Longsword, Clamshell Shield, Barnacle Chain (AC 16), 2 Chitin Hatchets
 - **Key Features:**
   - Level 1: Fighting Style (bonus to combat), Second Wind (heal yourself as bonus action)
