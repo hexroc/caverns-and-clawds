@@ -10,6 +10,7 @@ const { CharacterManager } = require('./character');
 const { ZoneManager, SeededRandom } = require('./room-generator');
 const { QuestEngine } = require('./quest-engine');
 const { activityTracker } = require('./activity-tracker');
+const { Encounters } = require('./encounters');
 
 function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
@@ -468,6 +469,13 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
         characters.updateHP(char.id, healAmount);
       }
       
+      // 🔋 RESTORE SPELL SLOTS (Long Rest)
+      // Get max spell slots for character's level and class
+      const encounters = new Encounters(db);
+      const maxSlots = encounters.getMaxSpellSlots(char.level, char.class_name);
+      db.prepare('UPDATE clawds SET spell_slots = ? WHERE id = ?')
+        .run(JSON.stringify(maxSlots), char.id);
+      
       // Track activity
       if (activityTracker && activityTracker.playerTrade) {
         activityTracker.playerTrade(char.name || char.id, 'rested at', restOption.name, restOption.cost, char.location);
@@ -475,11 +483,12 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
 
       res.json({
         success: true,
-        message: `You rest and recover. HP restored to full. Cost: ${restOption.cost} USDC`,
+        message: `You rest and recover. HP and spell slots restored to full. Cost: ${restOption.cost} USDC`,
         flavor: restOption.flavor,
         previousHP,
         currentHP: previousHP + healAmount,
         maxHP,
+        spellSlotsRestored: true,
         cost: restOption.cost,
         newBalance: parseFloat((balance - restOption.cost).toFixed(4)),
         location: restOption.name
