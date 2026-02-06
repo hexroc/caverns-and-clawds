@@ -2986,6 +2986,11 @@ console.log('⚔️  Class features loaded (Fighter, Rogue, Paladin, Bard, Cleri
 app.use('/api/social', createSocialRoutes(db, authenticateAgent, broadcastToSpectators));
 console.log('💬 Social system loaded (chat, emotes, presence)');
 
+// Initialize skill check system with DB
+const { setDatabase: setSkillsDB } = require('./skills');
+setSkillsDB(db);
+console.log('🎯 Skill check system initialized (18 D&D 5e skills)');
+
 // Initialize and mount Economy routes
 const { initEconomy } = require('./economy/init-economy');
 initEconomy().catch(err => console.error('Economy init failed:', err));

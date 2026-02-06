@@ -10,6 +10,7 @@ const { MONSTERS } = require('./monsters');
 const { CharacterManager } = require('./character');
 const { LOCATIONS } = require('./world');
 const { activityTracker } = require('./activity-tracker');
+const { SKILLS, makeSkillCheck } = require('./skills');
 // (tactical-combat & hex-grid removed - capstone system deprecated)
 
 function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = null) {
@@ -589,6 +590,66 @@ function createEncounterRoutes(db, authenticateAgent, broadcastToSpectators = nu
       console.error('Resurrect error:', err);
       res.status(500).json({ success: false, error: 'Resurrection failed' });
     }
+  });
+
+  // ============================================================================
+  // SKILL CHECKS
+  // ============================================================================
+
+  /**
+   * POST /api/zone/skill-check - Make a skill check
+   * Body: { skill: string, dc?: number, advantage?: boolean, disadvantage?: boolean }
+   */
+  router.post('/skill-check', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      const { skill, dc, advantage, disadvantage, situationalBonus } = req.body;
+      
+      if (!skill) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'skill required',
+          availableSkills: Object.keys(SKILLS)
+        });
+      }
+
+      if (!SKILLS[skill]) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Unknown skill: ${skill}`,
+          availableSkills: Object.keys(SKILLS)
+        });
+      }
+
+      const checkDC = dc || 12; // Default DC
+      const result = makeSkillCheck(char, skill, checkDC, { advantage, disadvantage, situationalBonus });
+
+      res.json(result);
+    } catch (err) {
+      console.error('Skill check error:', err);
+      res.status(500).json({ success: false, error: 'Skill check failed', debug: err.message });
+    }
+  });
+
+  /**
+   * GET /api/zone/skills - List all available skills
+   */
+  router.get('/skills', (req, res) => {
+    const skillList = Object.entries(SKILLS).map(([id, skill]) => ({
+      id,
+      name: skill.name,
+      ability: skill.ability,
+      description: skill.description
+    }));
+
+    res.json({
+      success: true,
+      skills: skillList
+    });
   });
 
   // ============================================================================
