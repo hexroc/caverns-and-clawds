@@ -822,10 +822,18 @@ function determineCombatOrder(character, enemies) {
 // ATTACK RESOLUTION
 // ============================================================================
 
-function resolveAttack(attacker, defender, advantage = false, disadvantage = false) {
+function resolveAttack(attacker, defender, advantage = false, disadvantage = false, options = {}) {
+  // Check conditions affecting attack rolls
+  const conditionMods = conditions.getAttackModifiers(attacker, defender);
+  if (conditionMods.advantage) advantage = true;
+  if (conditionMods.disadvantage) disadvantage = true;
+  
   const attackRoll = rollD20(advantage, disadvantage);
   const isCrit = attackRoll.result === 20;
   const isCritFail = attackRoll.result === 1;
+  
+  // Check for auto-crit (paralyzed/unconscious at melee range)
+  const autoCrit = conditions.isAutoCrit(attacker, defender, options.range || 'melee');
   
   // Calculate attack bonus
   let attackBonus;
@@ -843,15 +851,27 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
   }
   
   const totalAttack = attackRoll.result + attackBonus;
-  const defenderAC = defender.ac || defender.stats?.ac || 10;
+  let defenderAC = defender.ac || defender.stats?.ac || 10;
   
-  // Critical always hits, critical fail always misses
+  // Check for Shield spell reaction
+  let shieldUsed = false;
   const hits = isCrit || (!isCritFail && totalAttack >= defenderAC);
+  if (hits && !isCrit && reactions.canUseReaction(defender, reactions.REACTION_TYPES.SHIELD)) {
+    // Defender could use Shield spell
+    const shieldResult = reactions.useShield(defender, { roll: attackRoll.result, modifier: attackBonus, hit: true });
+    if (shieldResult.success && shieldResult.turnedMiss) {
+      shieldUsed = true;
+      defenderAC = shieldResult.newAC;
+    }
+  }
+  
+  const finalHit = (isCrit || autoCrit) || (!isCritFail && totalAttack >= defenderAC);
   
   let damage = 0;
   let damageRolls = null;
+  let sneakAttackResult = null;
   
-  if (hits) {
+  if (finalHit) {
     // Roll damage
     const damageDice = attacker.damage || attacker.stats?.weaponDamage || '1d8';
     const damageResult = roll(damageDice);
@@ -868,8 +888,8 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
     
     damage = damageResult.total + damageMod;
     
-    // Critical hit doubles dice
-    if (isCrit) {
+    // Critical hit doubles dice (or auto-crit from conditions)
+    if (isCrit || autoCrit) {
       const critBonus = roll(damageDice);
       damage += critBonus.total;
       damageRolls = { normal: damageResult.rolls, critical: critBonus.rolls };
@@ -877,8 +897,49 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
       damageRolls = { normal: damageResult.rolls };
     }
     
+    // Check for Sneak Attack (Rogue)
+    if (attacker.class?.toLowerCase() === 'rogue') {
+      sneakAttackResult = sneakAttack.applySneakAttack(attacker, defender, damage, {
+        weapon: attacker.weapon || { properties: ['finesse'] },
+        hasAdvantage: advantage,
+        hasDisadvantage: disadvantage,
+        allies: options.allies || [],
+        positions: options.positions || {},
+        usedThisTurn: attacker.combatState?.sneakAttackUsed || false
+      });
+      
+      if (sneakAttackResult.applied) {
+        damage = sneakAttackResult.totalDamage;
+        sneakAttack.markSneakAttackUsed(attacker);
+      }
+    }
+    
     // Minimum 1 damage on hit
     damage = Math.max(1, damage);
+    
+    // Apply damage with resistances/immunities/vulnerabilities
+    const damageType = attacker.damagetype || 'slashing';
+    const damageResult2 = damageSystem.applyDamage(defender, damage, damageType);
+    
+    // Check for Uncanny Dodge (Rogue reaction)
+    if (defender.class?.toLowerCase() === 'rogue' && defender.level >= 5) {
+      if (reactions.canUseReaction(defender, reactions.REACTION_TYPES.UNCANNY_DODGE)) {
+        const uncanny = reactions.useUncannyDodge(defender, damageResult2.final);
+        if (uncanny.success) {
+          // Update defender HP with reduced damage
+          defender.hp += damageResult2.final - uncanny.reducedDamage;
+        }
+      }
+    }
+    
+    // Check for death saves if reduced to 0 HP
+    if (defender.hp <= 0 && !defender.deathSaves) {
+      deathSaves.initDeathSaves(defender);
+      // If damage while at 0 HP
+      if (defender.hp < 0) {
+        deathSaves.damageAtZeroHP(defender, Math.abs(defender.hp), isCrit || autoCrit);
+      }
+    }
   }
   
   return {
@@ -886,12 +947,16 @@ function resolveAttack(attacker, defender, advantage = false, disadvantage = fal
     attackBonus,
     totalAttack,
     defenderAC,
-    hits,
-    isCrit,
+    hits: finalHit,
+    isCrit: isCrit || autoCrit,
     isCritFail,
     damage,
     damageRolls,
-    damageType: attacker.damagetype || 'slashing'
+    damageType: attacker.damagetype || 'slashing',
+    shieldUsed,
+    sneakAttack: sneakAttackResult,
+    conditionMods,
+    autoCrit
   };
 }
 
@@ -2240,6 +2305,78 @@ function listMonsters(tier = null) {
   return Object.entries(MONSTERS).map(([key, m]) => ({ id: key, ...m }));
 }
 
+/**
+ * Long rest - restore HP and spell slots
+ */
+function longRest(character) {
+  const results = {
+    hpRestored: 0,
+    slotsRestored: false,
+    conditions: []
+  };
+  
+  // Restore full HP
+  const oldHp = character.currentHp;
+  character.currentHp = character.maxHp || character.stats?.maxHp || 20;
+  results.hpRestored = character.currentHp - oldHp;
+  
+  // Restore spell slots
+  try {
+    const spellSystem = require('./spells/index');
+    if (character.spellSlots) {
+      spellSystem.restoreAllSlots(character);
+      results.slotsRestored = true;
+    }
+    
+    // End concentration
+    if (character.concentration) {
+      spellSystem.endConcentration(character, 'long rest');
+    }
+  } catch (err) {
+    // Spell system not available
+  }
+  
+  // Remove exhaustion levels (1 level per long rest)
+  if (character.exhaustion && character.exhaustion > 0) {
+    character.exhaustion--;
+    results.conditions.push(`Exhaustion reduced to ${character.exhaustion}`);
+  }
+  
+  // Clear temporary conditions
+  if (character.conditions) {
+    character.conditions = character.conditions.filter(c => 
+      c !== 'poisoned' && c !== 'paralyzed' && c !== 'frightened'
+    );
+  }
+  
+  return results;
+}
+
+/**
+ * Short rest - recover some HP with hit dice
+ */
+function shortRest(character, hitDiceSpent = 1) {
+  const className = character.class || character.stats?.class || 'fighter';
+  const hitDie = HIT_DICE[className.toLowerCase()] || HIT_DICE.default;
+  const conMod = getMod(character.stats?.constitution || character.abilities?.CON || 10);
+  
+  let hpRestored = 0;
+  for (let i = 0; i < hitDiceSpent; i++) {
+    const roll = Math.floor(Math.random() * hitDie.die) + 1 + conMod;
+    hpRestored += Math.max(1, roll);
+  }
+  
+  const oldHp = character.currentHp;
+  character.currentHp = Math.min(character.maxHp || character.stats?.maxHp || 20, 
+                                  character.currentHp + hpRestored);
+  const actualHealing = character.currentHp - oldHp;
+  
+  return {
+    hitDiceSpent,
+    hpRestored: actualHealing
+  };
+}
+
 // ============================================================================
 // EXPORTS
 // ============================================================================
@@ -2280,6 +2417,8 @@ module.exports = {
   getHPGain,
   getSpellSlots,
   processLevelUp,
+  longRest,
+  shortRest,
   
   // Combat
   rollInitiative,
@@ -2305,5 +2444,12 @@ module.exports = {
   generateDeathNarration,
   generateVictoryNarration,
   generateDefeatNarration,
-  generateMovementNarration
+  generateMovementNarration,
+  
+  // New combat subsystems
+  deathSaves,
+  sneakAttack,
+  damageSystem,
+  reactions,
+  conditions
 };
