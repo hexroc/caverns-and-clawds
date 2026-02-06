@@ -1149,7 +1149,7 @@
           'Stealth': { stat: 'DEX', desc: 'Hide, move silently, sneak' },
           'Survival': { stat: 'WIS', desc: 'Track, forage, navigate wilds' }
         };
-        const profSkills = (c.proficiencies || []).map(p => p.name || p);
+        const profSkills = (c.proficiencies || []).map(p => p.proficiency_name || p.name || p).filter(p => typeof p === 'string');
 
         html += '<div id="tab-skills" class="sheet-tab-content active">';
         Object.entries(SKILL_DEFS).forEach(([name, info]) => {
