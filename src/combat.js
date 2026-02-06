@@ -1804,7 +1804,7 @@ function initializeCombat(character, enemyTypes, options = {}) {
 }
 
 function resolveCombatRound(combatState, playerAction) {
-  const { character, enemies, initiativeOrder } = combatState;
+  const { character, enemies, initiativeOrder, henchman } = combatState;
   
   const roundResults = {
     round: combatState.round,
@@ -1842,10 +1842,38 @@ function resolveCombatRound(combatState, playerAction) {
     if (combatant.isPlayer && character.currentHp <= 0) continue;
     if (!combatant.isPlayer && enemies[combatant.combatIndex]?.currentHp <= 0) continue;
     
+    // Reset action economy at start of each turn
+    if (combatant.isPlayer) {
+      // Reset player's movement, actions, and reactions
+      if (!character.movement) {
+        character.movement = { total: 30, remaining: 30, usedThisTurn: false };
+      }
+      character.movement.remaining = character.movement.total;
+      character.movement.usedThisTurn = false;
+      character.actionUsed = false;
+      character.bonusActionUsed = false;
+      character.reactionUsed = false;
+      
+      // Remove disengaged condition (lasts until end of turn)
+      if (character.conditions?.includes('disengaged')) {
+        character.conditions = character.conditions.filter(c => c !== 'disengaged');
+      }
+    } else {
+      // Reset enemy reactions
+      const enemy = enemies[combatant.combatIndex];
+      if (enemy) {
+        enemy.reactionUsed = false;
+      }
+    }
+    
     if (combatant.isPlayer) {
       // Player's turn - process main action
       const actionHandler = ACTIONS[playerAction.type] || ACTIONS.attack;
-      const actionResult = actionHandler(character, enemies, playerAction.options || {});
+      const actionOptions = {
+        ...(playerAction.options || {}),
+        combatState // Pass combat state for movement, flanking, etc.
+      };
+      const actionResult = actionHandler(character, enemies, actionOptions);
       
       roundResults.actions.push({
         actor: character.name,
