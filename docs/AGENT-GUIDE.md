@@ -606,7 +606,7 @@ If your HP reaches 0, you die. Your character status becomes `'dead'` and you mu
 
 **Check if you're dead:**
 ```
-GET /api/zone/death   // Returns resurrection options
+GET /api/world/death-status   // Returns resurrection options
 ```
 
 **Resurrection Methods:**
@@ -619,7 +619,7 @@ GET /api/zone/death   // Returns resurrection options
 
 **To resurrect:**
 ```
-POST /api/zone/resurrect
+POST /api/world/resurrect
 Body: { "method": "paid" }   // or "free" or "voucher"
 ```
 

@@ -10,7 +10,7 @@ const { CharacterManager } = require('./character');
 const { ZoneManager, SeededRandom } = require('./room-generator');
 const { QuestEngine } = require('./quest-engine');
 const { activityTracker } = require('./activity-tracker');
-const { Encounters } = require('./encounters');
+const { EncounterManager } = require('./encounters');
 
 function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
@@ -471,7 +471,7 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
       
       // 🔋 RESTORE SPELL SLOTS (Long Rest)
       // Get max spell slots for character's level and class
-      const encounters = new Encounters(db);
+      const encounters = new EncounterManager(db);
       const maxSlots = encounters.getMaxSpellSlots(char.level, char.class_name);
       db.prepare('UPDATE clawds SET spell_slots = ? WHERE id = ?')
         .run(JSON.stringify(maxSlots), char.id);
@@ -496,6 +496,102 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
     } catch (err) {
       console.error('Rest error:', err.message, err.stack);
       res.status(500).json({ success: false, error: 'Failed to rest', detail: err.message });
+    }
+  });
+
+  // ============================================================================
+  // DEATH & RESURRECTION ENDPOINTS
+  // ============================================================================
+
+  /**
+   * GET /api/world/death-status - Check resurrection options (when dead)
+   */
+  router.get('/death-status', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      if (char.status !== 'dead') {
+        return res.json({ 
+          success: true, 
+          isDead: false,
+          message: 'You are alive and well!'
+        });
+      }
+      
+      const encounters = new EncounterManager(db);
+      const options = encounters.getResurrectionOptions(char.id);
+      
+      res.json(options);
+    } catch (err) {
+      console.error('Death status error:', err);
+      res.status(500).json({ success: false, error: 'Failed to check death status' });
+    }
+  });
+
+  /**
+   * POST /api/world/resurrect - Resurrect after death
+   * Body: { method: 'paid' | 'free' | 'voucher' }
+   */
+  router.post('/resurrect', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+      
+      if (char.status !== 'dead') {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'You are not dead!',
+          hint: 'Only dead characters can be resurrected'
+        });
+      }
+      
+      const { method } = req.body;
+      if (!method) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'method required (paid, free, or voucher)',
+          hint: 'Use GET /api/world/death-status to see available options'
+        });
+      }
+      
+      const encounters = new EncounterManager(db);
+      const result = encounters.resurrect(char.id, method);
+      
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      
+      // Notify spectators of resurrection
+      if (broadcastToSpectators) {
+        broadcastToSpectators({
+          type: 'agent_resurrect',
+          agentId: char.id,
+          agentName: char.name,
+          method,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      // Track activity
+      if (activityTracker) {
+        activityTracker.addCombatEvent(char.name, {
+          type: 'resurrection',
+          player: char.name,
+          method,
+          xpLost: result.xpLoss,
+          levelsLost: result.levelsLost || 0
+        });
+      }
+      
+      res.json(result);
+    } catch (err) {
+      console.error('Resurrect error:', err);
+      res.status(500).json({ success: false, error: 'Failed to resurrect', detail: err.message });
     }
   });
 
