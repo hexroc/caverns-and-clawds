@@ -3,6 +3,16 @@
  * Tick-based 5e-style combat resolver with XP and leveling
  */
 
+// Import narration system
+const narration = require('./narration');
+
+// Import combat subsystems
+const deathSaves = require('./combat/death-saves');
+const sneakAttack = require('./combat/sneak-attack');
+const damageSystem = require('./combat/damage');
+const reactions = require('./combat/reactions');
+const conditions = require('./combat/conditions');
+
 // ============================================================================
 // RANGE BANDS & POSITIONING
 // ============================================================================
@@ -1164,8 +1174,72 @@ const ACTIONS = {
   cast_spell: (character, enemies, options = {}) => {
     const spellName = options.spell || 'magic_missile';
     const targetIndex = options.targetIndex || 0;
+    const slotLevel = options.slotLevel;
     
-    // Try cantrip system first
+    // Try leveled spell system first
+    try {
+      const spellSystem = require('./spells/index');
+      const spell = spellSystem.getSpell(spellName);
+      
+      if (spell) {
+        // Use new leveled spell system
+        const targets = [];
+        
+        // Determine targets based on spell
+        if (spell.range === 'self' || spell.range === 0) {
+          targets.push(character);
+        } else if (spell.area) {
+          // Area spells - could affect multiple enemies
+          targets.push(...enemies.filter(e => e.currentHp > 0));
+        } else {
+          // Single target spell
+          const target = enemies[targetIndex];
+          if (!target || target.currentHp <= 0) {
+            return { success: false, error: 'Invalid target' };
+          }
+          targets.push(target);
+        }
+        
+        // Range validation for targeted spells
+        if (spell.range !== 'self' && spell.range > 0) {
+          const characterPos = character.position || { rangeBand: RANGE_BANDS.MELEE };
+          const targetPos = targets[0].position || { rangeBand: RANGE_BANDS.MELEE };
+          
+          if (!validateRange(characterPos, targetPos, spell.range)) {
+            return {
+              success: false,
+              error: `Target out of spell range! ${targetPos.rangeBand} is beyond ${spell.range} ft range of ${spell.name}`,
+              currentRange: characterPos.rangeBand,
+              targetRange: targetPos.rangeBand,
+              spellRange: spell.range
+            };
+          }
+        }
+        
+        // Cast the spell using the new system
+        const castResult = spellSystem.castSpell(spellName, character, targets, { ...options, slotLevel });
+        
+        // Handle concentration damage when casting
+        if (castResult.success && castResult.concentration) {
+          const concentrationStatus = spellSystem.getConcentrationStatus(character);
+          if (concentrationStatus.concentrating) {
+            castResult.concentrationWarning = `Ended concentration on ${concentrationStatus.spellName}`;
+          }
+        }
+        
+        return {
+          action: 'cast_spell',
+          spell: spell.name,
+          spellId: spellName,
+          ...castResult
+        };
+      }
+    } catch (err) {
+      // Leveled spell system not available or error, try cantrips
+      console.log('Leveled spell system error:', err.message);
+    }
+    
+    // Try cantrip system
     try {
       const { castCantrip, getCantrip } = require('./spells/cantrips');
       const cantrip = getCantrip(spellName);
@@ -1648,95 +1722,41 @@ function resolveEnemyTurn(enemy, character, combatState) {
 }
 
 // ============================================================================
-// NARRATION GENERATOR
+// NARRATION GENERATOR (Now using book-style narrative system)
 // ============================================================================
 
-const ATTACK_VERBS = {
-  slashing: ['slashes', 'cleaves', 'hacks', 'carves', 'rends'],
-  piercing: ['stabs', 'pierces', 'impales', 'skewers', 'punctures'],
-  bludgeoning: ['smashes', 'crushes', 'batters', 'pounds', 'hammers'],
-  fire: ['burns', 'scorches', 'immolates', 'sears', 'incinerates'],
-  cold: ['freezes', 'chills', 'frosts', 'numbs', 'ice-blasts'],
-  necrotic: ['withers', 'drains', 'corrupts', 'decays', 'blights'],
-  force: ['blasts', 'strikes', 'slams', 'impacts', 'hammers'],
-  default: ['strikes', 'hits', 'attacks', 'wounds', 'damages']
-};
-
-const MISS_DESCRIPTIONS = [
-  'The attack goes wide!',
-  'A narrow miss!',
-  'The blow is deflected!',
-  'The strike falls short!',
-  'The attack is parried!',
-  'A glancing blow misses its mark!',
-  'The swing connects with nothing but air!',
-  'The attack is dodged at the last second!'
-];
-
-const CRIT_DESCRIPTIONS = [
-  'A DEVASTATING blow!',
-  'CRITICAL HIT! A perfect strike!',
-  'The attack finds a vital point!',
-  'An absolutely BRUTAL hit!',
-  'A masterful strike of deadly precision!',
-  'The blow lands with bone-shattering force!'
-];
-
-const CRIT_FAIL_DESCRIPTIONS = [
-  'A catastrophic fumble!',
-  'The attack goes wildly astray!',
-  'A clumsy miss!',
-  'The swing overextends dramatically!',
-  'A humiliating whiff!'
-];
-
-const DEATH_DESCRIPTIONS = [
-  'collapses in a heap',
-  'falls with a final gasp',
-  'crumples to the ground',
-  'meets their end',
-  'is vanquished',
-  'breathes their last',
-  'falls lifeless'
-];
-
-function generateAttackNarration(attacker, defender, result) {
-  const damageType = result.damageType || 'default';
-  const verbs = ATTACK_VERBS[damageType] || ATTACK_VERBS.default;
-  const verb = verbs[Math.floor(Math.random() * verbs.length)];
-  
-  if (result.isCritFail) {
-    const critFail = CRIT_FAIL_DESCRIPTIONS[Math.floor(Math.random() * CRIT_FAIL_DESCRIPTIONS.length)];
-    return `${attacker.name} attacks ${defender.name}... ${critFail}`;
+/**
+ * Generate attack narration using the advanced narration system
+ * Falls back to simple narration if new system fails
+ */
+function generateAttackNarration(attacker, defender, result, distance = null) {
+  try {
+    // Use the new descriptive narration system
+    return narration.generateAttackNarration(attacker, defender, result, distance);
+  } catch (error) {
+    console.error('Narration system error:', error);
+    // Fallback to simple narration
+    if (result.isCrit) {
+      return `${attacker.name} CRITICALLY HITS ${defender.name} for **${result.damage} damage!**`;
+    } else if (!result.hits) {
+      return `${attacker.name} attacks ${defender.name} but misses!`;
+    }
+    return `${attacker.name} hits ${defender.name} for **${result.damage} damage!**`;
   }
-  
-  if (!result.hits) {
-    const miss = MISS_DESCRIPTIONS[Math.floor(Math.random() * MISS_DESCRIPTIONS.length)];
-    return `${attacker.name} swings at ${defender.name}... ${miss}`;
-  }
-  
-  if (result.isCrit) {
-    const crit = CRIT_DESCRIPTIONS[Math.floor(Math.random() * CRIT_DESCRIPTIONS.length)];
-    return `${attacker.name} ${verb} ${defender.name}! ${crit} **${result.damage} damage!**`;
-  }
-  
-  // Normal hit
-  const intensity = result.damage > 15 ? 'powerfully ' : result.damage > 8 ? '' : 'lightly ';
-  return `${attacker.name} ${intensity}${verb} ${defender.name} for **${result.damage} damage!**`;
 }
 
-function generateMovementNarration(character, fromBand, toBand, cost, difficultTerrain, opportunityAttacks) {
-  const terrain = difficultTerrain ? ' through difficult terrain' : '';
-  let narrative = `${character.name} moves from ${fromBand} to ${toBand}${terrain} (${cost} ft)`;
-  
-  if (opportunityAttacks.length > 0) {
-    narrative += '\n⚠️ **Opportunity Attacks triggered!**';
-    for (const oa of opportunityAttacks) {
-      narrative += `\n${oa.narrative}`;
-    }
+/**
+ * Generate movement narration using the advanced narration system
+ */
+function generateMovementNarration(character, fromBand, toBand, cost, difficultTerrain, opportunityAttacks = []) {
+  try {
+    return narration.generateMovementNarration(character, fromBand, toBand, cost, difficultTerrain, opportunityAttacks);
+  } catch (error) {
+    console.error('Narration system error:', error);
+    // Fallback
+    const terrain = difficultTerrain ? ' through difficult terrain' : '';
+    return `${character.name} moves from ${fromBand} to ${toBand}${terrain} (${cost} ft)`;
   }
-  
-  return narrative;
 }
 
 /**
@@ -1749,13 +1769,21 @@ function resolveOpportunityAttack(attacker, defender) {
     attacker: attacker.name,
     defender: defender.name,
     ...result,
-    narrative: generateAttackNarration(attacker, defender, result) + ' [Opportunity Attack]'
+    narrative: generateAttackNarration(attacker, defender, result) + ' **[Opportunity Attack]**'
   };
 }
 
-function generateDeathNarration(deceased) {
-  const death = DEATH_DESCRIPTIONS[Math.floor(Math.random() * DEATH_DESCRIPTIONS.length)];
-  return `**${deceased.name} ${death}!**`;
+/**
+ * Generate death narration using the advanced narration system
+ */
+function generateDeathNarration(deceased, killer = null) {
+  try {
+    return narration.generateDeathNarration(deceased, killer);
+  } catch (error) {
+    console.error('Narration system error:', error);
+    // Fallback
+    return `**${deceased.name} has fallen!**`;
+  }
 }
 
 function generateVictoryNarration(character, enemies) {
@@ -2050,17 +2078,56 @@ function resolveCombatRound(combatState, playerAction) {
           character.currentHp -= result.damage;
           roundResults.damage_taken += result.damage;
           
+          // Check concentration if damaged
+          if (character.concentration) {
+            try {
+              const spellSystem = require('./spells/index');
+              const concSave = spellSystem.concentrationSave(character, result.damage);
+              if (!concSave.success) {
+                roundResults.narration.push(concSave.message);
+              }
+            } catch (err) {
+              // Concentration system not available
+            }
+          }
+          
           // Apply special effects
           for (const effect of (result.specialEffects || [])) {
             if (effect.damage) {
               character.currentHp -= effect.damage;
               roundResults.damage_taken += effect.damage;
               roundResults.narration.push(effect.narration);
+              
+              // Check concentration for additional damage
+              if (character.concentration) {
+                try {
+                  const spellSystem = require('./spells/index');
+                  const concSave = spellSystem.concentrationSave(character, effect.damage);
+                  if (!concSave.success) {
+                    roundResults.narration.push(concSave.message);
+                  }
+                } catch (err) {
+                  // Concentration system not available
+                }
+              }
             }
             if (effect.type === 'paralyzed') {
               character.conditions = character.conditions || [];
               character.conditions.push('paralyzed');
               roundResults.narration.push(effect.narration);
+              
+              // Break concentration if paralyzed
+              if (character.concentration) {
+                try {
+                  const spellSystem = require('./spells/index');
+                  const broken = spellSystem.breakConcentration(character, 'paralyzed');
+                  if (broken) {
+                    roundResults.narration.push(broken.message);
+                  }
+                } catch (err) {
+                  // Concentration system not available
+                }
+              }
             }
           }
           
