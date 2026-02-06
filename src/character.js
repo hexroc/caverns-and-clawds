@@ -1123,6 +1123,10 @@ class CharacterManager {
         `).run(crypto.randomUUID(), characterId, feature, 'class:' + classData.name);
       }
       
+      // Initialize class feature state (uses, pools, etc.)
+      const { initClassFeatures } = require('./init-class-features');
+      initClassFeatures(characterId, characterClass, 1, finalStats);
+      
       return {
         success: true,
         character: this.getCharacter(characterId)
