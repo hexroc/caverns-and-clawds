@@ -164,15 +164,9 @@ router.get('/market-prices', (req, res) => {
  */
 router.get('/agents', (req, res) => {
   try {
-    const agents = db.prepare(`
-      SELECT 
-        u.id, u.name,
-        c.id as char_id, c.name as char_name, c.race, c.class, c.level, c.hp_current, c.hp_max, c.current_zone as location
-      FROM users u
-      LEFT JOIN clawds c ON c.agent_id = u.id
-      WHERE u.type = 'agent'
-      ORDER BY c.level DESC, u.name ASC
-    `).all();
+    // Only show agents active in the last 60 minutes (filters out ghost agents)
+    const { getActiveAgents } = require('./activity-timeout');
+    const agents = getActiveAgents(db, 60);
     
     res.json({
       success: true,

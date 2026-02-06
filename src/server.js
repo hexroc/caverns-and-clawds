@@ -546,6 +546,11 @@ function authenticateAgent(req, res, next) {
   }
   
   req.user = user;
+  
+  // Track activity (for ghost agent cleanup)
+  const { updateActivity } = require('./activity-timeout');
+  updateActivity(db, user.id);
+  
   next();
 }
 
@@ -3001,6 +3006,11 @@ console.log('💰 Economy system loaded (USDC, banking, trading)');
 const { initSpellsTable } = require('./spell-init');
 initSpellsTable(db);
 console.log('✨ Spell tracking system initialized (cantrips + prepared/known spells)');
+
+// Initialize activity timeout (ghost agent cleanup)
+const { initActivityTracking } = require('./activity-timeout');
+initActivityTracking(db);
+console.log('🕐 Activity tracking initialized (1 hour timeout for ghost agents)');
 
 // Initialize and mount DeFi routes (Kamino vault integration)
 const { init: initDefiRoutes } = require('./economy/defi-routes');
