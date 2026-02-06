@@ -4,6 +4,92 @@
  */
 
 // ============================================================================
+// RANGE BANDS & POSITIONING
+// ============================================================================
+
+const RANGE_BANDS = {
+  MELEE: 'melee',           // 0-5 ft (adjacent, can melee attack)
+  NEAR: 'near',             // 10-30 ft (move action to close, ranged viable)
+  FAR: 'far',               // 35-60 ft (2+ moves to close, long range)
+  DISTANT: 'distant',       // 65-120 ft (3+ moves, extreme range)
+  OUT_OF_RANGE: 'out_of_range'  // 120+ ft (unreachable)
+};
+
+// Movement cost per range band
+const MOVEMENT_COSTS = {
+  [RANGE_BANDS.MELEE]: 5,
+  [RANGE_BANDS.NEAR]: 20,
+  [RANGE_BANDS.FAR]: 30,
+  [RANGE_BANDS.DISTANT]: 60
+};
+
+// Distance in feet for each band (for range checking)
+const RANGE_DISTANCES = {
+  [RANGE_BANDS.MELEE]: 5,
+  [RANGE_BANDS.NEAR]: 30,
+  [RANGE_BANDS.FAR]: 60,
+  [RANGE_BANDS.DISTANT]: 120,
+  [RANGE_BANDS.OUT_OF_RANGE]: 999
+};
+
+/**
+ * Get range band from distance in feet
+ */
+function getRangeBandFromDistance(distance) {
+  if (distance <= 5) return RANGE_BANDS.MELEE;
+  if (distance <= 30) return RANGE_BANDS.NEAR;
+  if (distance <= 60) return RANGE_BANDS.FAR;
+  if (distance <= 120) return RANGE_BANDS.DISTANT;
+  return RANGE_BANDS.OUT_OF_RANGE;
+}
+
+/**
+ * Calculate movement cost to move between range bands
+ */
+function getMovementCost(fromBand, toBand, difficultTerrain = false) {
+  const bands = [RANGE_BANDS.MELEE, RANGE_BANDS.NEAR, RANGE_BANDS.FAR, RANGE_BANDS.DISTANT];
+  const fromIndex = bands.indexOf(fromBand);
+  const toIndex = bands.indexOf(toBand);
+  
+  if (fromIndex === -1 || toIndex === -1) return Infinity;
+  
+  let cost = 0;
+  const direction = toIndex > fromIndex ? 1 : -1;
+  
+  for (let i = fromIndex; i !== toIndex; i += direction) {
+    const nextBand = bands[i + direction];
+    cost += MOVEMENT_COSTS[nextBand] || 5;
+  }
+  
+  return difficultTerrain ? cost * 2 : cost;
+}
+
+/**
+ * Check if character is threatened (enemies at melee range)
+ */
+function isThreatened(characterPosition, enemyPositions) {
+  return enemyPositions.some(pos => pos.rangeBand === RANGE_BANDS.MELEE && pos.alive);
+}
+
+/**
+ * Check if two combatants are flanking a target
+ */
+function checkFlanking(attacker1Pos, attacker2Pos, targetPos) {
+  // Simplified flanking: both attackers at melee range with target
+  return attacker1Pos.rangeBand === RANGE_BANDS.MELEE && 
+         attacker2Pos.rangeBand === RANGE_BANDS.MELEE &&
+         targetPos.rangeBand === RANGE_BANDS.MELEE;
+}
+
+/**
+ * Validate attack/spell range
+ */
+function validateRange(attackerPos, targetPos, requiredRange) {
+  const distance = RANGE_DISTANCES[targetPos.rangeBand] || 0;
+  return distance <= requiredRange;
+}
+
+// ============================================================================
 // XP & LEVELING SYSTEM (Solo-adjusted from 5e)
 // ============================================================================
 
@@ -968,14 +1054,49 @@ function canUseCunningAction(actionType, character) {
 
 const ACTIONS = {
   attack: (character, enemies, options = {}) => {
-    const targetIndex = options.targetIndex || 0;
+    const { targetIndex = 0, combatState, weaponRange = 5 } = options;
     const target = enemies[targetIndex];
     if (!target || target.currentHp <= 0) {
       return { success: false, error: 'Invalid target' };
     }
     
-    const advantage = options.advantage || character.conditions?.includes('hidden');
-    const disadvantage = options.disadvantage || character.conditions?.includes('poisoned');
+    // Range validation
+    const characterPos = character.position || { rangeBand: RANGE_BANDS.MELEE };
+    const targetPos = target.position || { rangeBand: RANGE_BANDS.MELEE };
+    
+    // Check if weapon can reach target
+    if (!validateRange(characterPos, targetPos, weaponRange)) {
+      return {
+        success: false,
+        error: `Target out of range! ${targetPos.rangeBand} is beyond weapon range (${weaponRange} ft)`,
+        currentRange: characterPos.rangeBand,
+        targetRange: targetPos.rangeBand,
+        weaponRange
+      };
+    }
+    
+    // Check for advantage/disadvantage
+    let advantage = options.advantage || character.conditions?.includes('hidden');
+    let disadvantage = options.disadvantage || character.conditions?.includes('poisoned');
+    
+    // Flanking check (advantage if ally adjacent to same enemy)
+    if (combatState?.henchman && combatState.henchman.currentHp > 0) {
+      const henchmanPos = combatState.henchman.position || { rangeBand: RANGE_BANDS.MELEE };
+      if (checkFlanking(characterPos, henchmanPos, targetPos)) {
+        advantage = true;
+        options.flankingBonus = true;
+      }
+    }
+    
+    // Disadvantage on ranged attacks when threatened
+    const isRangedAttack = weaponRange > 5;
+    if (isRangedAttack && isThreatened(characterPos, enemies.map(e => ({ 
+      rangeBand: e.position?.rangeBand, 
+      alive: e.currentHp > 0 
+    })))) {
+      disadvantage = true;
+      options.threatenedPenalty = true;
+    }
     
     // Calculate number of attacks based on level and class
     const level = character.level || character.stats?.level || 1;
@@ -1014,7 +1135,14 @@ const ACTIONS = {
         currentTarget.currentHp -= result.damage;
       }
       
-      narratives.push(generateAttackNarration(character, currentTarget, result));
+      let attackNarrative = generateAttackNarration(character, currentTarget, result);
+      if (i === 0 && options.flankingBonus) {
+        attackNarrative += ' [Flanking - Advantage]';
+      }
+      if (i === 0 && options.threatenedPenalty) {
+        attackNarrative += ' [Threatened - Disadvantage]';
+      }
+      narratives.push(attackNarrative);
     }
     
     return {
@@ -1027,7 +1155,9 @@ const ACTIONS = {
       totalDamage,
       damage: totalDamage,
       result: attacks[0], // For backwards compatibility
-      narrative: narratives.join(' ')
+      narrative: narratives.join(' '),
+      flankingBonus: options.flankingBonus,
+      threatenedPenalty: options.threatenedPenalty
     };
   },
   
@@ -1040,14 +1170,14 @@ const ACTIONS = {
       return { success: false, error: 'No spells available' };
     }
     
-    // Simple spell effects
+    // Simple spell effects with ranges
     const spells = {
-      magic_missile: { damage: '3d4+3', auto: true, type: 'force' },
-      fire_bolt: { damage: '1d10', attackRoll: true, type: 'fire' },
-      healing_word: { healing: '1d4+3', target: 'self' },
-      thunderwave: { damage: '2d8', save: 'CON', dc: 13, type: 'thunder' },
-      burning_hands: { damage: '3d6', save: 'DEX', dc: 13, type: 'fire' },
-      cure_wounds: { healing: '1d8+3', target: 'self' }
+      magic_missile: { damage: '3d4+3', auto: true, type: 'force', range: 120 },
+      fire_bolt: { damage: '1d10', attackRoll: true, type: 'fire', range: 120 },
+      healing_word: { healing: '1d4+3', target: 'self', range: 60 },
+      thunderwave: { damage: '2d8', save: 'CON', dc: 13, type: 'thunder', range: 15 },
+      burning_hands: { damage: '3d6', save: 'DEX', dc: 13, type: 'fire', range: 15 },
+      cure_wounds: { healing: '1d8+3', target: 'self', range: 0 }
     };
     
     const spell = spells[spellName];
@@ -1067,6 +1197,20 @@ const ACTIONS = {
     const target = enemies[targetIndex];
     if (!target || target.currentHp <= 0) {
       return { success: false, error: 'Invalid target' };
+    }
+    
+    // Range validation for targeted spells
+    const characterPos = character.position || { rangeBand: RANGE_BANDS.MELEE };
+    const targetPos = target.position || { rangeBand: RANGE_BANDS.MELEE };
+    
+    if (!validateRange(characterPos, targetPos, spell.range)) {
+      return {
+        success: false,
+        error: `Target out of spell range! ${targetPos.rangeBand} is beyond ${spell.range} ft range of ${spellName}`,
+        currentRange: characterPos.rangeBand,
+        targetRange: targetPos.rangeBand,
+        spellRange: spell.range
+      };
     }
     
     result.target = target.name;
@@ -1119,12 +1263,107 @@ const ACTIONS = {
   },
   
   dash: (character, enemies, options = {}) => {
+    // Dash action doubles movement budget
+    if (!character.movement) {
+      character.movement = { total: 30, remaining: 30, usedThisTurn: false };
+    }
+    
+    character.movement.remaining = character.movement.total * 2 - (character.movement.total - character.movement.remaining);
+    
     return {
       success: true,
       action: 'dash',
       effect: 'double_movement',
-      skipCombat: true,
-      narrative: `${character.name} sprints through the chaos, covering extra ground!`
+      movementRemaining: character.movement.remaining,
+      narrative: `${character.name} takes the Dash action! Movement doubled to ${character.movement.remaining} ft!`
+    };
+  },
+  
+  move: (character, enemies, options = {}) => {
+    const { targetRange, targetId, combatState } = options;
+    
+    if (!targetRange) {
+      return { 
+        success: false, 
+        error: 'Specify target range band',
+        availableRanges: Object.values(RANGE_BANDS).slice(0, 4) // exclude OUT_OF_RANGE
+      };
+    }
+    
+    if (!character.movement) {
+      character.movement = { total: 30, remaining: 30, usedThisTurn: false };
+    }
+    
+    if (!character.position) {
+      character.position = { rangeBand: RANGE_BANDS.MELEE };
+    }
+    
+    const currentRange = character.position.rangeBand;
+    const difficultTerrain = combatState?.difficultTerrain || false;
+    
+    // Calculate movement cost
+    const cost = getMovementCost(currentRange, targetRange, difficultTerrain);
+    
+    if (cost > character.movement.remaining) {
+      return {
+        success: false,
+        error: `Not enough movement! Need ${cost} ft, have ${character.movement.remaining} ft`,
+        currentRange,
+        targetRange,
+        cost,
+        remaining: character.movement.remaining
+      };
+    }
+    
+    // Check if leaving melee range (opportunity attacks)
+    const leavingMelee = currentRange === RANGE_BANDS.MELEE && targetRange !== RANGE_BANDS.MELEE;
+    const threatened = isThreatened(character.position, enemies.map(e => e.position || {}));
+    const hasDisengaged = character.conditions?.includes('disengaged');
+    
+    let opportunityAttacks = [];
+    
+    if (leavingMelee && threatened && !hasDisengaged) {
+      // Trigger opportunity attacks from adjacent enemies
+      const adjacentEnemies = enemies.filter(e => 
+        e.currentHp > 0 && 
+        e.position?.rangeBand === RANGE_BANDS.MELEE &&
+        !e.reactionUsed
+      );
+      
+      for (const enemy of adjacentEnemies) {
+        const oa = resolveOpportunityAttack(enemy, character);
+        opportunityAttacks.push(oa);
+        enemy.reactionUsed = true;
+      }
+    }
+    
+    // Move character
+    character.position.rangeBand = targetRange;
+    character.movement.remaining -= cost;
+    character.movement.usedThisTurn = true;
+    
+    // Update adjacency if moving to/from melee
+    if (combatState?.adjacency) {
+      if (targetRange === RANGE_BANDS.MELEE) {
+        // Now adjacent to all melee enemies
+        combatState.adjacency.player = enemies
+          .filter(e => e.currentHp > 0 && e.position?.rangeBand === RANGE_BANDS.MELEE)
+          .map(e => e.id);
+      } else {
+        // No longer adjacent
+        combatState.adjacency.player = [];
+      }
+    }
+    
+    return {
+      success: true,
+      action: 'move',
+      from: currentRange,
+      to: targetRange,
+      cost,
+      remainingMovement: character.movement.remaining,
+      opportunityAttacks,
+      narrative: generateMovementNarration(character, currentRange, targetRange, cost, difficultTerrain, opportunityAttacks)
     };
   },
   
@@ -1220,11 +1459,16 @@ const ACTIONS = {
   },
   
   disengage: (character, enemies, options = {}) => {
+    // Add disengaged condition (prevents opportunity attacks until end of turn)
+    if (!character.conditions) character.conditions = [];
+    character.conditions.push('disengaged');
+    
     return {
       success: true,
       action: 'disengage',
       effect: 'no_opportunity_attacks',
-      narrative: `${character.name} carefully disengages, avoiding attacks of opportunity!`
+      narrative: `${character.name} carefully disengages, avoiding attacks of opportunity!`,
+      hint: 'You can now move away from melee range without triggering opportunity attacks.'
     };
   }
 };
@@ -1424,6 +1668,34 @@ function generateAttackNarration(attacker, defender, result) {
   return `${attacker.name} ${intensity}${verb} ${defender.name} for **${result.damage} damage!**`;
 }
 
+function generateMovementNarration(character, fromBand, toBand, cost, difficultTerrain, opportunityAttacks) {
+  const terrain = difficultTerrain ? ' through difficult terrain' : '';
+  let narrative = `${character.name} moves from ${fromBand} to ${toBand}${terrain} (${cost} ft)`;
+  
+  if (opportunityAttacks.length > 0) {
+    narrative += '\n⚠️ **Opportunity Attacks triggered!**';
+    for (const oa of opportunityAttacks) {
+      narrative += `\n${oa.narrative}`;
+    }
+  }
+  
+  return narrative;
+}
+
+/**
+ * Resolve opportunity attack (triggered when leaving melee without Disengage)
+ */
+function resolveOpportunityAttack(attacker, defender) {
+  const result = resolveAttack(attacker, defender);
+  
+  return {
+    attacker: attacker.name,
+    defender: defender.name,
+    ...result,
+    narrative: generateAttackNarration(attacker, defender, result) + ' [Opportunity Attack]'
+  };
+}
+
 function generateDeathNarration(deceased) {
   const death = DEATH_DESCRIPTIONS[Math.floor(Math.random() * DEATH_DESCRIPTIONS.length)];
   return `**${deceased.name} ${death}!**`;
@@ -1442,16 +1714,24 @@ function generateDefeatNarration(character) {
 // MAIN COMBAT RESOLUTION
 // ============================================================================
 
-function initializeCombat(character, enemyTypes) {
-  // Create enemy instances with current HP
+function initializeCombat(character, enemyTypes, options = {}) {
+  // Create enemy instances with current HP and positioning
   const enemies = enemyTypes.map((type, index) => {
     const template = MONSTERS[type] || MONSTERS.goblin;
+    
+    // Initialize enemy at NEAR range (typical starting distance)
+    const startingRange = options.startingRange || RANGE_BANDS.NEAR;
+    
     return {
       ...template,
       id: `enemy_${index}`,
       currentHp: template.hp,
       maxHp: template.hp,
-      conditions: []
+      conditions: [],
+      position: {
+        rangeBand: startingRange,
+        targetId: 'player' // enemies target player by default
+      }
     };
   });
   
@@ -1465,7 +1745,7 @@ function initializeCombat(character, enemyTypes) {
   const conMod = getMod(character.stats?.constitution || 10);
   const expectedHp = calculateHP(level, className, conMod);
   
-  // Initialize character combat state
+  // Initialize character combat state with positioning and movement
   const charCombat = {
     ...character,
     level,
@@ -1476,8 +1756,31 @@ function initializeCombat(character, enemyTypes) {
     conditions: [],
     proficiencyBonus: profBonus,
     attacks: getNumberOfAttacks(level, className),
-    spellSlots: getSpellSlots(level, className)
+    spellSlots: getSpellSlots(level, className),
+    position: {
+      rangeBand: RANGE_BANDS.MELEE // Player starts at melee range
+    },
+    movement: {
+      total: 30, // Base movement speed (5e standard)
+      remaining: 30,
+      usedThisTurn: false
+    },
+    actionUsed: false,
+    bonusActionUsed: false,
+    reactionUsed: false
   };
+  
+  // Track henchman positioning if present
+  if (options.henchman) {
+    options.henchman.position = {
+      rangeBand: RANGE_BANDS.MELEE // Henchman starts adjacent to player
+    };
+    options.henchman.movement = {
+      total: 30,
+      remaining: 30,
+      usedThisTurn: false
+    };
+  }
   
   // Roll initiative
   const order = determineCombatOrder(charCombat, enemies);
@@ -1485,11 +1788,18 @@ function initializeCombat(character, enemyTypes) {
   return {
     character: charCombat,
     enemies,
+    henchman: options.henchman || null,
     initiativeOrder: order,
     round: 1,
     turnIndex: 0,
     combatLog: [],
-    characterDodging: false
+    characterDodging: false,
+    difficultTerrain: options.difficultTerrain || false,
+    // Track which enemies are adjacent to which characters for flanking
+    adjacency: {
+      player: enemies.filter(e => e.position.rangeBand === RANGE_BANDS.MELEE).map(e => e.id),
+      henchman: options.henchman ? [] : null
+    }
   };
 }
 
@@ -1791,6 +2101,17 @@ module.exports = {
   rollWithAdvantage,
   rollWithDisadvantage,
   
+  // Range Bands & Positioning
+  RANGE_BANDS,
+  MOVEMENT_COSTS,
+  RANGE_DISTANCES,
+  getRangeBandFromDistance,
+  getMovementCost,
+  isThreatened,
+  checkFlanking,
+  validateRange,
+  resolveOpportunityAttack,
+  
   // XP & Leveling
   XP_THRESHOLDS,
   PROFICIENCY_BY_LEVEL,
@@ -1831,5 +2152,6 @@ module.exports = {
   generateAttackNarration,
   generateDeathNarration,
   generateVictoryNarration,
-  generateDefeatNarration
+  generateDefeatNarration,
+  generateMovementNarration
 };
