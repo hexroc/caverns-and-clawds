@@ -14,6 +14,7 @@ const { HenchmanManager } = require('./henchmen');
 const { generateZoneLoot, getZoneTier } = require('./loot-tables');
 const { generateMaterialDrops, addMaterialsToPlayer } = require('./economy/material-drops');
 const { activityTracker } = require('./activity-tracker');
+const { generateSpellNarration, generateHealingNarration, generateAoENarration } = require('./narration/spell-narration');
 
 // ============================================================================
 // SPELLS (5e, Sea-themed names)
@@ -1478,7 +1479,6 @@ class EncounterManager {
     
     // Cast the spell
     const messages = [];
-    messages.push(`✨ You cast ${spell.name}!`);
     
     // Get monsters for targeting
     const spellRow = this.db.prepare('SELECT monsters FROM active_encounters WHERE id = ?').get(encounter.id);
@@ -1644,7 +1644,16 @@ class EncounterManager {
         const healing = this._rollDice('1d8') + spellMod;
         const newHP = Math.min(char.hp_max, char.hp_current + healing);
         this.db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHP, char.id);
-        messages.push(`💚 Healed ${healing} HP! (${char.hp_current} → ${newHP}/${char.hp_max})`);
+        
+        // Generate healing narration
+        const healNarration = generateHealingNarration(
+          { name: char.name },
+          spell.seaName || spell.name,
+          { name: char.name },
+          healing
+        );
+        messages.push(healNarration + ` **[${char.hp_current} → ${newHP}/${char.hp_max}]**`);
+        
         // Emit heal event for spectators
         activityTracker.addCombatEvent(char.name, {
           type: 'combat_spell',
@@ -1683,7 +1692,16 @@ class EncounterManager {
             totalDamage += this._rollDice('1d4') + 1;
           }
           target.hp -= totalDamage;
-          messages.push(`✨ Three bolts strike ${target.name} for ${totalDamage} damage!`);
+          
+          // Generate spell narration
+          const spellNarration = generateSpellNarration(
+            { name: char.name },
+            spell.seaName || spell.name,
+            { name: target.name },
+            { hits: true, damage: totalDamage, damageType: 'force' }
+          );
+          messages.push(spellNarration);
+          
           activityTracker.addCombatEvent(char.name, {
             type: 'combat_spell',
             player: char.name,
@@ -1756,12 +1774,15 @@ class EncounterManager {
       
       case 'burning_hands': {
         const damage = this._rollDice('3d6');
-        let hits = 0;
+        const targets = [];
+        
         for (const monster of monsters.filter(m => m.alive)) {
           const saved = Math.random() < 0.5;
           const finalDamage = saved ? Math.floor(damage / 2) : damage;
           monster.hp -= finalDamage;
-          hits++;
+          
+          targets.push({ name: monster.name, damage: finalDamage, saved });
+          
           activityTracker.addCombatEvent(char.name, {
             type: 'combat_spell',
             player: char.name,
@@ -1780,7 +1801,16 @@ class EncounterManager {
             });
           }
         }
-        messages.push(`🔥 Flames engulf ${hits} enemies for ${damage} damage!`);
+        
+        // Generate AoE narration
+        const aoeNarration = generateAoENarration(
+          { name: char.name },
+          spell.seaName || spell.name,
+          targets,
+          { damageType: 'fire' }
+        );
+        messages.push(aoeNarration);
+        
         updateMonsters = true;
         break;
       }
@@ -1793,14 +1823,25 @@ class EncounterManager {
           const damage = this._rollDice(spell.id === 'eldritch_blast' ? '1d10' : '1d8');
           // Cantrip - no save, just hits
           target.hp -= damage;
-          messages.push(`🔥 ${spell.name} hits ${target.name} for ${damage} damage!`);
+          
+          // Generate spell narration
+          const damageType = spell.id === 'sacred_flame' ? 'radiant' : 
+                           spell.id === 'eldritch_blast' ? 'force' : 'fire';
+          const spellNarration = generateSpellNarration(
+            { name: char.name },
+            spell.seaName || spell.name,
+            { name: target.name },
+            { hits: true, damage, damageType }
+          );
+          messages.push(spellNarration);
+          
           activityTracker.addCombatEvent(char.name, {
             type: 'combat_spell',
             player: char.name,
             spell: spell.seaName || spell.name,
             target: target.name,
             damage,
-            damageType: spell.damageType || 'fire'
+            damageType
           });
           if (target.hp <= 0) {
             target.alive = false;
