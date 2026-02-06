@@ -114,8 +114,62 @@ function restoreArcaneRecovery(wizard) {
   return true;
 }
 
+/**
+ * DB Wrapper: Use Arcane Recovery
+ */
+function useArcaneRecovery(db, characterId, slotLevels) {
+  const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+  if (!char) {
+    return { success: false, error: 'Character not found' };
+  }
+  
+  if (char.class?.toLowerCase() !== 'wizard') {
+    return { success: false, error: 'Only Wizards can use Arcane Recovery' };
+  }
+  
+  // Get uses
+  let uses = db.prepare('SELECT uses_remaining FROM class_features WHERE character_id = ? AND feature_name = ?')
+    .get(characterId, 'Arcane Recovery');
+  
+  if (!uses) {
+    // Initialize (1 per long rest)
+    db.prepare(`
+      INSERT INTO class_features (character_id, feature_name, uses_remaining, max_uses, recharge_type)
+      VALUES (?, 'Arcane Recovery', 1, 1, 'long_rest')
+    `).run(characterId);
+    uses = { uses_remaining: 1 };
+  }
+  
+  if (uses.uses_remaining <= 0) {
+    return { success: false, error: 'Arcane Recovery already used' };
+  }
+  
+  // Check level limit (can recover up to wizard level / 2)
+  const maxLevel = Math.ceil(char.level / 2);
+  if (slotLevels > maxLevel) {
+    return { success: false, error: `Can only recover ${maxLevel} spell slot levels` };
+  }
+  
+  // Recover slots (simplified: add to slot total)
+  // For now, just recover the requested level
+  const slotColumn = `spell_slots_${slotLevels}`;
+  db.prepare(`UPDATE clawds SET ${slotColumn} = ${slotColumn} + 1 WHERE id = ?`).run(characterId);
+  
+  // Use Arcane Recovery
+  db.prepare('UPDATE class_features SET uses_remaining = 0 WHERE character_id = ? AND feature_name = ?')
+    .run(characterId, 'Arcane Recovery');
+  
+  return {
+    success: true,
+    slotsRecovered: [`${slotLevels}${slotLevels === 1 ? 'st' : slotLevels === 2 ? 'nd' : slotLevels === 3 ? 'rd' : 'th'}`],
+    narrative: `🔮 Arcane Recovery: You regain a level ${slotLevels} spell slot!`
+  };
+}
+
 module.exports = {
   arcaneRecovery,
   applyArcaneRecovery,
-  restoreArcaneRecovery
+  restoreArcaneRecovery,
+  // DB Wrappers
+  useArcaneRecovery
 };

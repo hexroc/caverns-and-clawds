@@ -148,8 +148,73 @@ function restoreChannelDivinity(cleric) {
   return uses;
 }
 
+/**
+ * DB Wrapper: Use Turn Undead
+ */
+function useTurnUndead(db, characterId) {
+  const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+  if (!char) {
+    return { success: false, error: 'Character not found' };
+  }
+  
+  if (char.class?.toLowerCase() !== 'cleric') {
+    return { success: false, error: 'Only Clerics can use Turn Undead' };
+  }
+  
+  // Get Channel Divinity uses
+  let uses = db.prepare('SELECT uses_remaining FROM class_features WHERE character_id = ? AND feature_name = ?')
+    .get(characterId, 'Channel Divinity');
+  
+  if (!uses) {
+    // Initialize
+    const maxUses = char.level >= 18 ? 3 : char.level >= 6 ? 2 : 1;
+    db.prepare(`
+      INSERT INTO class_features (character_id, feature_name, uses_remaining, max_uses, recharge_type)
+      VALUES (?, 'Channel Divinity', ?, ?, 'short_rest')
+    `).run(characterId, maxUses, maxUses);
+    uses = { uses_remaining: maxUses };
+  }
+  
+  if (uses.uses_remaining <= 0) {
+    return { success: false, error: 'No Channel Divinity uses remaining' };
+  }
+  
+  const mockChar = { level: char.level, wis: 14 }; // Assume 14 WIS
+  const result = turnUndead(mockChar);
+  
+  if (result.success) {
+    // Use Channel Divinity
+    db.prepare('UPDATE class_features SET uses_remaining = uses_remaining - 1 WHERE character_id = ? AND feature_name = ?')
+      .run(characterId, 'Channel Divinity');
+  }
+  
+  return result;
+}
+
+/**
+ * DB Wrapper: Use Destroy Undead
+ */
+function useDestroyUndead(db, characterId, undeadCR) {
+  const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+  if (!char) {
+    return { success: false, error: 'Character not found' };
+  }
+  
+  if (char.class?.toLowerCase() !== 'cleric') {
+    return { success: false, error: 'Only Clerics can use Destroy Undead' };
+  }
+  
+  const mockChar = { level: char.level };
+  const result = destroyUndead(mockChar, undeadCR);
+  
+  return result;
+}
+
 module.exports = {
   turnUndead,
   destroyUndead,
-  restoreChannelDivinity
+  restoreChannelDivinity,
+  // DB Wrappers
+  useTurnUndead,
+  useDestroyUndead
 };

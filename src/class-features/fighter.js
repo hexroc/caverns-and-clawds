@@ -237,6 +237,55 @@ function canActionSurge(character) {
   return { can: true, uses: character.actionSurgeUses };
 }
 
+/**
+ * DB Wrapper: Use Second Wind
+ */
+function useSecondWind(db, characterId) {
+  const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+  if (!char) {
+    return { success: false, error: 'Character not found' };
+  }
+  
+  const result = secondWind(char);
+  
+  if (result.success) {
+    // Update HP and uses in DB
+    db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(result.newHp, characterId);
+    
+    db.prepare(`
+      INSERT INTO class_features (character_id, feature_name, uses_remaining, max_uses, recharge_type)
+      VALUES (?, 'Second Wind', 0, 1, 'short_rest')
+      ON CONFLICT(character_id, feature_name) DO UPDATE SET uses_remaining = 0
+    `).run(characterId);
+  }
+  
+  return result;
+}
+
+/**
+ * DB Wrapper: Use Action Surge
+ */
+function useActionSurge(db, characterId) {
+  const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+  if (!char) {
+    return { success: false, error: 'Character not found' };
+  }
+  
+  const result = actionSurge(char);
+  
+  if (result.success) {
+    // Update uses in DB
+    const max = char.level >= 17 ? 2 : 1;
+    db.prepare(`
+      INSERT INTO class_features (character_id, feature_name, uses_remaining, max_uses, recharge_type)
+      VALUES (?, 'Action Surge', ?, ?, 'short_rest')
+      ON CONFLICT(character_id, feature_name) DO UPDATE SET uses_remaining = ?
+    `).run(characterId, result.usesRemaining, max, result.usesRemaining);
+  }
+  
+  return result;
+}
+
 module.exports = {
   FIGHTING_STYLES,
   applyFightingStyle,
@@ -244,5 +293,8 @@ module.exports = {
   restoreSecondWind,
   actionSurge,
   restoreActionSurge,
-  canActionSurge
+  canActionSurge,
+  // DB Wrappers
+  useSecondWind,
+  useActionSurge
 };

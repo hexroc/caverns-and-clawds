@@ -205,11 +205,77 @@ function canBardicInspiration(bard) {
   };
 }
 
+/**
+ * DB Wrapper: Give Bardic Inspiration
+ */
+function giveBardicInspiration(db, bardId, targetId) {
+  const bard = db.prepare('SELECT * FROM clawds WHERE id = ?').get(bardId);
+  if (!bard) {
+    return { success: false, error: 'Bard not found' };
+  }
+  
+  const target = db.prepare('SELECT * FROM clawds WHERE id = ?').get(targetId);
+  if (!target) {
+    return { success: false, error: 'Target not found' };
+  }
+  
+  // Check if bard
+  if (bard.class?.toLowerCase() !== 'bard') {
+    return { success: false, error: 'Only Bards can give Bardic Inspiration' };
+  }
+  
+  // Get uses
+  let uses = db.prepare('SELECT uses_remaining FROM class_features WHERE character_id = ? AND feature_name = ?')
+    .get(bardId, 'Bardic Inspiration');
+  
+  if (!uses) {
+    // Initialize (CHA mod, min 1)
+    const chaMod = 4; // Default CHA mod
+    const maxUses = Math.max(1, chaMod);
+    db.prepare(`
+      INSERT INTO class_features (character_id, feature_name, uses_remaining, max_uses, recharge_type)
+      VALUES (?, 'Bardic Inspiration', ?, ?, ?)
+    `).run(bardId, maxUses, maxUses, bard.level >= 5 ? 'short_rest' : 'long_rest');
+    uses = { uses_remaining: maxUses };
+  }
+  
+  if (uses.uses_remaining <= 0) {
+    return { success: false, error: 'No Bardic Inspiration uses remaining' };
+  }
+  
+  // Determine die size
+  let dieSize = 6;
+  if (bard.level >= 15) dieSize = 12;
+  else if (bard.level >= 10) dieSize = 10;
+  else if (bard.level >= 5) dieSize = 8;
+  
+  // Give inspiration (add condition)
+  db.prepare(`
+    INSERT INTO active_conditions (character_id, condition_name, source, duration, metadata)
+    VALUES (?, 'Bardic Inspiration', ?, -1, ?)
+  `).run(targetId, `Bard ${bard.name}`, JSON.stringify({ die: `d${dieSize}`, dieSize }));
+  
+  // Decrement uses
+  db.prepare('UPDATE class_features SET uses_remaining = uses_remaining - 1 WHERE character_id = ? AND feature_name = ?')
+    .run(bardId, 'Bardic Inspiration');
+  
+  return {
+    success: true,
+    die: `d${dieSize}`,
+    dieSize,
+    target: target.name,
+    usesRemaining: uses.uses_remaining - 1,
+    narrative: `🎵 ${bard.name} inspires ${target.name} with stirring words! They gain a **d${dieSize}** Bardic Inspiration die.`
+  };
+}
+
 module.exports = {
   bardicInspiration,
   useBardicInspiration,
   restoreBardicInspiration,
   canBardicInspiration,
   jackOfAllTrades,
-  songOfRest
+  songOfRest,
+  // DB Wrappers
+  giveBardicInspiration
 };

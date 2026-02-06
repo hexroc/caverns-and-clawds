@@ -106,9 +106,53 @@ function canUncannyDodge(character) {
   return { can: true };
 }
 
+/**
+ * DB Wrapper: Use Uncanny Dodge
+ */
+function useUncannyDodge(db, characterId, incomingDamage) {
+  const char = db.prepare('SELECT * FROM clawds WHERE id = ?').get(characterId);
+  if (!char) {
+    return { success: false, error: 'Character not found' };
+  }
+  
+  if (char.class?.toLowerCase() !== 'rogue') {
+    return { success: false, error: 'Only Rogues can use Uncanny Dodge' };
+  }
+  
+  // Get uses
+  let uses = db.prepare('SELECT uses_remaining FROM class_features WHERE character_id = ? AND feature_name = ?')
+    .get(characterId, 'Uncanny Dodge');
+  
+  if (!uses) {
+    // Initialize (1 per round, resets each turn)
+    db.prepare(`
+      INSERT INTO class_features (character_id, feature_name, uses_remaining, max_uses, recharge_type)
+      VALUES (?, 'Uncanny Dodge', 1, 1, 'reaction')
+    `).run(characterId);
+    uses = { uses_remaining: 1 };
+  }
+  
+  if (uses.uses_remaining <= 0) {
+    return { success: false, error: 'Uncanny Dodge already used this round' };
+  }
+  
+  const mockChar = { level: char.level };
+  const result = uncannyDodge(mockChar, incomingDamage);
+  
+  if (result.success) {
+    // Use reaction
+    db.prepare('UPDATE class_features SET uses_remaining = 0 WHERE character_id = ? AND feature_name = ?')
+      .run(characterId, 'Uncanny Dodge');
+  }
+  
+  return result;
+}
+
 module.exports = {
   applyExpertise,
   initExpertise,
   uncannyDodge,
-  canUncannyDodge
+  canUncannyDodge,
+  // DB Wrappers
+  useUncannyDodge
 };
