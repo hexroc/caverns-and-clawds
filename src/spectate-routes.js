@@ -159,7 +159,7 @@ router.get('/character/:userId', (req, res) => {
         wis: char.wis,
         cha: char.cha,
         usdc_balance: char.usdc_balance,
-        location: char.location,
+        location: char.current_zone,
         shells: shells,
         proficiencies: proficiencies,
         proficiency_bonus: proficiency_bonus
@@ -361,7 +361,7 @@ router.get('/map', (req, res) => {
     const agents = db.prepare(`
       SELECT 
         u.id, c.name as char_name, c.race, c.class, c.level,
-        c.hp_current, c.hp_max, c.current_zone, c.location, c.status
+        c.hp_current, c.hp_max, c.current_zone, c.status
       FROM users u
       JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent' AND c.status != 'dead'
