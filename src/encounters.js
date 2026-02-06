@@ -435,12 +435,16 @@ class EncounterManager {
       damage += attackMod;
       damage = Math.max(1, damage);
       
-      target.hp -= damage;
+      // Apply resistances/immunities
+      const damageType = (henchman.class === 'wizard' || henchman.class === 'cleric') ? 'magical' : 'slashing';
+      const { damage: finalDamage, message: resistMsg } = this._applyMonsterResistances(damage, damageType, target.monsterId);
+      
+      target.hp -= finalDamage;
       
       if (crit) {
-        message = `💥 ${henchman.name} lands a CRITICAL HIT on ${target.name} for ${damage} damage!`;
+        message = `💥 ${henchman.name} lands a CRITICAL HIT on ${target.name} for ${finalDamage} damage!${resistMsg}`;
       } else {
-        message = `⚔️ ${henchman.name} hits ${target.name} for ${damage} damage!`;
+        message = `⚔️ ${henchman.name} hits ${target.name} for ${finalDamage} damage!${resistMsg}`;
       }
       
       if (target.hp <= 0) {
@@ -1289,13 +1293,17 @@ class EncounterManager {
       damage += strMod;
       damage = Math.max(1, damage);
       
-      target.hp -= damage;
+      // Apply resistances/immunities
+      const damageType = 'slashing'; // melee weapon damage
+      const { damage: finalDamage, message: resistMsg } = this._applyMonsterResistances(damage, damageType, target.monsterId);
+      
+      target.hp -= finalDamage;
       
       if (crit) {
         const crits = [
-          `💥 **DEVASTATING STRIKE!** You find a critical weak point in ${target.name}'s defenses! Your weapon tears through shell and flesh — **${damage} damage**! The water shakes with the impact!`,
-          `💥 **CRITICAL HIT!** In a blur of deadly motion, you strike true! ${target.name} staggers as your blow crashes through their guard — **${damage} damage**!`,
-          `💥 **PERFECT STRIKE!** You channel all your might into ${target.name}! The blow lands with bone-crushing force, sending shockwaves through the water — **${damage} damage**!`
+          `💥 **DEVASTATING STRIKE!** You find a critical weak point in ${target.name}'s defenses! Your weapon tears through shell and flesh — **${finalDamage} damage**!${resistMsg} The water shakes with the impact!`,
+          `💥 **CRITICAL HIT!** In a blur of deadly motion, you strike true! ${target.name} staggers as your blow crashes through their guard — **${finalDamage} damage**!${resistMsg}`,
+          `💥 **PERFECT STRIKE!** You channel all your might into ${target.name}! The blow lands with bone-crushing force, sending shockwaves through the water — **${finalDamage} damage**!${resistMsg}`
         ];
         messages.push(crits[Math.floor(Math.random() * crits.length)]);
         // Emit critical hit event
@@ -2344,15 +2352,16 @@ class EncounterManager {
           const attackRoll = Math.floor(Math.random() * 20) + 1 + spellMod + Math.ceil(char.level / 4);
           if (attackRoll >= target.ac) {
             const damage = this._rollDice('4d6');
-            target.hp -= damage;
-            messages.push(`☀️ Radiant energy strikes ${target.name} for ${damage} damage!`);
+            const { damage: finalDamage, message: resistMsg } = this._applyMonsterResistances(damage, 'radiant', target.monsterId);
+            target.hp -= finalDamage;
+            messages.push(`☀️ Radiant energy strikes ${target.name} for ${finalDamage} damage!${resistMsg}`);
             messages.push(`Next attack against ${target.name} has advantage!`);
             activityTracker.addCombatEvent(char.name, {
               type: 'combat_spell',
               player: char.name,
               spell: spell.seaName || spell.name,
               target: target.name,
-              damage,
+              damage: finalDamage,
               damageType: 'radiant',
               roll: attackRoll,
               ac: target.ac,
@@ -2433,25 +2442,28 @@ class EncounterManager {
         if (target) {
           const damage = this._rollDice(spell.id === 'eldritch_blast' ? '1d10' : '1d8');
           // Cantrip - no save, just hits
-          target.hp -= damage;
           
-          // Generate spell narration
+          // Determine damage type
           const damageType = spell.id === 'sacred_flame' ? 'radiant' : 
                            spell.id === 'eldritch_blast' ? 'force' : 'fire';
+          
+          // Apply resistances/immunities
+          const { damage: finalDamage, message: resistMsg } = this._applyMonsterResistances(damage, damageType, target.monsterId);
+          target.hp -= finalDamage;
           const spellNarration = generateSpellNarration(
             { name: char.name },
             spell.seaName || spell.name,
             { name: target.name },
-            { hits: true, damage, damageType }
+            { hits: true, damage: finalDamage, damageType }
           );
-          messages.push(spellNarration);
+          messages.push(spellNarration + resistMsg);
           
           activityTracker.addCombatEvent(char.name, {
             type: 'combat_spell',
             player: char.name,
             spell: spell.seaName || spell.name,
             target: target.name,
-            damage,
+            damage: finalDamage,
             damageType
           });
           if (target.hp <= 0) {
@@ -2871,6 +2883,190 @@ class EncounterManager {
   }
   
   /**
+   * Apply resistances/immunities to damage against a monster
+   */
+  _applyMonsterResistances(damage, damageType, monsterId) {
+    const template = MONSTERS[monsterId];
+    if (!template) return { damage, message: '' };
+    
+    let resistanceMessage = '';
+    
+    // Check immunities first
+    if (template.immunities && template.immunities.includes(damageType)) {
+      resistanceMessage = ` (**IMMUNE** to ${damageType}!)`;
+      return { damage: 0, message: resistanceMessage };
+    }
+    
+    // Check resistances
+    if (template.resistances && template.resistances.includes(damageType)) {
+      const originalDamage = damage;
+      damage = Math.floor(damage / 2);
+      resistanceMessage = ` (**Resistant** to ${damageType}: ${originalDamage} → ${damage})`;
+    }
+    
+    return { damage, message: resistanceMessage };
+  }
+  
+  /**
+   * Monster spell attack with saving throw
+   */
+  _monsterSpellAttack(monster, template, attack, char, encounter) {
+    // Player makes saving throw
+    const saveType = attack.saveType.toLowerCase();
+    const abilityScore = char[saveType] || 10;
+    const abilityMod = Math.floor((abilityScore - 10) / 2);
+    const profBonus = Math.ceil(char.level / 4) + 1;
+    
+    // Check if proficient in this save
+    const proficientSaves = {
+      fighter: ['str', 'con'],
+      rogue: ['dex', 'int'],
+      wizard: ['int', 'wis'],
+      cleric: ['wis', 'cha'],
+      paladin: ['wis', 'cha'],
+      warlock: ['wis', 'cha'],
+      bard: ['dex', 'cha']
+    };
+    const isProficient = (proficientSaves[char.class] || []).includes(saveType);
+    const saveBonus = abilityMod + (isProficient ? profBonus : 0);
+    
+    const saveRoll = Math.floor(Math.random() * 20) + 1;
+    const totalSave = saveRoll + saveBonus;
+    const success = totalSave >= attack.saveDC;
+    
+    // Calculate damage
+    const damageMatch = attack.damage.match(/(\d+)d(\d+)([+-]\d+)?/);
+    let damage = 0;
+    
+    if (damageMatch) {
+      const numDice = parseInt(damageMatch[1]);
+      const dieSize = parseInt(damageMatch[2]);
+      const modifier = parseInt(damageMatch[3] || 0);
+      
+      for (let i = 0; i < numDice; i++) {
+        damage += Math.floor(Math.random() * dieSize) + 1;
+      }
+      damage += modifier;
+    }
+    
+    // Half damage on successful save (most spells)
+    if (success) {
+      damage = Math.floor(damage / 2);
+    }
+    
+    damage = Math.max(0, damage);
+    
+    // Apply damage
+    let newHP = Math.max(0, char.hp_current - damage);
+    let playerDied = newHP <= 0;
+    let extraMessage = '';
+    
+    // Crustafarianism: 1% chance to resurrect
+    if (playerDied && char.religion === 'crustafarianism') {
+      if (Math.random() < 0.01) {
+        newHP = 1;
+        playerDied = false;
+        extraMessage = '\n🦞✨ **THE GREAT CLAW INTERVENES!** You refuse to die and cling to life at 1 HP!';
+      }
+    }
+    
+    this.db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHP, char.id);
+    
+    // Build message
+    const saveDesc = success ? `**SAVED!** (${totalSave} vs DC ${attack.saveDC})` : `**FAILED!** (${totalSave} vs DC ${attack.saveDC})`;
+    let message = `⚡ **${monster.name}** casts **${attack.name}**!\n`;
+    message += `🎲 ${saveType.toUpperCase()} save: ${saveDesc}\n`;
+    
+    if (damage > 0) {
+      message += `💥 ${success ? 'Half damage!' : 'Full blast!'} **${damage} ${attack.damageType}** damage! *(${newHP}/${char.hp_max} HP)*`;
+    } else {
+      message += `✨ You resist completely!`;
+    }
+    
+    message += extraMessage;
+    
+    // Activity tracking
+    activityTracker.addCombatEvent(char.name, {
+      type: 'combat_spell',
+      caster: monster.name,
+      target: char.name,
+      spell: attack.name,
+      saveType,
+      saveRoll: totalSave,
+      saveDC: attack.saveDC,
+      success,
+      damage,
+      damageType: attack.damageType
+    });
+    
+    if (playerDied) {
+      activityTracker.addCombatEvent(char.name, {
+        type: 'combat_defeat',
+        player: char.name,
+        killer: monster.name,
+        playerHp: 0,
+        playerMaxHp: char.hp_max
+      });
+    }
+    
+    return { message, playerDied, damage };
+  }
+  
+  /**
+   * Select which attack the monster should use
+   */
+  _selectMonsterAttack(monster, template, char) {
+    if (!template.attacks || template.attacks.length === 0) {
+      return null;
+    }
+    
+    // Single attack - easy choice
+    if (template.attacks.length === 1) {
+      return template.attacks[0];
+    }
+    
+    // Initialize spell slots if monster is a spellcaster
+    if (template.spellcaster && !monster.spellSlots) {
+      monster.spellSlots = { ...template.spellSlots };
+    }
+    
+    // Multiple attacks - choose tactically
+    const range = monster.range || 1; // Assume melee range if not specified
+    
+    // Spellcasters prefer spells at range
+    if (template.spellcaster && monster.spellSlots) {
+      const spellAttacks = template.attacks.filter(a => a.type === 'spell' && a.range > 2);
+      if (spellAttacks.length > 0 && range > 2) {
+        // Find highest level spell we have slots for
+        for (const spellAttack of spellAttacks) {
+          const spellLevel = spellAttack.level || 1;
+          if (monster.spellSlots[spellLevel] && monster.spellSlots[spellLevel] > 0) {
+            monster.spellSlots[spellLevel]--;
+            return spellAttack;
+          }
+        }
+      }
+    }
+    
+    // Ranged attackers prefer ranged attacks when at distance
+    if (template.preferRanged && range >= (template.preferredRange || 3)) {
+      const rangedAttacks = template.attacks.filter(a => a.type === 'ranged' || (a.range && a.range > 2));
+      if (rangedAttacks.length > 0) {
+        return rangedAttacks[Math.floor(Math.random() * rangedAttacks.length)];
+      }
+    }
+    
+    // Melee attackers or close range - use melee
+    const meleeAttacks = template.attacks.filter(a => a.type === 'melee' || a.range === 1 || !a.range);
+    if (meleeAttacks.length > 0) {
+      return meleeAttacks[Math.floor(Math.random() * meleeAttacks.length)];
+    }
+    
+    // Fallback - use first attack
+    return template.attacks[0];
+  }
+  
+  /**
    * Monster attacks player
    */
   _monsterAttack(monster, encounter) {
@@ -2884,7 +3080,18 @@ class EncounterManager {
       return { message: `${monster.name} hesitates...`, playerDied: false };
     }
     
-    const attack = template.attacks[0];  // Use first attack
+    // Select attack tactically
+    const attack = this._selectMonsterAttack(monster, template, char);
+    if (!attack) {
+      return { message: `${monster.name} hesitates...`, playerDied: false };
+    }
+    
+    // Handle spell attacks with saving throws
+    if (attack.saveDC && attack.saveType) {
+      return this._monsterSpellAttack(monster, template, attack, char, encounter);
+    }
+    
+    // Normal attack roll
     const attackRoll = Math.floor(Math.random() * 20) + 1;
     const totalAttack = attackRoll + attack.hit;
     
