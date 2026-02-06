@@ -114,6 +114,36 @@ function initTables() {
       FOREIGN KEY (character_id) REFERENCES clawds(id)
     );
     
+    -- Auction listings
+    CREATE TABLE IF NOT EXISTS auctions (
+      id TEXT PRIMARY KEY,
+      seller_id TEXT NOT NULL,
+      item_type TEXT CHECK(item_type IN ('material', 'item')) NOT NULL,
+      item_id TEXT NOT NULL,
+      quantity INTEGER NOT NULL,
+      starting_bid REAL NOT NULL,
+      buyout_price REAL,
+      current_bid REAL NOT NULL,
+      current_bidder_id TEXT,
+      status TEXT CHECK(status IN ('active', 'sold', 'expired', 'cancelled')) DEFAULT 'active',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      ends_at DATETIME NOT NULL,
+      completed_at DATETIME,
+      FOREIGN KEY (seller_id) REFERENCES clawds(id),
+      FOREIGN KEY (current_bidder_id) REFERENCES clawds(id)
+    );
+    
+    -- Auction bid history
+    CREATE TABLE IF NOT EXISTS auction_bids (
+      id TEXT PRIMARY KEY,
+      auction_id TEXT NOT NULL,
+      bidder_id TEXT NOT NULL,
+      amount REAL NOT NULL,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (auction_id) REFERENCES auctions(id),
+      FOREIGN KEY (bidder_id) REFERENCES clawds(id)
+    );
+    
     -- Add wallet columns to clawds if not exists
     -- (SQLite doesn't support IF NOT EXISTS for columns, so we'll handle this separately)
   `);
