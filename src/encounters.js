@@ -1945,13 +1945,138 @@ class EncounterManager {
     const questManager = new QuestManager(this.db);
     const questEngine = new QuestEngine(this.db);
     const questUpdates = [];
+    const completedQuestIds = [];
+    
     for (const monster of monsters) {
       // Track in old quest system
       const oldUpdates = questManager.trackKill(char.id, monster.monsterId, encounter.zone);
       questUpdates.push(...oldUpdates);
+      
+      // Collect completed quest IDs for auto-reward granting
+      for (const update of oldUpdates) {
+        if (update.questComplete && update.questId) {
+          completedQuestIds.push(update.questId);
+        }
+      }
+      
       // Track in new quest engine
       const newUpdates = questEngine.recordKill(char.id, monster.monsterId, encounter.zone);
       questUpdates.push(...newUpdates);
+    }
+    
+    // AUTO-GRANT QUEST REWARDS (no manual turn-in required!)
+    const { QUESTS } = require('./quests');
+    for (const questId of completedQuestIds) {
+      const quest = QUESTS[questId];
+      if (!quest) continue;
+      
+      const questRow = this.db.prepare(
+        'SELECT * FROM character_quests WHERE character_id = ? AND quest_id = ? AND status = ?'
+      ).get(char.id, questId, 'completed');
+      
+      if (!questRow) continue; // Already turned in or not completed
+      
+      const rewards = quest.rewards;
+      
+      // Grant XP (add to what was already gained from monster kills)
+      if (rewards.xp > 0) {
+        const currentChar = this.db.prepare('SELECT xp, level FROM clawds WHERE id = ?').get(char.id);
+        const questXP = currentChar.xp + rewards.xp;
+        let questLevel = currentChar.level;
+        
+        // Re-check level up with quest XP
+        while (questLevel < 20 && questXP >= (xpThresholds[questLevel + 1] || 999999)) {
+          questLevel++;
+          leveledUp = true;
+        }
+        
+        this.db.prepare('UPDATE clawds SET xp = ?, level = ? WHERE id = ?')
+          .run(questXP, questLevel, char.id);
+        
+        if (questLevel > newLevel) {
+          newLevel = questLevel;
+        }
+        
+        messages.push(`📜 ${quest.name}: +${rewards.xp} XP`);
+      }
+      
+      // Grant USDC with 1% treasury tax
+      if (rewards.usdc > 0) {
+        const TREASURY_TAX_RATE = 0.01; // 1% tax
+        const taxAmount = rewards.usdc * TREASURY_TAX_RATE;
+        const playerAmount = rewards.usdc - taxAmount;
+        
+        // Award USDC to player
+        this.db.prepare('UPDATE clawds SET usdc_balance = usdc_balance + ? WHERE id = ?')
+          .run(playerAmount, char.id);
+        
+        // Send tax to treasury
+        this.db.prepare(`
+          UPDATE system_wallets SET balance_cache = balance_cache + ? 
+          WHERE id = 'treasury'
+        `).run(taxAmount);
+        
+        // Log player reward transaction
+        this.db.prepare(`
+          INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, description)
+          VALUES (?, 'transfer', 'npc_quest_giver', ?, ?, ?)
+        `).run(
+          crypto.randomUUID(),
+          char.id,
+          playerAmount,
+          `Quest reward: ${quest.name}`
+        );
+        
+        // Log treasury tax transaction
+        this.db.prepare(`
+          INSERT INTO economy_transactions (id, type, from_wallet, to_wallet, amount, description)
+          VALUES (?, 'treasury_tax', ?, 'treasury', ?, ?)
+        `).run(
+          crypto.randomUUID(),
+          char.id,
+          taxAmount,
+          `1% tax on quest reward: ${quest.name}`
+        );
+        
+        messages.push(`💰 ${quest.name}: +${playerAmount.toFixed(4)} USDC (${taxAmount.toFixed(4)} tax)`);
+      }
+      
+      // Grant items
+      if (rewards.items && rewards.items.length > 0) {
+        for (const itemId of rewards.items) {
+          const existing = this.db.prepare(
+            'SELECT * FROM character_inventory WHERE character_id = ? AND item_id = ?'
+          ).get(char.id, itemId);
+          
+          if (existing) {
+            this.db.prepare('UPDATE character_inventory SET quantity = quantity + 1 WHERE id = ?')
+              .run(existing.id);
+          } else {
+            this.db.prepare(`
+              INSERT INTO character_inventory (id, character_id, item_id, quantity, equipped, slot)
+              VALUES (?, ?, ?, 1, 0, NULL)
+            `).run(crypto.randomUUID(), char.id, itemId);
+          }
+        }
+        
+        const itemNames = rewards.items.map(id => ITEMS[id]?.name || id).join(', ');
+        messages.push(`📦 ${quest.name}: ${itemNames}`);
+      }
+      
+      // Mark quest as turned in
+      this.db.prepare(
+        'UPDATE character_quests SET status = ?, turned_in_at = CURRENT_TIMESTAMP WHERE id = ?'
+      ).run('turned_in', questRow.id);
+      
+      // Add to history for repeatables
+      if (quest.repeatable) {
+        this.db.prepare(`
+          INSERT INTO quest_history (id, character_id, quest_id)
+          VALUES (?, ?, ?)
+        `).run(crypto.randomUUID(), char.id, questId);
+      }
+      
+      messages.push(`✅ Quest auto-completed: ${quest.name}`);
     }
     
     // Build victory message

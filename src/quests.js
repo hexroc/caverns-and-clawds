@@ -634,9 +634,10 @@ class QuestManager {
         
         if (allComplete) {
           updates.push({
+            questId: quest.id,
             questName: quest.name,
             questComplete: true,
-            message: `📜 Quest Complete: ${quest.name}! Return to ${quest.giverName} for your reward.`
+            message: `📜 Quest Complete: ${quest.name}! Rewards granted automatically.`
           });
         }
       }
