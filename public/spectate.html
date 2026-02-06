@@ -1327,38 +1327,141 @@
     }
     
     function narrateCombatEvent(event) {
+      // Immersive MUD-style combat narration
+      const attackVerbs = ['lunges at', 'strikes toward', 'slashes at', 'thrusts toward', 'sweeps at'];
+      const hitVerbs = ['connects solidly with', 'tears into', 'carves through', 'crashes into', 'rips through'];
+      const missVerbs = ['swings wide of', 'misjudges the distance to', 'barely misses', 'finds only water near'];
+      
       switch (event.type) {
         case 'combat_start': {
           const monsterList = (event.monsters || []).map(m => m.name).join(', ');
-          return { cssClass: 'start', text: `⚔️ <strong>COMBAT BEGINS!</strong> ${event.description || ('Enemies appear: ' + monsterList)}` };
+          const encounters = [
+            `⚔️ The water churns violently as <strong>${monsterList}</strong> emerge from the murky depths!`,
+            `⚔️ Shadows shift in the kelp — <strong>${monsterList}</strong> circle menacingly, claws clicking in the gloom!`,
+            `⚔️ A hunting cry echoes through the water! <strong>${monsterList}</strong> burst from cover, eyes glowing with hunger!`,
+            `⚔️ The seafloor trembles. <strong>${monsterList}</strong> rise from the sand, ready to strike!`
+          ];
+          return { cssClass: 'start', text: event.description || encounters[Math.floor(Math.random() * encounters.length)] };
         }
+        
         case 'combat_attack': {
           const isPlayer = !isMonsterName(event.player);
-          if (isPlayer) return { cssClass: 'hit', text: `⚔️ <strong>${event.player}</strong> swings at ${event.target} — <em>${event.roll} vs AC ${event.ac}</em>... <strong>HIT!</strong> <strong>${event.damage} ${event.damageType||''}</strong> damage!` };
-          return { cssClass: 'damage-taken', text: `🩸 <strong>${event.player}</strong> strikes <strong>${event.target}</strong> — <em>${event.roll} vs AC ${event.ac}</em>... <strong>HIT!</strong> <strong>${event.damage} ${event.damageType||''}</strong> damage!` };
+          const verb = hitVerbs[Math.floor(Math.random() * hitVerbs.length)];
+          
+          if (isPlayer) {
+            const flavor = [
+              `⚔️ <strong>${event.player}</strong> ${verb} <em>${event.target}</em>, their weapon biting deep! <em>(${event.roll} vs AC ${event.ac})</em> <strong>${event.damage} ${event.damageType||'damage'}</strong> — blood clouds the water!`,
+              `⚔️ With deadly precision, <strong>${event.player}</strong> ${verb} <em>${event.target}</em>! <em>(${event.roll} vs AC ${event.ac})</em> The blow lands true for <strong>${event.damage} ${event.damageType||'damage'}</strong>!`,
+              `⚔️ <strong>${event.player}</strong> finds an opening and ${verb} <em>${event.target}</em>! <em>(${event.roll} vs AC ${event.ac})</em> <strong>${event.damage} ${event.damageType||'damage'}</strong> — their foe reels back!`
+            ];
+            return { cssClass: 'hit', text: flavor[Math.floor(Math.random() * flavor.length)] };
+          } else {
+            const monsterFlavor = [
+              `🩸 <strong>${event.player}</strong> ${verb} <em>${event.target}</em>, claws raking across shell! <em>(${event.roll} vs AC ${event.ac})</em> <strong>${event.damage} ${event.damageType||'damage'}</strong>!`,
+              `🩸 A vicious strike! <strong>${event.player}</strong> ${verb} <em>${event.target}</em>! <em>(${event.roll} vs AC ${event.ac})</em> Pain lances through the water — <strong>${event.damage} ${event.damageType||'damage'}</strong>!`,
+              `🩸 <strong>${event.player}</strong> surges forward, ${verb} <em>${event.target}</em>! <em>(${event.roll} vs AC ${event.ac})</em> The impact echoes — <strong>${event.damage} ${event.damageType||'damage'}</strong>!`
+            ];
+            return { cssClass: 'damage-taken', text: monsterFlavor[Math.floor(Math.random() * monsterFlavor.length)] };
+          }
         }
-        case 'combat_miss':
-          if (event.critMiss) return { cssClass: 'miss', text: `🎲 <strong>${event.player}</strong> swings wildly — <em>Natural 1!</em> <strong>CRITICAL MISS!</strong>` };
-          return { cssClass: 'miss', text: `🛡️ <strong>${event.player}</strong> attacks <strong>${event.target}</strong> — <em>${event.roll||event.totalRoll} vs AC ${event.ac}</em>... <strong>MISS!</strong>` };
-        case 'combat_critical':
-          return { cssClass: 'crit', text: `⚡ <strong>CRITICAL HIT!</strong> <strong>${event.player}</strong> finds a weak spot on ${event.target} — <strong>${event.damage} ${event.damageType||''}</strong> damage!` };
-        case 'combat_spell':
-          if (event.healing) return { cssClass: 'heal', text: `💚 <strong>${event.player}</strong> channels ${event.spell||'divine energy'} — Restores <strong>${event.healing} HP</strong>!` + (event.newHp ? ` (${event.newHp}/${event.maxHp} HP)` : '') };
-          if (event.damage) return { cssClass: 'spell-damage', text: `✨ <strong>${event.player}</strong> casts <strong>${event.spell}</strong> at ${event.target} — <strong>${event.damage} ${event.damageType||'arcane'}</strong> damage!` };
-          return { cssClass: 'heal', text: `✨ <strong>${event.player}</strong> casts <strong>${event.spell||'a spell'}</strong>!` };
-        case 'combat_death':
-          return { cssClass: 'kill', text: `💀 <strong>${event.target}</strong> crumbles, defeated by <strong>${event.killer}</strong>!` };
-        case 'combat_defeat':
-          return { cssClass: 'defeat', text: `☠️ <strong>${event.player}</strong> falls... the ocean claims another soul.` };
+        
+        case 'combat_miss': {
+          if (event.critMiss) {
+            const fumbles = [
+              `🎲 <strong>${event.player}</strong> swings wildly, their weapon tangling in drifting kelp! <em>Natural 1!</em> — a <strong>critical fumble</strong>!`,
+              `🎲 The currents betray <strong>${event.player}</strong>! They spin off-balance, missing completely! <em>Natural 1!</em>`,
+              `🎲 <strong>${event.player}</strong> misjudges the water pressure — their strike goes laughably wide! <em>Natural 1!</em> <strong>Critical miss!</strong>`
+            ];
+            return { cssClass: 'miss', text: fumbles[Math.floor(Math.random() * fumbles.length)] };
+          }
+          
+          const verb = missVerbs[Math.floor(Math.random() * missVerbs.length)];
+          const misses = [
+            `🛡️ <strong>${event.player}</strong> ${verb} <em>${event.target}</em> — they slip away through the water! <em>(${event.roll||event.totalRoll} vs AC ${event.ac})</em>`,
+            `🛡️ <em>${event.target}</em> twists aside! <strong>${event.player}</strong>'s attack finds only swirling sand. <em>(${event.roll||event.totalRoll} vs AC ${event.ac})</em>`,
+            `🛡️ A near miss! <strong>${event.player}</strong> ${verb} <em>${event.target}</em>, who darts away at the last moment! <em>(${event.roll||event.totalRoll} vs AC ${event.ac})</em>`
+          ];
+          return { cssClass: 'miss', text: misses[Math.floor(Math.random() * misses.length)] };
+        }
+        
+        case 'combat_critical': {
+          const crits = [
+            `⚡ <strong>DEVASTATING STRIKE!</strong> <strong>${event.player}</strong> finds a critical weak point in <em>${event.target}</em>'s defenses! Shell cracks and splits — <strong>${event.damage} ${event.damageType||'damage'}</strong>! The water shakes with the impact!`,
+            `⚡ <strong>CRITICAL HIT!</strong> In a blur of motion, <strong>${event.player}</strong> strikes true! <em>${event.target}</em> staggers as <strong>${event.damage} ${event.damageType||'damage'}</strong> tears through their guard!`,
+            `⚡ A <strong>PERFECT STRIKE!</strong> <strong>${event.player}</strong> channels all their might into <em>${event.target}</em>! The blow lands with bone-crushing force — <strong>${event.damage} ${event.damageType||'damage'}</strong>!`
+          ];
+          return { cssClass: 'crit', text: crits[Math.floor(Math.random() * crits.length)] };
+        }
+        
+        case 'combat_spell': {
+          if (event.healing) {
+            const heals = [
+              `💚 <strong>${event.player}</strong> channels <em>${event.spell||'divine energy'}</em> — golden light pulses through the water! Wounds seal and strength returns. <strong>+${event.healing} HP</strong>` + (event.newHp ? ` <em>(${event.newHp}/${event.maxHp} HP)</em>` : ''),
+              `💚 Arcane currents swirl as <strong>${event.player}</strong> casts <em>${event.spell||'healing magic'}</em>! The water shimmers with restorative power. <strong>+${event.healing} HP</strong>` + (event.newHp ? ` <em>(${event.newHp}/${event.maxHp} HP)</em>` : ''),
+              `💚 <strong>${event.player}</strong> weaves <em>${event.spell||'healing magic'}</em> through the depths — pain fades as vitality surges back! <strong>+${event.healing} HP</strong>` + (event.newHp ? ` <em>(${event.newHp}/${event.maxHp} HP)</em>` : '')
+            ];
+            return { cssClass: 'heal', text: heals[Math.floor(Math.random() * heals.length)] };
+          }
+          
+          if (event.damage) {
+            const spellCasts = [
+              `✨ <strong>${event.player}</strong> unleashes <em>${event.spell}</em> — arcane energy crackles through the water, slamming into <em>${event.target}</em>! <strong>${event.damage} ${event.damageType||'arcane'} damage</strong>!`,
+              `✨ The water glows with eldritch power! <strong>${event.player}</strong> hurls <em>${event.spell}</em> at <em>${event.target}</em> — <strong>${event.damage} ${event.damageType||'magical'} damage</strong> tears through them!`,
+              `✨ <strong>${event.player}</strong> gestures mystically, casting <em>${event.spell}</em>! <em>${event.target}</em> convulses as <strong>${event.damage} ${event.damageType||'arcane'} damage</strong> ripples through their form!`
+            ];
+            return { cssClass: 'spell-damage', text: spellCasts[Math.floor(Math.random() * spellCasts.length)] };
+          }
+          
+          return { cssClass: 'heal', text: `✨ <strong>${event.player}</strong> weaves <em>${event.spell||'a spell'}</em> into being — the water shimmers with magical energy!` };
+        }
+        
+        case 'combat_death': {
+          const deaths = [
+            `💀 With a final, gurgling cry, <strong>${event.target}</strong> collapses! Their form goes limp and sinks to the seafloor. <em>Defeated by ${event.killer}.</em>`,
+            `💀 <strong>${event.target}</strong> shudders and falls still, life bleeding into the water. <em>${event.killer}</em> stands victorious over the corpse.`,
+            `💀 The light fades from <strong>${event.target}</strong>'s eyes. They crumble, defeated, as <em>${event.killer}</em> delivers the killing blow!`
+          ];
+          return { cssClass: 'kill', text: deaths[Math.floor(Math.random() * deaths.length)] };
+        }
+        
+        case 'combat_defeat': {
+          const defeats = [
+            `☠️ <strong>${event.player}</strong> crumples to the sand, vision fading to black... The cold depths claim another soul.`,
+            `☠️ Darkness swallows <strong>${event.player}</strong> as they fall, defeated. The ocean floor rises up to meet them...`,
+            `☠️ <strong>${event.player}</strong> sinks into unconsciousness, their strength spent. The battle is lost.`
+          ];
+          return { cssClass: 'defeat', text: defeats[Math.floor(Math.random() * defeats.length)] };
+        }
+        
         case 'combat_victory': {
-          const xp = event.xpGained ? ` Gained <strong>${event.xpGained} XP</strong>!` : '';
-          const loot = (event.materials && event.materials.length) ? ` Loot: ${event.materials.join(', ')}` : '';
-          return { cssClass: 'victory', text: `🎉 <strong>VICTORY!</strong> ${event.player} is triumphant!${xp}${loot}` };
+          const xp = event.xpGained ? ` <em>Gained <strong>${event.xpGained} XP</strong>!</em>` : '';
+          const loot = (event.materials && event.materials.length) ? ` Treasures recovered: <em>${event.materials.join(', ')}</em>` : '';
+          const victories = [
+            `🎉 <strong>VICTORY!</strong> The water clears as the last foe falls! <strong>${event.player}</strong> stands triumphant, breathing hard.${xp}${loot}`,
+            `🎉 <strong>TRIUMPH!</strong> <strong>${event.player}</strong> emerges victorious! The battlefield grows quiet, save for settling sand.${xp}${loot}`,
+            `🎉 <strong>VICTORY ACHIEVED!</strong> <strong>${event.player}</strong> prevails! Their enemies lie defeated in the murky depths.${xp}${loot}`
+          ];
+          return { cssClass: 'victory', text: victories[Math.floor(Math.random() * victories.length)] };
         }
-        case 'combat_flee':
-          return event.success ? { cssClass: 'flee', text: `🏃 <strong>${event.player}</strong> escapes!` } : { cssClass: 'miss', text: `❌ <strong>${event.player}</strong> tries to flee but is blocked!` };
+        
+        case 'combat_flee': {
+          if (event.success) {
+            const escapes = [
+              `🏃 <strong>${event.player}</strong> kicks hard against the current, darting into the kelp! They slip away into the shadows, escaping!`,
+              `🏃 With a burst of speed, <strong>${event.player}</strong> breaks away! They vanish into the murky depths, leaving their foes behind!`,
+              `🏃 <strong>${event.player}</strong> sees an opening and takes it — they retreat successfully, living to fight another day!`
+            ];
+            return { cssClass: 'flee', text: escapes[Math.floor(Math.random() * escapes.length)] };
+          } else {
+            return { cssClass: 'miss', text: `❌ <strong>${event.player}</strong> tries to retreat, but enemies block every escape route! No way out!` };
+          }
+        }
+        
         case 'combat_end':
-          return event.result === 'defeat' ? { cssClass: 'defeat', text: `☠️ <strong>COMBAT OVER</strong> — ${event.player} has fallen...` } : { cssClass: 'victory', text: `🎉 <strong>COMBAT OVER</strong> — Victory!` };
+          return event.result === 'defeat' 
+            ? { cssClass: 'defeat', text: `☠️ <strong>COMBAT OVER</strong> — The battle ends in defeat. <em>${event.player}</em> lies motionless on the ocean floor...` }
+            : { cssClass: 'victory', text: `🎉 <strong>COMBAT ENDS</strong> — Victory! The water settles as the last enemy falls!` };
+        
         default:
           return { cssClass: '', text: `📋 ${event.type}: ${JSON.stringify(event).substring(0, 100)}` };
       }
