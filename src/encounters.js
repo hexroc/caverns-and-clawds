@@ -3450,7 +3450,7 @@ class EncounterManager {
     `).run(respawnHP, newHPMax, newXP, newLevel, charId);
     
     // Notify spectators
-    activityTracker.addActivityEvent(char.name, {
+    activityTracker.addCombatEvent(char.name, {
       type: 'resurrection',
       player: char.name,
       method: 'auto',
