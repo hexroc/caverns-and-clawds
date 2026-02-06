@@ -44,6 +44,7 @@ const { createEncounterRoutes } = require('./encounter-routes');
 const { createQuestRoutes } = require('./quest-routes');
 const { createQuestEngineRoutes, getQuestEngine } = require('./quest-engine-routes');
 const { createHenchmanRoutes } = require('./henchman-routes');
+const createClassFeatureRoutes = require('./class-feature-routes');
 const { createSocialRoutes } = require('./social-routes');
 const { createEconomyRoutes } = require('./economy/economy-routes');
 const { createRealEstateRoutes } = require('./economy/realestate-routes');
@@ -2976,6 +2977,10 @@ app.use('/api/quests', createQuestEngineRoutes(db, authenticateAgent, broadcastT
 app.use('/api/quests', createQuestRoutes(db, authenticateAgent));
 app.use('/api/henchmen', createHenchmanRoutes(db, authenticateAgent));
 console.log('📜 Quest system loaded (Quest Engine v2 + legacy v1)');
+
+// Mount Class Feature routes
+app.use('/api/class', createClassFeatureRoutes(authenticateAgent));
+console.log('⚔️  Class features loaded (Fighter, Rogue, Paladin, Bard, Cleric, Wizard, Warlock)');
 
 // Mount Social routes
 app.use('/api/social', createSocialRoutes(db, authenticateAgent, broadcastToSpectators));
