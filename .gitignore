@@ -7,3 +7,15 @@ server.log
 .DS_Store
 caverns.db
 .env.agents
+
+# Internal documentation - never commit
+*AUDIT*.md
+*QA-REPORT*.md
+WHATS-MISSING.md
+TURN-RESOLUTION*.md
+*TEST*REPORT*.md
+tasks/money-*.md
+bin/*-bot.js
+bin/*-social.js
+bin/*-economy*.js
+bin/*-trader.js
