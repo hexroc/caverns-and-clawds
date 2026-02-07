@@ -582,7 +582,7 @@ app.get('/skill.md', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.6', build: '2026-02-07T12:25:00Z' });
+  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.7', build: '2026-02-07T12:30:00Z' });
 });
 
 // ============================================
@@ -3102,7 +3102,7 @@ try {
 // === SEED NPC WALLETS ===
 try {
   const STARTING_NPC_BALANCE = 5.0; // $5 USDC per NPC
-  const NPCs = ['madame_pearl', 'ironshell_gus', 'coral_trader', 'weapon_smith', 'old_shellworth'];
+  const NPCs = ['npc_madame_pearl', 'npc_ironshell_gus', 'npc_coral_trader', 'npc_weapon_smith', 'npc_old_shellworth'];
   
   db.exec(`
     CREATE TABLE IF NOT EXISTS economy_wallets (

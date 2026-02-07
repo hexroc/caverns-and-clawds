@@ -20,11 +20,11 @@ const APY = 0.10; // 10% simulated APY (Kamino-like)
 const DB_PATH = path.join(__dirname, '..', '..', 'db', 'caverns.db');
 
 const NPCs = [
-  'madame_pearl',
-  'ironshell_gus',
-  'coral_trader',
-  'weapon_smith',
-  'old_shellworth'
+  'npc_madame_pearl',
+  'npc_ironshell_gus',
+  'npc_coral_trader',
+  'npc_weapon_smith',
+  'npc_old_shellworth'
 ];
 
 /**
