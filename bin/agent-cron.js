@@ -8,11 +8,11 @@ require('dotenv').config({ path: require('path').join(__dirname, '../.env.agents
 
 const BASE_URL = process.env.CANDC_URL || 'http://localhost:3000';
 
-// Hardcoded agent keys (from production registration)
+// Hardcoded agent keys (from production registration - 2026-02-07)
 const AGENTS = [
-  { name: 'Scalesworth', apiKey: process.env.SCALESWORTH_KEY },
-  { name: 'Crusher', apiKey: process.env.CRUSHER_KEY },
-  { name: 'Bubbles', apiKey: process.env.BUBBLES_KEY },
+  { name: 'ShellShock', apiKey: process.env.SHELLSHOCK_KEY },
+  { name: 'DeepShadow', apiKey: process.env.DEEPSHADOW_KEY },
+  { name: 'ReefRunner', apiKey: process.env.REEFRUNNER_KEY },
 ].filter(a => a.apiKey);
 
 async function api(endpoint, options = {}, apiKey = null) {

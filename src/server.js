@@ -3091,6 +3091,14 @@ app.use('/api', (req, res) => {
   });
 });
 
+// === RUN MIGRATIONS ===
+try {
+  const { addClassFeatureColumns } = require('./migrations/add-class-feature-columns');
+  addClassFeatureColumns();
+} catch (err) {
+  console.error('Migration error:', err.message);
+}
+
 // === START SERVER ===
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, '0.0.0.0', () => {
