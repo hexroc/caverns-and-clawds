@@ -985,12 +985,8 @@ class EncounterManager {
     
     const aliveMonsters = monsters.filter(m => m.alive);
     
-    // Safety: if no alive monsters, end the combat
-    if (aliveMonsters.length === 0) {
-      this.db.prepare('UPDATE active_encounters SET status = ? WHERE id = ?')
-        .run('victory', encounter.id);
-      return null; // No active encounter anymore
-    }
+    // Note: If no alive monsters, combat should end via _handleVictory
+    // Don't auto-end here as it bypasses rewards
     
     return {
       id: encounter.id,
