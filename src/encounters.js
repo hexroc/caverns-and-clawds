@@ -3292,7 +3292,18 @@ class EncounterManager {
       description: 'Priestess Marina performs the rite. Lose 10% of your XP.'
     });
     
-    // Option 2: Free resurrection (brutal XP loss - 35%)
+    // Option 2: Premium resurrection (0.05 USDC, NO XP loss - money goes to bank)
+    const PREMIUM_COST = 0.05;
+    options.push({
+      type: 'premium',
+      cost: { usdc: PREMIUM_COST },
+      xpLoss: 0,
+      xpLossPercent: '0%',
+      available: usdcBalance >= PREMIUM_COST,
+      description: 'The Bank\'s resurrection insurance. No XP loss. Payment goes to the Bank.'
+    });
+    
+    // Option 3: Free resurrection (brutal XP loss - 35%)
     const freeXPLoss = Math.floor(char.xp * 0.35);
     options.push({
       type: 'free',
@@ -3303,7 +3314,7 @@ class EncounterManager {
       description: 'Crawl back from the void. Lose 35% of your XP. May lose levels.'
     });
     
-    // Option 3: Voucher resurrection (no penalty)
+    // Option 4: Voucher resurrection (no penalty)
     const hasVoucher = this.db.prepare(
       'SELECT * FROM character_inventory WHERE character_id = ? AND item_id = ?'
     ).get(characterId, 'resurrection_voucher');
@@ -3355,6 +3366,16 @@ class EncounterManager {
         message = 'Priestess Marina channels the Ocean Mother\'s blessing. You gasp back to life.';
         break;
         
+      case 'premium':
+        const premiumBalance = char.usdc_balance || 0;
+        if (premiumBalance < 0.05) {
+          return { success: false, error: 'Not enough USDC. Need 0.05 for premium resurrection.' };
+        }
+        usdcCost = 0.05;
+        xpLoss = 0;  // NO XP loss!
+        message = 'The Bank\'s resurrection insurance kicks in. You return fully restored, memories intact.';
+        break;
+        
       case 'free':
         xpLoss = Math.floor(char.xp * 0.35);  // 35% XP loss - brutal!
         message = 'You claw your way back from the abyss. The experience haunts you.';
@@ -3375,7 +3396,7 @@ class EncounterManager {
         break;
         
       default:
-        return { success: false, error: 'Invalid resurrection method. Use: paid, free, or voucher' };
+        return { success: false, error: 'Invalid resurrection method. Use: paid, premium, free, or voucher' };
     }
     
     // Calculate new XP and level
@@ -3432,10 +3453,12 @@ class EncounterManager {
       WHERE id = ?
     `).run(respawnHP, newHPMax, newXP, newLevel, usdcCost, characterId);
 
-    // Route resurrection payment to Tide Temple NPC (closed loop)
+    // Route resurrection payment (closed loop economy)
     if (usdcCost > 0) {
+      // Premium goes to bank, regular paid goes to temple NPC
+      const recipient = method === 'premium' ? 'npc_bank_manager' : 'npc_mystic_mantis';
       this.db.prepare('UPDATE system_wallets SET balance_cache = balance_cache + ? WHERE id = ?')
-        .run(usdcCost, 'npc_mystic_mantis');
+        .run(usdcCost, recipient);
     }
     
     const result = {
