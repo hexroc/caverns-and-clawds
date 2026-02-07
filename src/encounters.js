@@ -1144,13 +1144,22 @@ class EncounterManager {
       }
       damage += attackMod;
       
-      // SNEAK ATTACK for rogues!
+      // SNEAK ATTACK for rogues - requires advantage or flanking!
+      // Conditions: first round (ambush), henchman present (flank), or crit
       let sneakAttackDice = 0;
+      let sneakAttackReason = '';
       if (charClass === 'rogue') {
-        // Sneak Attack scales: 1d6 at level 1, +1d6 every 2 levels
-        sneakAttackDice = Math.ceil(char.level / 2);
-        for (let i = 0; i < sneakAttackDice; i++) {
-          damage += Math.floor(Math.random() * 6) + 1;
+        const hasHenchman = henchman && henchman.alive;
+        const isFirstRound = encounter.round === 1;
+        const hasSneakAttack = crit || isFirstRound || hasHenchman;
+        
+        if (hasSneakAttack) {
+          // Sneak Attack scales: 1d6 at level 1, +1d6 every 2 levels
+          sneakAttackDice = Math.ceil(char.level / 2);
+          for (let i = 0; i < sneakAttackDice; i++) {
+            damage += Math.floor(Math.random() * 6) + 1;
+          }
+          sneakAttackReason = isFirstRound ? 'ambush' : (hasHenchman ? 'flank' : 'crit');
         }
       }
       
@@ -1183,7 +1192,7 @@ class EncounterManager {
         });
       } else {
         // Add sneak attack flavor if applicable
-        const sneakNote = sneakAttackDice > 0 ? ` *(+${sneakAttackDice}d6 sneak attack!)*` : '';
+        const sneakNote = sneakAttackDice > 0 ? ` *(+${sneakAttackDice}d6 sneak attack - ${sneakAttackReason}!)*` : '';
         const hits = [
           `⚔️ Your weapon connects solidly with ${target.name}, tearing into their flesh! **${finalDamage} damage**${sneakNote} — blood clouds the water! *(${totalAttack} vs AC ${target.ac})*`,
           `⚔️ With deadly precision, you carve through ${target.name}'s defenses! The blow lands true for **${finalDamage} damage**!${sneakNote} *(${totalAttack} vs AC ${target.ac})*`,

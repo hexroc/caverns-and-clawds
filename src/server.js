@@ -582,7 +582,7 @@ app.get('/skill.md', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.13', build: '2026-02-07T12:40:00Z' });
+  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.14', build: '2026-02-07T12:40:00Z' });
 });
 
 // ============================================
