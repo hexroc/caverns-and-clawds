@@ -983,12 +983,21 @@ class EncounterManager {
       }
     }
     
+    const aliveMonsters = monsters.filter(m => m.alive);
+    
+    // Safety: if no alive monsters, end the combat
+    if (aliveMonsters.length === 0) {
+      this.db.prepare('UPDATE active_encounters SET status = ? WHERE id = ?')
+        .run('victory', encounter.id);
+      return null; // No active encounter anymore
+    }
+    
     return {
       id: encounter.id,
       characterId: encounter.character_id,
       zone: encounter.zone,
       round: encounter.round,
-      monsters: monsters.filter(m => m.alive),
+      monsters: aliveMonsters,
       henchman,
       turnOrder,
       currentTurn: turnOrder[encounter.current_turn],
@@ -1096,11 +1105,14 @@ class EncounterManager {
       return { success: false, error: 'No valid target' };
     }
     
-    // Roll attack
-    const strMod = Math.floor((char.str - 10) / 2);
+    // Roll attack (use DEX for finesse classes like rogue)
+    const isFinesse = ['rogue', 'monk', 'ranger'].includes((char.class_name || '').toLowerCase());
+    const strMod = Math.floor(((char.str || 10) - 10) / 2);
+    const dexMod = Math.floor(((char.dex || 10) - 10) / 2);
+    const attackMod = isFinesse ? Math.max(strMod, dexMod) : strMod;
     const profBonus = Math.ceil(1 + char.level / 4);
     const attackRoll = Math.floor(Math.random() * 20) + 1;
-    const totalAttack = attackRoll + strMod + profBonus;
+    const totalAttack = attackRoll + attackMod + profBonus;
     
     const messages = [];
     let hit = false;
@@ -1127,13 +1139,25 @@ class EncounterManager {
       });
     } else if (crit || totalAttack >= target.ac) {
       hit = true;
-      // Roll damage (assume 1d8 + STR for simplicity)
+      // Roll damage (1d8 + attack mod)
       const damageDice = crit ? 2 : 1;
       damage = 0;
       for (let i = 0; i < damageDice; i++) {
         damage += Math.floor(Math.random() * 8) + 1;
       }
-      damage += strMod;
+      damage += attackMod;
+      
+      // SNEAK ATTACK for rogues!
+      const className = (char.class_name || '').toLowerCase();
+      let sneakAttackDice = 0;
+      if (className === 'rogue') {
+        // Sneak Attack scales: 1d6 at level 1, +1d6 every 2 levels
+        sneakAttackDice = Math.ceil(char.level / 2);
+        for (let i = 0; i < sneakAttackDice; i++) {
+          damage += Math.floor(Math.random() * 6) + 1;
+        }
+      }
+      
       damage = Math.max(1, damage);
       
       // Apply resistances/immunities
@@ -1162,11 +1186,13 @@ class EncounterManager {
           weapon: 'melee attack'
         });
       } else {
+        // Add sneak attack flavor if applicable
+        const sneakNote = sneakAttackDice > 0 ? ` *(+${sneakAttackDice}d6 sneak attack!)*` : '';
         const hits = [
-          `⚔️ Your weapon connects solidly with ${target.name}, tearing into their flesh! **${damage} damage** — blood clouds the water! *(${totalAttack} vs AC ${target.ac})*`,
-          `⚔️ With deadly precision, you carve through ${target.name}'s defenses! The blow lands true for **${damage} damage**! *(${totalAttack} vs AC ${target.ac})*`,
-          `⚔️ You find an opening and strike! Your weapon rips through ${target.name} — they reel back from **${damage} damage**! *(${totalAttack} vs AC ${target.ac})*`,
-          `⚔️ A solid hit! You crash into ${target.name}, your attack biting deep for **${damage} damage**! *(${totalAttack} vs AC ${target.ac})*`
+          `⚔️ Your weapon connects solidly with ${target.name}, tearing into their flesh! **${finalDamage} damage**${sneakNote} — blood clouds the water! *(${totalAttack} vs AC ${target.ac})*`,
+          `⚔️ With deadly precision, you carve through ${target.name}'s defenses! The blow lands true for **${finalDamage} damage**!${sneakNote} *(${totalAttack} vs AC ${target.ac})*`,
+          `⚔️ You find an opening and strike! Your weapon rips through ${target.name} — they reel back from **${finalDamage} damage**!${sneakNote} *(${totalAttack} vs AC ${target.ac})*`,
+          `⚔️ A solid hit! You crash into ${target.name}, your attack biting deep for **${finalDamage} damage**!${sneakNote} *(${totalAttack} vs AC ${target.ac})*`
         ];
         messages.push(hits[Math.floor(Math.random() * hits.length)]);
         // Emit attack hit event
