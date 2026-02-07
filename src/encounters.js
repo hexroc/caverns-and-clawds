@@ -2435,7 +2435,7 @@ class EncounterManager {
     }
     
     // Calculate HP gain if leveled up
-    let newMaxHp = char.max_hp || 10;
+    let newMaxHp = char.hp_max || char.max_hp || 10;
     if (leveledUp) {
       const hitDice = { fighter: 10, paladin: 10, ranger: 10, barbarian: 12, 
                         rogue: 8, bard: 8, cleric: 8, druid: 8, monk: 8, warlock: 8,
@@ -2451,9 +2451,9 @@ class EncounterManager {
       }
     }
     
-    // Update character (XP, level, and max_hp)
+    // Update character (XP, level, and hp_max)
     this.db.prepare(`
-      UPDATE clawds SET xp = ?, level = ?, max_hp = ? WHERE id = ?
+      UPDATE clawds SET xp = ?, level = ?, hp_max = ? WHERE id = ?
     `).run(newXP, newLevel, newMaxHp, char.id);
     
     // Add MATERIALS to player's material inventory
