@@ -54,7 +54,7 @@ function getActiveAgents(db, minutesAgo = 60) {
       SELECT 
         u.id, u.name, u.last_activity,
         c.id as char_id, c.name as char_name, c.race, c.class, c.level, 
-        c.hp_current, c.hp_max, c.current_zone as location
+        c.hp as hp_current, c.max_hp as hp_max, c.current_zone as location
       FROM users u
       LEFT JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent'
@@ -73,7 +73,7 @@ function getActiveAgents(db, minutesAgo = 60) {
       SELECT 
         u.id, u.name,
         c.id as char_id, c.name as char_name, c.race, c.class, c.level, 
-        c.hp_current, c.hp_max, c.current_zone as location
+        c.hp as hp_current, c.max_hp as hp_max, c.current_zone as location
       FROM users u
       LEFT JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent'
