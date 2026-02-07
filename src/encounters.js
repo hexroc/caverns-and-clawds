@@ -1106,7 +1106,8 @@ class EncounterManager {
     }
     
     // Roll attack (use DEX for finesse classes like rogue)
-    const isFinesse = ['rogue', 'monk', 'ranger'].includes((char.class_name || '').toLowerCase());
+    const charClass = (char.class_name || char.class || '').toLowerCase();
+    const isFinesse = ['rogue', 'monk', 'ranger'].includes(charClass);
     const strMod = Math.floor(((char.str || 10) - 10) / 2);
     const dexMod = Math.floor(((char.dex || 10) - 10) / 2);
     const attackMod = isFinesse ? Math.max(strMod, dexMod) : strMod;
@@ -1148,9 +1149,8 @@ class EncounterManager {
       damage += attackMod;
       
       // SNEAK ATTACK for rogues!
-      const className = (char.class_name || '').toLowerCase();
       let sneakAttackDice = 0;
-      if (className === 'rogue') {
+      if (charClass === 'rogue') {
         // Sneak Attack scales: 1d6 at level 1, +1d6 every 2 levels
         sneakAttackDice = Math.ceil(char.level / 2);
         for (let i = 0; i < sneakAttackDice; i++) {
