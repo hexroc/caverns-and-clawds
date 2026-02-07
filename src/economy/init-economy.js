@@ -309,6 +309,21 @@ async function initEconomy() {
   console.log('');
   
   initSystemWallets();
+  
+  // Seed NPC wallets with starting USDC if broke
+  const STARTING_NPC_BALANCE = 5.0;
+  const merchantNPCs = ['npc_madame_pearl', 'npc_ironshell_gus', 'npc_coral_trader', 'npc_weapon_smith', 'npc_old_shellworth'];
+  const seedStmt = db.prepare(`
+    UPDATE system_wallets 
+    SET balance_cache = ? 
+    WHERE id = ? AND (balance_cache IS NULL OR balance_cache < 0.01)
+  `);
+  let seeded = 0;
+  for (const npcId of merchantNPCs) {
+    const r = seedStmt.run(STARTING_NPC_BALANCE, npcId);
+    if (r.changes > 0) seeded++;
+  }
+  if (seeded > 0) console.log(`  💰 Seeded ${seeded} NPCs with $${STARTING_NPC_BALANCE} USDC each`);
   console.log('');
   
   initMaterials();

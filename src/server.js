@@ -582,7 +582,7 @@ app.get('/skill.md', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.7', build: '2026-02-07T12:30:00Z' });
+  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.8', build: '2026-02-07T12:40:00Z' });
 });
 
 // ============================================
@@ -3104,25 +3104,19 @@ try {
   const STARTING_NPC_BALANCE = 5.0; // $5 USDC per NPC
   const NPCs = ['npc_madame_pearl', 'npc_ironshell_gus', 'npc_coral_trader', 'npc_weapon_smith', 'npc_old_shellworth'];
   
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS economy_wallets (
-      wallet_id TEXT PRIMARY KEY,
-      type TEXT NOT NULL,
-      usdc_balance REAL DEFAULT 0,
-      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-      last_yield_at TEXT
-    )
-  `);
-  
+  // Update system_wallets balance_cache (what sell endpoint actually checks)
   const seedStmt = db.prepare(`
-    INSERT INTO economy_wallets (wallet_id, type, usdc_balance)
-    VALUES (?, 'npc', ?)
-    ON CONFLICT(wallet_id) DO UPDATE SET 
-      usdc_balance = CASE WHEN usdc_balance < 0.01 THEN ? ELSE usdc_balance END
+    UPDATE system_wallets 
+    SET balance_cache = CASE WHEN balance_cache < 0.01 THEN ? ELSE balance_cache END
+    WHERE id = ?
   `);
   
   for (const npcId of NPCs) {
-    seedStmt.run(npcId, STARTING_NPC_BALANCE, STARTING_NPC_BALANCE);
+    const result = seedStmt.run(STARTING_NPC_BALANCE, npcId);
+    if (result.changes === 0) {
+      // NPC doesn't exist yet, will be created by init-economy
+      console.log(`  ⏭️  ${npcId} not in system_wallets yet`);
+    }
   }
   console.log('💰 NPC wallets seeded');
 } catch (err) {
