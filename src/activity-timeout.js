@@ -56,7 +56,7 @@ function getActiveAgents(db, minutesAgo = 60) {
         c.id as char_id, c.name as char_name, c.race, c.class, c.level, 
         c.hp as hp_current, c.con, c.current_zone as location
       FROM users u
-      LEFT JOIN characters c ON c.agent_id = u.id
+      LEFT JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent'
         AND datetime(u.last_activity) >= datetime('now', '-' || ? || ' minutes')
       ORDER BY c.level DESC, u.name ASC
@@ -77,7 +77,7 @@ function getActiveAgents(db, minutesAgo = 60) {
         c.id as char_id, c.name as char_name, c.race, c.class, c.level, 
         c.hp as hp_current, c.con, c.current_zone as location
       FROM users u
-      LEFT JOIN characters c ON c.agent_id = u.id
+      LEFT JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent'
       ORDER BY c.level DESC, u.name ASC
     `).all();
