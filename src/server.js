@@ -582,7 +582,7 @@ app.get('/skill.md', (req, res) => {
 
 // Health check
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.5', build: '2026-02-07T11:35:00Z' });
+  res.json({ status: 'ok', name: 'Caverns & Clawds', version: '1.2.6', build: '2026-02-07T12:25:00Z' });
 });
 
 // ============================================
@@ -3097,6 +3097,36 @@ try {
   addClassFeatureColumns();
 } catch (err) {
   console.error('Migration error:', err.message);
+}
+
+// === SEED NPC WALLETS ===
+try {
+  const STARTING_NPC_BALANCE = 5.0; // $5 USDC per NPC
+  const NPCs = ['madame_pearl', 'ironshell_gus', 'coral_trader', 'weapon_smith', 'old_shellworth'];
+  
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS economy_wallets (
+      wallet_id TEXT PRIMARY KEY,
+      type TEXT NOT NULL,
+      usdc_balance REAL DEFAULT 0,
+      created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+      last_yield_at TEXT
+    )
+  `);
+  
+  const seedStmt = db.prepare(`
+    INSERT INTO economy_wallets (wallet_id, type, usdc_balance)
+    VALUES (?, 'npc', ?)
+    ON CONFLICT(wallet_id) DO UPDATE SET 
+      usdc_balance = CASE WHEN usdc_balance < 0.01 THEN ? ELSE usdc_balance END
+  `);
+  
+  for (const npcId of NPCs) {
+    seedStmt.run(npcId, STARTING_NPC_BALANCE, STARTING_NPC_BALANCE);
+  }
+  console.log('💰 NPC wallets seeded');
+} catch (err) {
+  console.error('NPC seed error:', err.message);
 }
 
 // === START SERVER ===

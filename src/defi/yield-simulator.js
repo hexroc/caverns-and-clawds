@@ -77,6 +77,19 @@ function distributeYieldToNPCs(db, dailyYield) {
     `);
   }
   
+  // Seed NPCs with starting balance if they have 0 or don't exist
+  const STARTING_NPC_BALANCE = 5.0; // $5 USDC starting capital per NPC
+  const seedStmt = db.prepare(`
+    INSERT INTO economy_wallets (wallet_id, type, usdc_balance, last_yield_at)
+    VALUES (?, 'npc', ?, CURRENT_TIMESTAMP)
+    ON CONFLICT(wallet_id) DO UPDATE SET 
+      usdc_balance = CASE WHEN usdc_balance < 0.01 THEN ? ELSE usdc_balance END
+  `);
+  
+  for (const npcId of NPCs) {
+    seedStmt.run(npcId, STARTING_NPC_BALANCE, STARTING_NPC_BALANCE);
+  }
+  
   const upsertStmt = db.prepare(`
     INSERT INTO economy_wallets (wallet_id, type, usdc_balance, last_yield_at)
     VALUES (?, 'npc', ?, CURRENT_TIMESTAMP)
