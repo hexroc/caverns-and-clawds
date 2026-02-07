@@ -127,6 +127,39 @@ class EncounterManager {
     this.initDB();
   }
   
+  /**
+   * Get max spell slots for a given level and class (for rest restoration)
+   */
+  getMaxSpellSlots(level, className) {
+    const fullCasterSlots = {
+      1: { 1: 2 }, 2: { 1: 3 }, 3: { 1: 4, 2: 2 }, 4: { 1: 4, 2: 3 },
+      5: { 1: 4, 2: 3, 3: 2 }, 6: { 1: 4, 2: 3, 3: 3 }, 7: { 1: 4, 2: 3, 3: 3, 4: 1 },
+      8: { 1: 4, 2: 3, 3: 3, 4: 2 }, 9: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 1 },
+      10: { 1: 4, 2: 3, 3: 3, 4: 3, 5: 2 }
+    };
+    const halfCasterSlots = {
+      1: {}, 2: { 1: 2 }, 3: { 1: 3 }, 4: { 1: 3 }, 5: { 1: 4, 2: 2 },
+      6: { 1: 4, 2: 2 }, 7: { 1: 4, 2: 3 }, 8: { 1: 4, 2: 3 },
+      9: { 1: 4, 2: 3, 3: 2 }, 10: { 1: 4, 2: 3, 3: 2 }
+    };
+    
+    const classLower = (className || '').toLowerCase();
+    const fullCasters = ['cleric', 'wizard', 'sorcerer', 'bard', 'druid', 'shellpriest', 'tidecaller', 'shantysinger'];
+    const halfCasters = ['paladin', 'ranger', 'crusader'];
+    const pactCasters = ['warlock', 'depthtouched'];
+    
+    if (fullCasters.includes(classLower)) {
+      return fullCasterSlots[Math.min(level, 10)] || {};
+    } else if (halfCasters.includes(classLower)) {
+      return halfCasterSlots[Math.min(level, 10)] || {};
+    } else if (pactCasters.includes(classLower)) {
+      const warlockSlots = { 1: 1, 2: 2, 3: 2, 4: 2, 5: 2 };
+      const slotLevel = Math.min(Math.ceil(level / 2), 5);
+      return { [slotLevel]: warlockSlots[Math.min(level, 5)] || 2 };
+    }
+    return {};
+  }
+  
   initDB() {
     // Active encounters table
     this.db.exec(`
