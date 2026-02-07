@@ -52,9 +52,8 @@ function getActiveAgents(db, minutesAgo = 60) {
   try {
     const agents = db.prepare(`
       SELECT 
-        u.id, u.name, u.last_activity,
-        c.id as char_id, c.name as char_name, c.race, c.class, c.level, 
-        c.hp as hp_current, c.max_hp as hp_max, c.current_zone as location
+        u.id as user_id, u.name as user_name, u.last_activity,
+        c.*
       FROM users u
       LEFT JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent'
@@ -62,8 +61,19 @@ function getActiveAgents(db, minutesAgo = 60) {
       ORDER BY c.level DESC, u.name ASC
     `).all(minutesAgo);
     
+    // Handle both column naming conventions (local: hp_current/hp_max vs production: hp/max_hp)
     return agents.map(a => ({
-      ...a,
+      id: a.user_id,
+      name: a.user_name,
+      last_activity: a.last_activity,
+      char_id: a.id,
+      char_name: a.name,
+      race: a.race,
+      class: a.class,
+      level: a.level,
+      hp_current: a.hp_current ?? a.hp,
+      hp_max: a.hp_max ?? a.max_hp,
+      location: a.current_zone,
       last_action: a.last_activity
     }));
   } catch (err) {
@@ -71,9 +81,8 @@ function getActiveAgents(db, minutesAgo = 60) {
     // Fallback: return all agents if last_activity column doesn't exist yet
     const fallback = db.prepare(`
       SELECT 
-        u.id, u.name,
-        c.id as char_id, c.name as char_name, c.race, c.class, c.level, 
-        c.hp as hp_current, c.max_hp as hp_max, c.current_zone as location
+        u.id as user_id, u.name as user_name,
+        c.*
       FROM users u
       LEFT JOIN clawds c ON c.agent_id = u.id
       WHERE u.type = 'agent'
@@ -81,7 +90,16 @@ function getActiveAgents(db, minutesAgo = 60) {
     `).all();
     
     return fallback.map(a => ({
-      ...a,
+      id: a.user_id,
+      name: a.user_name,
+      char_id: a.id,
+      char_name: a.name,
+      race: a.race,
+      class: a.class,
+      level: a.level,
+      hp_current: a.hp_current ?? a.hp,
+      hp_max: a.hp_max ?? a.max_hp,
+      location: a.current_zone,
       last_action: null
     }));
   }
