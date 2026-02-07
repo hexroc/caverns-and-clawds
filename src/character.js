@@ -839,6 +839,34 @@ function initCharacterDB(db) {
     // Column already exists, ignore
   }
   
+  // Class feature columns (Fighter, Paladin, Bard, Cleric, Wizard, Warlock, Rogue)
+  const classFeatureColumns = [
+    'second_wind_available INTEGER DEFAULT 1',
+    'action_surge_uses INTEGER DEFAULT 0',
+    'action_surge_max INTEGER DEFAULT 0',
+    'action_surge_active INTEGER DEFAULT 0',
+    'fighting_style TEXT',
+    'lay_on_hands_pool INTEGER DEFAULT 0',
+    'divine_sense_uses INTEGER DEFAULT 0',
+    'divine_sense_max INTEGER DEFAULT 0',
+    'bardic_inspiration_uses INTEGER DEFAULT 0',
+    'bardic_inspiration_max INTEGER DEFAULT 0',
+    'channel_divinity_uses INTEGER DEFAULT 0',
+    'channel_divinity_max INTEGER DEFAULT 0',
+    'arcane_recovery_used INTEGER DEFAULT 0',
+    'pact_boon TEXT',
+    'invocations TEXT DEFAULT "[]"',
+    'expertise TEXT DEFAULT "[]"',
+    'reaction_used INTEGER DEFAULT 0'
+  ];
+  for (const col of classFeatureColumns) {
+    try {
+      db.exec(`ALTER TABLE clawds ADD COLUMN ${col}`);
+    } catch (e) {
+      // Column already exists, ignore
+    }
+  }
+  
   // Inventory table
   db.exec(`
     CREATE TABLE IF NOT EXISTS character_inventory (
