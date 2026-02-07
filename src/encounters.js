@@ -2403,10 +2403,27 @@ class EncounterManager {
       leveledUp = true;
     }
     
-    // Update character (XP and level only - no more pearl drops!)
+    // Calculate HP gain if leveled up
+    let newMaxHp = char.max_hp || 10;
+    if (leveledUp) {
+      const hitDice = { fighter: 10, paladin: 10, ranger: 10, barbarian: 12, 
+                        rogue: 8, bard: 8, cleric: 8, druid: 8, monk: 8, warlock: 8,
+                        wizard: 6, sorcerer: 6 };
+      const className = (char.class_name || 'fighter').toLowerCase();
+      const hitDie = hitDice[className] || 8;
+      const conMod = Math.floor(((char.constitution || 10) - 10) / 2);
+      
+      // Gain HP for each new level (average of hit die + CON mod, minimum 1)
+      for (let l = char.level + 1; l <= newLevel; l++) {
+        const hpGain = Math.max(1, Math.floor(hitDie / 2) + 1 + conMod);
+        newMaxHp += hpGain;
+      }
+    }
+    
+    // Update character (XP, level, and max_hp)
     this.db.prepare(`
-      UPDATE clawds SET xp = ?, level = ? WHERE id = ?
-    `).run(newXP, newLevel, char.id);
+      UPDATE clawds SET xp = ?, level = ?, max_hp = ? WHERE id = ?
+    `).run(newXP, newLevel, newMaxHp, char.id);
     
     // Add MATERIALS to player's material inventory
     if (allMaterials.length > 0) {
