@@ -2473,7 +2473,7 @@
     function formatUSDC(amount) {
       if (amount >= 1000000) return (amount / 1000000).toFixed(1) + 'M';
       if (amount >= 1000) return (amount / 1000).toFixed(1) + 'K';
-      return Number(amount || 0).toFixed(2);
+      return Number(amount || 0).toFixed(3);
     }
     
     function formatTime(timestamp) {
