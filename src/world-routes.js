@@ -11,6 +11,7 @@ const { ZoneManager, SeededRandom } = require('./room-generator');
 const { QuestEngine } = require('./quest-engine');
 const { activityTracker } = require('./activity-tracker');
 const { EncounterManager } = require('./encounters');
+const spellSystem = require('./spells/index');
 
 function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) {
   const router = express.Router();
@@ -496,6 +497,249 @@ function createWorldRoutes(db, authenticateAgent, broadcastToSpectators = null) 
     } catch (err) {
       console.error('Rest error:', err.message, err.stack);
       res.status(500).json({ success: false, error: 'Failed to rest', detail: err.message });
+    }
+  });
+
+  // ============================================================================
+  // OUT-OF-COMBAT SPELL CASTING
+  // ============================================================================
+
+  /**
+   * POST /api/world/cast - Cast a spell outside of combat
+   * Body: { spell: 'cure_wounds' | 'healing_word' | etc, target?: 'self' | characterId }
+   * 
+   * Only healing/utility spells can be cast outside combat.
+   * Damage spells require an active encounter.
+   */
+  router.post('/cast', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      // Check if in combat
+      const encounters = new EncounterManager(db);
+      const activeEncounter = encounters.getActiveEncounter(char.id);
+      if (activeEncounter) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Cannot cast this way during combat!',
+          hint: 'Use /api/encounter/action with action=spell instead'
+        });
+      }
+
+      const { spell: spellId, target: targetId, slotLevel } = req.body;
+      if (!spellId) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'spell required',
+          hint: 'e.g., { "spell": "cure_wounds" }'
+        });
+      }
+
+      // Get the spell
+      const spell = spellSystem.getSpell(spellId);
+      if (!spell) {
+        return res.status(400).json({ 
+          success: false, 
+          error: `Unknown spell: ${spellId}`,
+          available: ['cure_wounds', 'healing_word', 'lesser_restoration', 'prayer_of_healing']
+        });
+      }
+
+      // Only allow healing/utility spells outside combat
+      const HEALING_SPELLS = ['cure_wounds', 'healing_word', 'lesser_restoration', 'prayer_of_healing', 'aid'];
+      if (!HEALING_SPELLS.includes(spellId)) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'Only healing spells can be cast outside combat',
+          allowed: HEALING_SPELLS
+        });
+      }
+
+      // Check if character knows the spell (from character_spells table)
+      const knownSpell = db.prepare(`
+        SELECT * FROM character_spells 
+        WHERE character_id = ? AND spell_id = ? AND prepared = 1
+      `).get(char.id, spellId);
+      
+      if (!knownSpell) {
+        const allSpells = db.prepare(`
+          SELECT spell_id FROM character_spells WHERE character_id = ? AND prepared = 1
+        `).all(char.id).map(s => s.spell_id);
+        
+        return res.status(400).json({ 
+          success: false, 
+          error: `You don't know ${spell.name}`,
+          yourSpells: allSpells
+        });
+      }
+
+      // Get spell slots from database directly (char object may not include it)
+      const rawChar = db.prepare('SELECT spell_slots FROM clawds WHERE id = ?').get(char.id);
+      let spellSlots = rawChar?.spell_slots ? JSON.parse(rawChar.spell_slots) : {};
+      const useLevel = slotLevel || spell.level;
+      
+      if (spell.level > 0) {
+        const slotKey = `level${useLevel}`;
+        const available = spellSlots[slotKey] || 0;
+        if (available < 1) {
+          return res.status(400).json({ 
+            success: false, 
+            error: `No level ${useLevel} spell slots available`,
+            spellSlots
+          });
+        }
+      }
+
+      // Determine target (self or ally - no enemies out of combat)
+      let targetChar = char;
+      let targetHpCurrent, targetHpMax;
+      
+      // Get char's location (handle nested object from getChar)
+      const charLocation = char.current_location || char.location;
+      
+      if (targetId && targetId !== 'self') {
+        // Try to find another character in same location
+        const nearby = db.prepare(`
+          SELECT * FROM clawds 
+          WHERE (id = ? OR name = ?) 
+            AND (current_location = ? OR location = ?)
+            AND status != 'dead'
+        `).get(targetId, targetId, charLocation, charLocation);
+        
+        if (nearby) {
+          targetChar = nearby;
+          targetHpCurrent = nearby.hp_current;
+          targetHpMax = nearby.hp_max;
+        } else {
+          return res.status(400).json({ 
+            success: false, 
+            error: `Target not found or not in your location`,
+            hint: 'Target must be in the same room as you'
+          });
+        }
+      } else {
+        // Self target - handle nested hp object from getChar
+        targetHpCurrent = char.hp?.current ?? char.hp_current;
+        targetHpMax = char.hp?.max ?? char.hp_max;
+      }
+
+      // Get caster stats
+      const casterStats = char.stats ? (typeof char.stats === 'string' ? JSON.parse(char.stats) : char.stats) : { wisdom: { mod: 0 } };
+      const wisdomMod = casterStats.wis?.mod ?? casterStats.wisdom?.mod ?? Math.floor(((casterStats.wis?.score || casterStats.wisdom || 10) - 10) / 2);
+
+      // Cast the spell
+      const result = spell.cast(
+        { 
+          ...char,
+          stats: { wisdom: 10 + (wisdomMod * 2) }  // Convert mod back to score for spell
+        },
+        [{ 
+          ...targetChar, 
+          currentHp: targetHpCurrent, 
+          maxHp: targetHpMax 
+        }],
+        useLevel
+      );
+
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+
+      // Apply healing to database
+      if (result.healing) {
+        const newHp = Math.min(targetHpMax, targetHpCurrent + result.healing);
+        db.prepare('UPDATE clawds SET hp_current = ? WHERE id = ?').run(newHp, targetChar.id);
+        result.targetHp = { before: targetHpCurrent, after: newHp, max: targetHpMax };
+      }
+
+      // Consume spell slot
+      if (spell.level > 0) {
+        const slotKey = `level${useLevel}`;
+        spellSlots[slotKey] = (spellSlots[slotKey] || 0) - 1;
+        db.prepare('UPDATE clawds SET spell_slots = ? WHERE id = ?')
+          .run(JSON.stringify(spellSlots), char.id);
+        result.slotsRemaining = spellSlots;
+      }
+
+      // Broadcast to spectators
+      if (broadcastToSpectators) {
+        broadcastToSpectators({
+          type: 'spell_cast',
+          caster: char.name,
+          spell: spell.name,
+          target: targetChar.name,
+          healing: result.healing,
+          timestamp: new Date().toISOString()
+        });
+      }
+
+      res.json({
+        success: true,
+        spell: spell.name,
+        caster: char.name,
+        target: targetChar.name,
+        ...result
+      });
+
+    } catch (err) {
+      console.error('Cast error:', err.message, err.stack);
+      res.status(500).json({ success: false, error: 'Failed to cast spell', detail: err.message });
+    }
+  });
+
+  /**
+   * GET /api/world/spells - List character's known spells and slots
+   */
+  router.get('/spells', authenticateAgent, (req, res) => {
+    try {
+      const char = getChar(req);
+      if (!char) {
+        return res.status(404).json({ success: false, error: 'No character found' });
+      }
+
+      // Get spells from character_spells table
+      const charSpells = db.prepare(`
+        SELECT spell_id, spell_type, spell_level, prepared 
+        FROM character_spells 
+        WHERE character_id = ?
+      `).all(char.id);
+      
+      // Get spell slots from database directly
+      const rawChar = db.prepare('SELECT spell_slots FROM clawds WHERE id = ?').get(char.id);
+      const spellSlots = rawChar?.spell_slots ? JSON.parse(rawChar.spell_slots) : {};
+      
+      // Get spell details
+      const spellDetails = charSpells.map(row => {
+        const spell = spellSystem.getSpell(row.spell_id);
+        return spell ? {
+          id: spell.id,
+          name: spell.name,
+          level: spell.level,
+          school: spell.school,
+          castingTime: spell.castingTime,
+          range: spell.range,
+          description: spell.description,
+          prepared: row.prepared === 1
+        } : { id: row.spell_id, name: row.spell_id, level: row.spell_level, error: 'Definition not found' };
+      });
+      
+      const knownSpellIds = charSpells.filter(s => s.prepared === 1).map(s => s.spell_id);
+
+      res.json({
+        success: true,
+        character: char.name,
+        spells: spellDetails,
+        spellSlots,
+        canCastOutOfCombat: ['cure_wounds', 'healing_word', 'lesser_restoration', 'prayer_of_healing', 'aid']
+          .filter(s => knownSpellIds.includes(s))
+      });
+
+    } catch (err) {
+      console.error('Spells error:', err);
+      res.status(500).json({ success: false, error: 'Failed to get spells' });
     }
   });
 

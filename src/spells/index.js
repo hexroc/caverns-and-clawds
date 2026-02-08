@@ -14,9 +14,25 @@ const SPELL_REGISTRY = {
   ...level2Spells
 };
 
-// Helper to get spell by ID
+// Helper to convert snake_case to camelCase
+function toCamelCase(str) {
+  return str.replace(/_([a-z])/g, (_, letter) => letter.toUpperCase());
+}
+
+// Helper to get spell by ID (supports both snake_case and camelCase)
 function getSpell(spellId) {
-  return SPELL_REGISTRY[spellId] || null;
+  // Try direct lookup first
+  if (SPELL_REGISTRY[spellId]) return SPELL_REGISTRY[spellId];
+  
+  // Try camelCase conversion
+  const camelId = toCamelCase(spellId);
+  if (SPELL_REGISTRY[camelId]) return SPELL_REGISTRY[camelId];
+  
+  // Try matching by spell.id field
+  const byId = Object.values(SPELL_REGISTRY).find(s => s.id === spellId);
+  if (byId) return byId;
+  
+  return null;
 }
 
 // Helper to get all spells by level
