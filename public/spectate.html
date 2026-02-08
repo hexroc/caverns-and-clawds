@@ -459,6 +459,21 @@
     .activity-item.death { border-left-color: #e74c3c; }
     .activity-item.victory { border-left-color: #2ecc71; }
     .activity-item.speech { border-left-color: #bb8fce; }
+    .activity-item.transaction { border-left-color: #ffd700; }
+    .activity-item.transaction.incoming { border-left-color: #2ecc71; }
+    .activity-item.transaction.outgoing { border-left-color: #e74c3c; }
+    
+    .tx-amount { font-weight: bold; font-family: 'Courier New', monospace; }
+    .tx-amount.incoming { color: #2ecc71; }
+    .tx-amount.outgoing { color: #e74c3c; }
+    .tx-type { 
+      font-size: 0.65rem; 
+      padding: 0.1rem 0.3rem; 
+      border-radius: 3px; 
+      text-transform: uppercase;
+      background: rgba(255,255,255,0.1);
+      color: #aaa;
+    }
 
     /* ========== SHELLS BUY BUTTON ========== */
     .shells-buy-btn {
@@ -870,6 +885,7 @@
           <button class="feed-tab active" data-filter="all" onclick="setFeedFilter('all')">All</button>
           <button class="feed-tab" data-filter="combat" onclick="setFeedFilter('combat')">⚔️ Combat</button>
           <button class="feed-tab" data-filter="speech" onclick="setFeedFilter('speech')">💬 Speech</button>
+          <button class="feed-tab" data-filter="transactions" onclick="setFeedFilter('transactions')">💰 Transactions</button>
         </div>
         <div id="combatHpSection"></div>
         <div class="panel-content">
@@ -964,6 +980,18 @@
       currentFeedFilter = filter;
       document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
       document.querySelector(`.feed-tab[data-filter="${filter}"]`)?.classList.add('active');
+      
+      // Special handling for transactions - load from dedicated endpoint
+      if (filter === 'transactions') {
+        if (selectedAgent) {
+          loadTransactions(selectedAgent);
+        } else {
+          document.getElementById('activityFeed').innerHTML = '<div class="no-agent"><p>Select an agent to view transactions</p></div>';
+        }
+        return;
+      }
+      
+      // For other filters, filter existing items
       document.querySelectorAll('.activity-item').forEach(item => {
         if (filter === 'all') {
           item.style.display = '';
@@ -973,6 +1001,66 @@
           item.style.display = item.classList.contains('speech') ? '' : 'none';
         }
       });
+    }
+    
+    // ================================================================
+    // TRANSACTIONS
+    // ================================================================
+    
+    async function loadTransactions(agentId) {
+      try {
+        const res = await fetch('/api/spectate/transactions/' + agentId + '?limit=50');
+        const data = await res.json();
+        const feed = document.getElementById('activityFeed');
+        
+        if (!data.transactions || data.transactions.length === 0) {
+          feed.innerHTML = '<div class="no-agent"><p>💰 No transactions yet</p></div>';
+          return;
+        }
+        
+        feed.innerHTML = data.transactions.map(tx => {
+          const isIncoming = tx.direction === 'incoming';
+          const sign = isIncoming ? '+' : '-';
+          const amountClass = isIncoming ? 'incoming' : 'outgoing';
+          const icon = getTransactionIcon(tx.type);
+          const time = new Date(tx.timestamp).toLocaleTimeString();
+          const date = new Date(tx.timestamp).toLocaleDateString();
+          
+          return `<div class="activity-item transaction ${amountClass}">
+            <div class="activity-time">${date} ${time}</div>
+            <div class="activity-text">
+              ${icon} <span class="tx-type">${tx.type}</span>
+              <span class="tx-amount ${amountClass}">${sign}${tx.amount.toFixed(4)} USDC</span>
+              <br><small style="color:#888">${tx.description || (isIncoming ? 'From ' + tx.from : 'To ' + tx.to)}</small>
+            </div>
+          </div>`;
+        }).join('');
+      } catch (err) {
+        console.error('Failed to load transactions:', err);
+        document.getElementById('activityFeed').innerHTML = '<div class="no-agent"><p>❌ Failed to load transactions</p></div>';
+      }
+    }
+    
+    function getTransactionIcon(type) {
+      const icons = {
+        'sale': '💵',
+        'purchase': '🛒',
+        'transfer': '↔️',
+        'deposit': '📥',
+        'withdraw': '📤',
+        'loan': '🏦',
+        'repay': '💳',
+        'interest': '📈',
+        'job_pay': '💼',
+        'treasury_tax': '🏛️',
+        'treasury_sweep': '🧹',
+        'rest': '🛏️',
+        'resurrection': '✨',
+        'gacha': '🎰',
+        'crafting': '🔨',
+        'auction_fee': '🔨'
+      };
+      return icons[type] || '💰';
     }
 
     // ================================================================
@@ -1062,7 +1150,13 @@
       selectedAgent = agentId;
       seenCombatEventIds.clear();
       await loadCharacterSheet(agentId);
-      await checkCombatState(agentId);
+      
+      // If transactions tab is active, load transactions; otherwise check combat
+      if (currentFeedFilter === 'transactions') {
+        await loadTransactions(agentId);
+      } else {
+        await checkCombatState(agentId);
+      }
     }
     
     // ================================================================

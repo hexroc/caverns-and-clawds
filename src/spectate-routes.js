@@ -542,4 +542,90 @@ router.get('/map', (req, res) => {
   }
 });
 
+/**
+ * GET /api/spectate/transactions/:userId
+ * Get transaction history for a character
+ */
+router.get('/transactions/:userId', (req, res) => {
+  try {
+    const { userId } = req.params;
+    const limit = parseInt(req.query.limit) || 50;
+    
+    // Get character's wallet address
+    const char = db.prepare(`
+      SELECT c.id, c.name, c.wallet_public_key
+      FROM clawds c
+      JOIN users u ON c.agent_id = u.id
+      WHERE u.id = ?
+    `).get(userId);
+    
+    if (!char) {
+      return res.status(404).json({ success: false, error: 'Character not found' });
+    }
+    
+    // If no wallet, return empty transactions
+    if (!char.wallet_public_key) {
+      return res.json({
+        success: true,
+        character: char.name,
+        transactions: []
+      });
+    }
+    
+    // Get transactions where this character is sender or receiver
+    const transactions = db.prepare(`
+      SELECT 
+        t.id,
+        t.type,
+        t.from_wallet,
+        t.to_wallet,
+        t.amount,
+        t.description,
+        t.created_at,
+        CASE 
+          WHEN t.from_wallet = ? THEN 'outgoing'
+          WHEN t.to_wallet = ? THEN 'incoming'
+          ELSE 'other'
+        END as direction,
+        sender.name as from_name,
+        receiver.name as to_name
+      FROM economy_transactions t
+      LEFT JOIN clawds sender ON t.from_wallet = sender.wallet_public_key
+      LEFT JOIN clawds receiver ON t.to_wallet = receiver.wallet_public_key
+      WHERE t.from_wallet = ? OR t.to_wallet = ?
+      ORDER BY t.created_at DESC
+      LIMIT ?
+    `).all(char.wallet_public_key, char.wallet_public_key, char.wallet_public_key, char.wallet_public_key, limit);
+    
+    // Format transactions for display
+    const formatted = transactions.map(t => ({
+      id: t.id,
+      type: t.type,
+      direction: t.direction,
+      amount: t.amount,
+      description: t.description,
+      timestamp: t.created_at,
+      from: t.from_name || shortenWallet(t.from_wallet),
+      to: t.to_name || shortenWallet(t.to_wallet)
+    }));
+    
+    res.json({
+      success: true,
+      character: char.name,
+      wallet: char.wallet_public_key,
+      transactions: formatted
+    });
+  } catch (err) {
+    console.error('Get transactions error:', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Helper to shorten wallet addresses for display
+function shortenWallet(wallet) {
+  if (!wallet) return 'Unknown';
+  if (wallet.length <= 12) return wallet;
+  return wallet.slice(0, 6) + '...' + wallet.slice(-4);
+}
+
 module.exports = { init };
