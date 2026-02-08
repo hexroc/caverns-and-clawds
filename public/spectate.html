@@ -394,16 +394,17 @@
     }
     
     .agent-dot {
-      width: 12px; height: 12px;
-      border-radius: 50%;
+      width: 14px; height: 14px;
       cursor: pointer;
       transition: transform 0.15s;
-      border: 1.5px solid rgba(255,255,255,0.35);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .agent-dot:hover { transform: scale(1.5); z-index: 20; border-color: #fff; }
-    .agent-dot.race-split { background: linear-gradient(90deg, #e74c3c 50%, #3498db 50%) !important; }
-    .agent-dot.race-reef { background: linear-gradient(135deg, #e74c3c, #f39c12, #f1c40f, #2ecc71, #3498db, #9b59b6) !important; }
-    .agent-dot.race-ghost { border-color: rgba(200,255,255,0.6); animation: ghostPulse 2s infinite; }
+    .agent-dot:hover { transform: scale(1.8); z-index: 20; }
+    .agent-dot .lobster-svg { width: 14px; height: 14px; }
+    .agent-dot .lobster-svg svg { width: 100%; height: 100%; }
+    .agent-dot.race-ghost { animation: ghostPulse 2s infinite; }
     @keyframes ghostPulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
     
     /* Map tooltip */
@@ -1813,17 +1814,14 @@
     
     function renderAgentDot(agent) {
       const race = (agent.race || '').toLowerCase();
-      let style = '', extra = '';
-      if (race === 'split') extra = ' race-split';
-      else if (race === 'reef') extra = ' race-reef';
-      else if (race === 'ghost') { extra = ' race-ghost'; style = `background:${RACE_COLORS.ghost};`; }
-      else style = `background:${RACE_COLORS[race]||'#888'};`;
+      let extra = race === 'ghost' ? ' race-ghost' : '';
+      const lobsterSvg = createLobsterSVG(race || 'american');
       
-      return `<div class="agent-dot${extra}" style="${style}" 
+      return `<div class="agent-dot${extra}" 
         data-agent-id="${agent.id}" data-agent-name="${agent.name}" 
         data-agent-class="${agent.class||'?'}" data-agent-race="${agent.race||'?'}"
         data-agent-hp="${agent.hp}" data-agent-maxhp="${agent.maxHp}" 
-        data-agent-level="${agent.level}"></div>`;
+        data-agent-level="${agent.level}">${lobsterSvg}</div>`;
     }
     
     function attachMapEvents() {
