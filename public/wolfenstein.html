@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wolfenstein 3D - Three.js POC</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { overflow: hidden; background: #000; }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: linear-gradient(to bottom, #333 0%, #111 100%);
+            border-top: 3px solid #666;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-family: 'Courier New', monospace;
+            color: #fff;
+        }
+        .stat { text-align: center; }
+        .stat-label { font-size: 12px; color: #888; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #fff; }
+        .health { color: #f00; }
+        .ammo { color: #ff0; }
+        #crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            color: #fff;
+            font-size: 24px;
+            pointer-events: none;
+            text-shadow: 0 0 4px #000;
+        }
+        #gun {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 200px;
+            height: 150px;
+            pointer-events: none;
+        }
+        #instructions {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            font-family: monospace;
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 5px;
+        }
+        #muzzle-flash {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 100px;
+            height: 100px;
+            background: radial-gradient(circle, rgba(255,200,0,0.9) 0%, rgba(255,100,0,0.5) 50%, transparent 70%);
+            border-radius: 50%;
+            pointer-events: none;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="crosshair">+</div>
+    <div id="muzzle-flash"></div>
+    <canvas id="gun"></canvas>
+    <div id="ui">
+        <div class="stat">
+            <div class="stat-label">LEVEL</div>
+            <div class="stat-value">1</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">SCORE</div>
+            <div class="stat-value">0</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">LIVES</div>
+            <div class="stat-value">3</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">HEALTH</div>
+            <div class="stat-value health">100%</div>
+        </div>
+        <div class="stat">
+            <div class="stat-label">AMMO</div>
+            <div class="stat-value ammo">50</div>
+        </div>
+    </div>
+    <div id="instructions">
+        WASD - Move | Mouse - Look | Click - Shoot | ESC - Release mouse
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // ===== GAME CONFIG =====
+        const CELL_SIZE = 4;
+        const WALL_HEIGHT = 4;
+        const MOVE_SPEED = 0.1;
+        const MOUSE_SENSITIVITY = 0.002;
+        
+        // Level map: 1 = wall, 0 = empty
+        const MAP = [
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,1,1,1,0,0,0,0,0,1,1,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,1],
+            [1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
+            [1,0,0,0,0,0,1,0,0,1,0,0,0,0,0,1],
+            [1,0,0,0,0,0,1,1,0,1,0,0,0,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,1,0,0,0,0,0,0,0,0,0,1,0,0,1],
+            [1,0,1,1,1,0,0,0,0,0,1,1,1,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1],
+            [1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],
+        ];
+        
+        // Wall textures (procedural)
+        const WALL_COLORS = [0x0000aa, 0x000088, 0x0000cc, 0x000066];
+        
+        // ===== THREE.JS SETUP =====
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x111111);
+        
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / (window.innerHeight - 60), 0.1, 1000);
+        camera.position.set(CELL_SIZE * 2, WALL_HEIGHT / 2, CELL_SIZE * 2);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight - 60);
+        document.body.insertBefore(renderer.domElement, document.body.firstChild);
+        
+        // ===== CREATE LEVEL =====
+        function createLevel() {
+            // Floor
+            const floorGeo = new THREE.PlaneGeometry(MAP[0].length * CELL_SIZE, MAP.length * CELL_SIZE);
+            const floorMat = new THREE.MeshBasicMaterial({ color: 0x444444 });
+            const floor = new THREE.Mesh(floorGeo, floorMat);
+            floor.rotation.x = -Math.PI / 2;
+            floor.position.set(MAP[0].length * CELL_SIZE / 2, 0, MAP.length * CELL_SIZE / 2);
+            scene.add(floor);
+            
+            // Ceiling
+            const ceilGeo = new THREE.PlaneGeometry(MAP[0].length * CELL_SIZE, MAP.length * CELL_SIZE);
+            const ceilMat = new THREE.MeshBasicMaterial({ color: 0x333333 });
+            const ceil = new THREE.Mesh(ceilGeo, ceilMat);
+            ceil.rotation.x = Math.PI / 2;
+            ceil.position.set(MAP[0].length * CELL_SIZE / 2, WALL_HEIGHT, MAP.length * CELL_SIZE / 2);
+            scene.add(ceil);
+            
+            // Walls
+            for (let z = 0; z < MAP.length; z++) {
+                for (let x = 0; x < MAP[z].length; x++) {
+                    if (MAP[z][x] === 1) {
+                        createWall(x, z);
+                    }
+                }
+            }
+        }
+        
+        function createWall(x, z) {
+            const geo = new THREE.BoxGeometry(CELL_SIZE, WALL_HEIGHT, CELL_SIZE);
+            
+            // Create brick texture procedurally
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            // Base color
+            ctx.fillStyle = '#0000aa';
+            ctx.fillRect(0, 0, 64, 64);
+            
+            // Brick pattern
+            ctx.fillStyle = '#000088';
+            for (let row = 0; row < 4; row++) {
+                for (let col = 0; col < 4; col++) {
+                    const offset = row % 2 === 0 ? 0 : 8;
+                    ctx.fillRect(col * 16 + offset + 1, row * 16 + 1, 14, 14);
+                }
+            }
+            
+            // Mortar lines
+            ctx.strokeStyle = '#000044';
+            ctx.lineWidth = 2;
+            for (let i = 0; i <= 4; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * 16);
+                ctx.lineTo(64, i * 16);
+                ctx.stroke();
+            }
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.wrapS = THREE.RepeatWrapping;
+            texture.wrapT = THREE.RepeatWrapping;
+            
+            const mat = new THREE.MeshBasicMaterial({ map: texture });
+            const wall = new THREE.Mesh(geo, mat);
+            wall.position.set(x * CELL_SIZE + CELL_SIZE / 2, WALL_HEIGHT / 2, z * CELL_SIZE + CELL_SIZE / 2);
+            scene.add(wall);
+        }
+        
+        // ===== ENEMIES =====
+        const enemies = [];
+        
+        function createEnemy(x, z) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 64;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            
+            // Simple guard sprite
+            ctx.fillStyle = '#8B4513';
+            ctx.fillRect(20, 10, 24, 20); // head
+            ctx.fillStyle = '#4169E1';
+            ctx.fillRect(16, 30, 32, 30); // body
+            ctx.fillStyle = '#000';
+            ctx.fillRect(24, 18, 4, 4); // eye
+            ctx.fillRect(36, 18, 4, 4); // eye
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: texture });
+            const sprite = new THREE.Sprite(mat);
+            sprite.scale.set(2, 2, 1);
+            sprite.position.set(x * CELL_SIZE + CELL_SIZE / 2, WALL_HEIGHT / 2, z * CELL_SIZE + CELL_SIZE / 2);
+            sprite.userData = { health: 100, alive: true };
+            scene.add(sprite);
+            enemies.push(sprite);
+        }
+        
+        // Add some enemies
+        createEnemy(7, 7);
+        createEnemy(12, 3);
+        createEnemy(3, 12);
+        
+        // ===== GUN =====
+        function drawGun(shooting = false) {
+            const canvas = document.getElementById('gun');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 150;
+            
+            ctx.clearRect(0, 0, 200, 150);
+            
+            // Hand
+            ctx.fillStyle = '#DEB887';
+            ctx.fillRect(70, 100, 60, 50);
+            
+            // Gun body
+            ctx.fillStyle = '#333';
+            ctx.fillRect(80, 50, 40, 60);
+            
+            // Barrel
+            ctx.fillStyle = '#222';
+            ctx.fillRect(90, 20, 20, 40);
+            
+            // Muzzle flash
+            if (shooting) {
+                ctx.fillStyle = '#ff0';
+                ctx.beginPath();
+                ctx.arc(100, 15, 15, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+        drawGun();
+        
+        // ===== CONTROLS =====
+        const keys = {};
+        let yaw = 0;
+        let pitch = 0;
+        let ammo = 50;
+        let score = 0;
+        
+        document.addEventListener('keydown', e => keys[e.key.toLowerCase()] = true);
+        document.addEventListener('keyup', e => keys[e.key.toLowerCase()] = false);
+        
+        document.addEventListener('click', () => {
+            if (!document.pointerLockElement) {
+                renderer.domElement.requestPointerLock();
+            } else {
+                shoot();
+            }
+        });
+        
+        document.addEventListener('mousemove', e => {
+            if (document.pointerLockElement) {
+                yaw -= e.movementX * MOUSE_SENSITIVITY;
+                pitch -= e.movementY * MOUSE_SENSITIVITY;
+                pitch = Math.max(-Math.PI / 3, Math.min(Math.PI / 3, pitch));
+            }
+        });
+        
+        function shoot() {
+            if (ammo <= 0) return;
+            
+            ammo--;
+            document.querySelector('.ammo').textContent = ammo;
+            
+            // Visual feedback
+            drawGun(true);
+            document.getElementById('muzzle-flash').style.display = 'block';
+            setTimeout(() => {
+                drawGun(false);
+                document.getElementById('muzzle-flash').style.display = 'none';
+            }, 50);
+            
+            // Raycasting for hit detection
+            const raycaster = new THREE.Raycaster();
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            
+            const hits = raycaster.intersectObjects(enemies);
+            if (hits.length > 0) {
+                const enemy = hits[0].object;
+                if (enemy.userData.alive) {
+                    enemy.userData.health -= 50;
+                    if (enemy.userData.health <= 0) {
+                        enemy.userData.alive = false;
+                        scene.remove(enemy);
+                        score += 100;
+                        document.querySelectorAll('.stat-value')[1].textContent = score;
+                    }
+                }
+            }
+        }
+        
+        // ===== COLLISION DETECTION =====
+        function canMoveTo(x, z) {
+            const mapX = Math.floor(x / CELL_SIZE);
+            const mapZ = Math.floor(z / CELL_SIZE);
+            
+            if (mapX < 0 || mapX >= MAP[0].length || mapZ < 0 || mapZ >= MAP.length) {
+                return false;
+            }
+            
+            return MAP[mapZ][mapX] === 0;
+        }
+        
+        // ===== GAME LOOP =====
+        function update() {
+            // Calculate movement direction
+            const forward = new THREE.Vector3(0, 0, -1).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            const right = new THREE.Vector3(1, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), yaw);
+            
+            let newX = camera.position.x;
+            let newZ = camera.position.z;
+            
+            if (keys['w']) {
+                newX += forward.x * MOVE_SPEED;
+                newZ += forward.z * MOVE_SPEED;
+            }
+            if (keys['s']) {
+                newX -= forward.x * MOVE_SPEED;
+                newZ -= forward.z * MOVE_SPEED;
+            }
+            if (keys['a']) {
+                newX -= right.x * MOVE_SPEED;
+                newZ -= right.z * MOVE_SPEED;
+            }
+            if (keys['d']) {
+                newX += right.x * MOVE_SPEED;
+                newZ += right.z * MOVE_SPEED;
+            }
+            
+            // Apply movement with collision
+            if (canMoveTo(newX, camera.position.z)) {
+                camera.position.x = newX;
+            }
+            if (canMoveTo(camera.position.x, newZ)) {
+                camera.position.z = newZ;
+            }
+            
+            // Update camera rotation
+            camera.rotation.set(0, 0, 0);
+            camera.rotateY(yaw);
+            camera.rotateX(pitch);
+            
+            // Make enemies face camera (billboard)
+            enemies.forEach(enemy => {
+                if (enemy.userData.alive) {
+                    enemy.lookAt(camera.position);
+                }
+            });
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            update();
+            renderer.render(scene, camera);
+        }
+        
+        // ===== INIT =====
+        createLevel();
+        animate();
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / (window.innerHeight - 60);
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight - 60);
+        });
+    </script>
+</body>
+</html>
