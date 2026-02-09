@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>C&C Isometric Battle</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            overflow: hidden; 
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            font-family: 'Courier New', monospace;
+        }
+        canvas { display: block; }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid #4a9eff;
+        }
+        #ui h2 { 
+            color: #4a9eff; 
+            margin-bottom: 10px;
+            font-size: 18px;
+        }
+        .combatant {
+            margin: 8px 0;
+            padding: 8px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        .combatant.friendly { border-left: 3px solid #4ade80; }
+        .combatant.enemy { border-left: 3px solid #f87171; }
+        .hp-bar {
+            height: 8px;
+            background: #333;
+            border-radius: 4px;
+            margin-top: 4px;
+            overflow: hidden;
+        }
+        .hp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #22c55e, #4ade80);
+            transition: width 0.3s;
+        }
+        .hp-fill.low { background: linear-gradient(90deg, #ef4444, #f87171); }
+        #combat-log {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            max-height: 150px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.8);
+            color: #ccc;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            border: 1px solid #333;
+        }
+        .log-entry { margin: 4px 0; }
+        .log-entry.damage { color: #f87171; }
+        .log-entry.heal { color: #4ade80; }
+        .log-entry.action { color: #60a5fa; }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            color: #fff;
+            background: rgba(0,0,0,0.7);
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h2>⚔️ COMBAT</h2>
+        <div class="combatant friendly">
+            <div>🦞 <strong>Snapper</strong> (Rogue 5)</div>
+            <div class="hp-bar"><div class="hp-fill" id="player-hp" style="width: 85%"></div></div>
+            <small>HP: 34/40</small>
+        </div>
+        <div class="combatant friendly">
+            <div>🦞 <strong>Coral</strong> (Cleric 4)</div>
+            <div class="hp-bar"><div class="hp-fill" id="ally-hp" style="width: 100%"></div></div>
+            <small>HP: 28/28</small>
+        </div>
+        <hr style="border-color: #333; margin: 10px 0;">
+        <div class="combatant enemy">
+            <div>🦈 <strong>Reef Shark</strong></div>
+            <div class="hp-bar"><div class="hp-fill low" id="enemy1-hp" style="width: 45%"></div></div>
+            <small>HP: 18/40</small>
+        </div>
+        <div class="combatant enemy">
+            <div>🐙 <strong>Giant Octopus</strong></div>
+            <div class="hp-bar"><div class="hp-fill" id="enemy2-hp" style="width: 70%"></div></div>
+            <small>HP: 35/50</small>
+        </div>
+    </div>
+    
+    <div id="controls">
+        🖱️ Drag to rotate | Scroll to zoom
+    </div>
+    
+    <div id="combat-log">
+        <div class="log-entry action">⚔️ Combat initiated!</div>
+        <div class="log-entry damage">🦞 Snapper attacks Reef Shark for 12 damage!</div>
+        <div class="log-entry action">🦈 Reef Shark moves closer...</div>
+        <div class="log-entry heal">🦞 Coral casts Healing Word on Snapper (+6 HP)</div>
+        <div class="log-entry damage">🐙 Giant Octopus grapples Snapper!</div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // ===== SCENE SETUP =====
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x1a1a2e);
+        
+        // Isometric camera
+        const aspect = window.innerWidth / window.innerHeight;
+        const d = 15;
+        const camera = new THREE.OrthographicCamera(-d * aspect, d * aspect, d, -d, 1, 1000);
+        camera.position.set(20, 20, 20);
+        camera.lookAt(0, 0, 0);
+        
+        const renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        document.body.insertBefore(renderer.domElement, document.body.firstChild);
+        
+        // Controls
+        const controls = new THREE.OrbitControls(camera, renderer.domElement);
+        controls.enableDamping = true;
+        controls.dampingFactor = 0.05;
+        controls.maxPolarAngle = Math.PI / 2.5;
+        controls.minPolarAngle = Math.PI / 6;
+        
+        // ===== LIGHTING =====
+        const ambientLight = new THREE.AmbientLight(0x404060, 0.6);
+        scene.add(ambientLight);
+        
+        const sunLight = new THREE.DirectionalLight(0xffffff, 0.8);
+        sunLight.position.set(10, 20, 10);
+        sunLight.castShadow = true;
+        sunLight.shadow.mapSize.width = 2048;
+        sunLight.shadow.mapSize.height = 2048;
+        sunLight.shadow.camera.near = 0.5;
+        sunLight.shadow.camera.far = 50;
+        sunLight.shadow.camera.left = -20;
+        sunLight.shadow.camera.right = 20;
+        sunLight.shadow.camera.top = 20;
+        sunLight.shadow.camera.bottom = -20;
+        scene.add(sunLight);
+        
+        // Underwater caustics light
+        const causticLight = new THREE.PointLight(0x00ffff, 0.3, 30);
+        causticLight.position.set(0, 10, 0);
+        scene.add(causticLight);
+        
+        // ===== MATERIALS =====
+        const materials = {
+            sand: new THREE.MeshLambertMaterial({ color: 0xc2b280 }),
+            sandDark: new THREE.MeshLambertMaterial({ color: 0xa89860 }),
+            rock: new THREE.MeshLambertMaterial({ color: 0x5a5a5a }),
+            coral: new THREE.MeshLambertMaterial({ color: 0xff6b6b }),
+            coralPink: new THREE.MeshLambertMaterial({ color: 0xffb6c1 }),
+            seaweed: new THREE.MeshLambertMaterial({ color: 0x228b22 }),
+            water: new THREE.MeshLambertMaterial({ color: 0x1e90ff, transparent: true, opacity: 0.4 }),
+            lobsterRed: new THREE.MeshLambertMaterial({ color: 0xdc143c }),
+            lobsterOrange: new THREE.MeshLambertMaterial({ color: 0xff6347 }),
+            shark: new THREE.MeshLambertMaterial({ color: 0x708090 }),
+            sharkBelly: new THREE.MeshLambertMaterial({ color: 0xd3d3d3 }),
+            octopus: new THREE.MeshLambertMaterial({ color: 0x8b008b }),
+            eye: new THREE.MeshLambertMaterial({ color: 0x000000 }),
+            eyeWhite: new THREE.MeshLambertMaterial({ color: 0xffffff }),
+        };
+        
+        // ===== GRID TERRAIN =====
+        const gridSize = 10;
+        const tileSize = 2;
+        
+        for (let x = -gridSize/2; x < gridSize/2; x++) {
+            for (let z = -gridSize/2; z < gridSize/2; z++) {
+                const height = Math.random() * 0.3;
+                const geo = new THREE.BoxGeometry(tileSize - 0.05, 0.5 + height, tileSize - 0.05);
+                const mat = Math.random() > 0.3 ? materials.sand : materials.sandDark;
+                const tile = new THREE.Mesh(geo, mat);
+                tile.position.set(x * tileSize, -0.25 - height/2, z * tileSize);
+                tile.receiveShadow = true;
+                scene.add(tile);
+            }
+        }
+        
+        // ===== DECORATIONS =====
+        function createRock(x, z, scale = 1) {
+            const geo = new THREE.DodecahedronGeometry(0.5 * scale, 0);
+            const rock = new THREE.Mesh(geo, materials.rock);
+            rock.position.set(x, 0.3 * scale, z);
+            rock.rotation.set(Math.random(), Math.random(), Math.random());
+            rock.castShadow = true;
+            scene.add(rock);
+        }
+        
+        function createCoral(x, z, type = 0) {
+            const group = new THREE.Group();
+            const mat = type === 0 ? materials.coral : materials.coralPink;
+            
+            for (let i = 0; i < 3 + Math.random() * 3; i++) {
+                const height = 0.5 + Math.random() * 1;
+                const geo = new THREE.CylinderGeometry(0.05, 0.15, height, 6);
+                const branch = new THREE.Mesh(geo, mat);
+                branch.position.set(
+                    (Math.random() - 0.5) * 0.5,
+                    height / 2,
+                    (Math.random() - 0.5) * 0.5
+                );
+                branch.rotation.set(
+                    (Math.random() - 0.5) * 0.3,
+                    0,
+                    (Math.random() - 0.5) * 0.3
+                );
+                branch.castShadow = true;
+                group.add(branch);
+            }
+            group.position.set(x, 0, z);
+            scene.add(group);
+        }
+        
+        function createSeaweed(x, z) {
+            const group = new THREE.Group();
+            for (let i = 0; i < 3; i++) {
+                const height = 1 + Math.random() * 1.5;
+                const geo = new THREE.CylinderGeometry(0.03, 0.05, height, 4);
+                const strand = new THREE.Mesh(geo, materials.seaweed);
+                strand.position.set(
+                    (Math.random() - 0.5) * 0.3,
+                    height / 2,
+                    (Math.random() - 0.5) * 0.3
+                );
+                strand.rotation.z = (Math.random() - 0.5) * 0.4;
+                group.add(strand);
+            }
+            group.position.set(x, 0, z);
+            scene.add(group);
+        }
+        
+        // Add decorations
+        createRock(-7, -7, 1.5);
+        createRock(6, -5, 1);
+        createRock(-5, 6, 0.8);
+        createCoral(-6, 4, 0);
+        createCoral(5, 5, 1);
+        createCoral(-3, -6, 0);
+        createSeaweed(7, 3);
+        createSeaweed(-7, -3);
+        createSeaweed(4, -7);
+        
+        // ===== LOBSTER CHARACTER =====
+        function createLobster(x, z, color = materials.lobsterRed, rotation = 0) {
+            const group = new THREE.Group();
+            
+            // Body (ellipsoid)
+            const bodyGeo = new THREE.SphereGeometry(0.5, 8, 6);
+            bodyGeo.scale(1, 0.6, 1.5);
+            const body = new THREE.Mesh(bodyGeo, color);
+            body.position.y = 0.5;
+            body.castShadow = true;
+            group.add(body);
+            
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.3, 8, 6);
+            const head = new THREE.Mesh(headGeo, color);
+            head.position.set(0, 0.6, 0.6);
+            head.castShadow = true;
+            group.add(head);
+            
+            // Eyes (on stalks)
+            for (let side of [-1, 1]) {
+                const stalkGeo = new THREE.CylinderGeometry(0.03, 0.03, 0.2, 4);
+                const stalk = new THREE.Mesh(stalkGeo, color);
+                stalk.position.set(side * 0.15, 0.85, 0.7);
+                stalk.rotation.x = -0.3;
+                group.add(stalk);
+                
+                const eyeGeo = new THREE.SphereGeometry(0.06, 6, 6);
+                const eye = new THREE.Mesh(eyeGeo, materials.eyeWhite);
+                eye.position.set(side * 0.15, 0.95, 0.75);
+                group.add(eye);
+                
+                const pupilGeo = new THREE.SphereGeometry(0.03, 4, 4);
+                const pupil = new THREE.Mesh(pupilGeo, materials.eye);
+                pupil.position.set(side * 0.15, 0.95, 0.8);
+                group.add(pupil);
+            }
+            
+            // Claws
+            for (let side of [-1, 1]) {
+                const armGeo = new THREE.CylinderGeometry(0.08, 0.06, 0.6, 6);
+                const arm = new THREE.Mesh(armGeo, color);
+                arm.position.set(side * 0.5, 0.4, 0.3);
+                arm.rotation.z = side * 0.5;
+                arm.rotation.x = 0.3;
+                group.add(arm);
+                
+                // Claw
+                const clawGeo = new THREE.SphereGeometry(0.2, 6, 6);
+                clawGeo.scale(1.2, 0.6, 0.8);
+                const claw = new THREE.Mesh(clawGeo, color);
+                claw.position.set(side * 0.8, 0.5, 0.5);
+                claw.castShadow = true;
+                group.add(claw);
+            }
+            
+            // Tail segments
+            for (let i = 0; i < 4; i++) {
+                const segGeo = new THREE.SphereGeometry(0.25 - i * 0.04, 6, 6);
+                segGeo.scale(1, 0.5, 1);
+                const seg = new THREE.Mesh(segGeo, color);
+                seg.position.set(0, 0.4 - i * 0.05, -0.5 - i * 0.3);
+                seg.castShadow = true;
+                group.add(seg);
+            }
+            
+            // Tail fan
+            const fanGeo = new THREE.CircleGeometry(0.3, 6);
+            const fan = new THREE.Mesh(fanGeo, color);
+            fan.position.set(0, 0.25, -1.6);
+            fan.rotation.x = -Math.PI / 2 + 0.3;
+            group.add(fan);
+            
+            // Legs
+            for (let i = 0; i < 4; i++) {
+                for (let side of [-1, 1]) {
+                    const legGeo = new THREE.CylinderGeometry(0.02, 0.02, 0.4, 4);
+                    const leg = new THREE.Mesh(legGeo, color);
+                    leg.position.set(side * 0.35, 0.15, 0.2 - i * 0.25);
+                    leg.rotation.z = side * 0.8;
+                    group.add(leg);
+                }
+            }
+            
+            group.position.set(x, 0, z);
+            group.rotation.y = rotation;
+            scene.add(group);
+            return group;
+        }
+        
+        // ===== SHARK =====
+        function createShark(x, z, rotation = 0) {
+            const group = new THREE.Group();
+            
+            // Body
+            const bodyGeo = new THREE.ConeGeometry(0.5, 2, 8);
+            bodyGeo.rotateX(Math.PI / 2);
+            const body = new THREE.Mesh(bodyGeo, materials.shark);
+            body.position.y = 0.8;
+            body.castShadow = true;
+            group.add(body);
+            
+            // Belly
+            const bellyGeo = new THREE.SphereGeometry(0.35, 8, 6);
+            bellyGeo.scale(1, 0.5, 1.5);
+            const belly = new THREE.Mesh(bellyGeo, materials.sharkBelly);
+            belly.position.set(0, 0.6, 0);
+            group.add(belly);
+            
+            // Dorsal fin
+            const finGeo = new THREE.ConeGeometry(0.2, 0.6, 4);
+            const fin = new THREE.Mesh(finGeo, materials.shark);
+            fin.position.set(0, 1.3, -0.2);
+            fin.rotation.x = -0.2;
+            fin.castShadow = true;
+            group.add(fin);
+            
+            // Tail
+            const tailGeo = new THREE.ConeGeometry(0.3, 0.5, 4);
+            const tail = new THREE.Mesh(tailGeo, materials.shark);
+            tail.position.set(0, 0.9, -1.2);
+            tail.rotation.x = Math.PI / 4;
+            group.add(tail);
+            
+            // Eyes
+            for (let side of [-1, 1]) {
+                const eyeGeo = new THREE.SphereGeometry(0.08, 6, 6);
+                const eye = new THREE.Mesh(eyeGeo, materials.eye);
+                eye.position.set(side * 0.35, 0.85, 0.6);
+                group.add(eye);
+            }
+            
+            // Teeth indicator
+            const teethGeo = new THREE.TorusGeometry(0.15, 0.03, 4, 8, Math.PI);
+            const teeth = new THREE.Mesh(teethGeo, materials.eyeWhite);
+            teeth.position.set(0, 0.7, 0.9);
+            teeth.rotation.x = Math.PI;
+            group.add(teeth);
+            
+            group.position.set(x, 0, z);
+            group.rotation.y = rotation;
+            scene.add(group);
+            return group;
+        }
+        
+        // ===== OCTOPUS =====
+        function createOctopus(x, z, rotation = 0) {
+            const group = new THREE.Group();
+            
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.6, 8, 8);
+            headGeo.scale(1, 1.2, 1);
+            const head = new THREE.Mesh(headGeo, materials.octopus);
+            head.position.y = 1.2;
+            head.castShadow = true;
+            group.add(head);
+            
+            // Eyes
+            for (let side of [-1, 1]) {
+                const eyeGeo = new THREE.SphereGeometry(0.15, 8, 8);
+                const eye = new THREE.Mesh(eyeGeo, materials.eyeWhite);
+                eye.position.set(side * 0.3, 1.3, 0.45);
+                group.add(eye);
+                
+                const pupilGeo = new THREE.SphereGeometry(0.08, 6, 6);
+                const pupil = new THREE.Mesh(pupilGeo, materials.eye);
+                pupil.position.set(side * 0.3, 1.3, 0.55);
+                group.add(pupil);
+            }
+            
+            // Tentacles
+            for (let i = 0; i < 8; i++) {
+                const angle = (i / 8) * Math.PI * 2;
+                const tentacle = new THREE.Group();
+                
+                // Create curved tentacle with segments
+                for (let j = 0; j < 6; j++) {
+                    const size = 0.12 - j * 0.015;
+                    const segGeo = new THREE.SphereGeometry(size, 6, 6);
+                    segGeo.scale(1, 0.6, 1);
+                    const seg = new THREE.Mesh(segGeo, materials.octopus);
+                    
+                    const dist = 0.4 + j * 0.25;
+                    const wave = Math.sin(j * 0.5 + i) * 0.2;
+                    seg.position.set(
+                        Math.sin(angle) * dist + wave,
+                        0.3 - j * 0.05,
+                        Math.cos(angle) * dist
+                    );
+                    tentacle.add(seg);
+                }
+                group.add(tentacle);
+            }
+            
+            group.position.set(x, 0, z);
+            group.rotation.y = rotation;
+            scene.add(group);
+            return group;
+        }
+        
+        // ===== CREATE COMBATANTS =====
+        const player = createLobster(-3, 2, materials.lobsterRed, Math.PI / 4);
+        const ally = createLobster(-4, -1, materials.lobsterOrange, Math.PI / 3);
+        const shark = createShark(3, 1, -Math.PI / 2);
+        const octopus = createOctopus(4, -2, -Math.PI / 3);
+        
+        // ===== GRID INDICATORS =====
+        function createGridHighlight(x, z, color = 0x4a9eff) {
+            const geo = new THREE.PlaneGeometry(1.8, 1.8);
+            const mat = new THREE.MeshBasicMaterial({ 
+                color: color, 
+                transparent: true, 
+                opacity: 0.3,
+                side: THREE.DoubleSide
+            });
+            const highlight = new THREE.Mesh(geo, mat);
+            highlight.rotation.x = -Math.PI / 2;
+            highlight.position.set(x, 0.01, z);
+            scene.add(highlight);
+            return highlight;
+        }
+        
+        // Highlight combatant positions
+        createGridHighlight(-3, 2, 0x4ade80);  // Player
+        createGridHighlight(-4, -1, 0x4ade80); // Ally
+        createGridHighlight(3, 1, 0xf87171);   // Shark
+        createGridHighlight(4, -2, 0xf87171);  // Octopus
+        
+        // Movement range indicators
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dz = -1; dz <= 1; dz++) {
+                if (dx === 0 && dz === 0) continue;
+                createGridHighlight(-3 + dx * 2, 2 + dz * 2, 0x60a5fa);
+            }
+        }
+        
+        // ===== FLOATING DAMAGE NUMBERS =====
+        const damageNumbers = [];
+        
+        function spawnDamageNumber(x, y, z, damage, isHeal = false) {
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 64;
+            const ctx = canvas.getContext('2d');
+            ctx.font = 'bold 48px Arial';
+            ctx.fillStyle = isHeal ? '#4ade80' : '#f87171';
+            ctx.textAlign = 'center';
+            ctx.fillText((isHeal ? '+' : '-') + damage, 64, 48);
+            
+            const texture = new THREE.CanvasTexture(canvas);
+            const mat = new THREE.SpriteMaterial({ map: texture, transparent: true });
+            const sprite = new THREE.Sprite(mat);
+            sprite.position.set(x, y, z);
+            sprite.scale.set(2, 1, 1);
+            scene.add(sprite);
+            
+            damageNumbers.push({
+                sprite: sprite,
+                velocity: 0.02,
+                life: 60
+            });
+        }
+        
+        // Spawn some damage numbers for effect
+        setTimeout(() => spawnDamageNumber(3, 2, 1, 12), 500);
+        setTimeout(() => spawnDamageNumber(-3, 2, 2, 6, true), 1500);
+        setTimeout(() => spawnDamageNumber(4, 2, -2, 8), 2500);
+        
+        // ===== ANIMATION =====
+        let time = 0;
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            time += 0.016;
+            
+            controls.update();
+            
+            // Animate caustic light
+            causticLight.position.x = Math.sin(time) * 5;
+            causticLight.position.z = Math.cos(time * 0.7) * 5;
+            causticLight.intensity = 0.3 + Math.sin(time * 2) * 0.1;
+            
+            // Bob characters slightly
+            player.position.y = Math.sin(time * 2) * 0.05;
+            ally.position.y = Math.sin(time * 2 + 1) * 0.05;
+            shark.position.y = Math.sin(time * 1.5) * 0.08;
+            octopus.position.y = Math.sin(time * 1.8 + 0.5) * 0.06;
+            
+            // Animate damage numbers
+            for (let i = damageNumbers.length - 1; i >= 0; i--) {
+                const dn = damageNumbers[i];
+                dn.sprite.position.y += dn.velocity;
+                dn.sprite.material.opacity = dn.life / 60;
+                dn.life--;
+                
+                if (dn.life <= 0) {
+                    scene.remove(dn.sprite);
+                    damageNumbers.splice(i, 1);
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+        
+        // Handle resize
+        window.addEventListener('resize', () => {
+            const aspect = window.innerWidth / window.innerHeight;
+            camera.left = -d * aspect;
+            camera.right = d * aspect;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Periodically spawn damage numbers
+        setInterval(() => {
+            const targets = [
+                { x: 3, z: 1, y: 1.5 },
+                { x: 4, z: -2, y: 1.5 },
+                { x: -3, z: 2, y: 1.5 },
+                { x: -4, z: -1, y: 1.5 }
+            ];
+            const target = targets[Math.floor(Math.random() * targets.length)];
+            const isHeal = Math.random() > 0.7;
+            const amount = Math.floor(Math.random() * 15) + 3;
+            spawnDamageNumber(target.x, target.y, target.z, amount, isHeal);
+        }, 3000);
+    </script>
+</body>
+</html>
